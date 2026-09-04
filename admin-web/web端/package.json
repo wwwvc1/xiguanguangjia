@@ -1,0 +1,28 @@
+{
+  "name": "habit-admin-web-v2",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "习惯管家 — 运营管理后台 (web端, Phase 0 基础架构)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "type-check": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "axios": "^1.7.0",
+    "pinia": "^2.2.0",
+    "three": "^0.160.1",
+    "vue": "^3.4.0",
+    "vue-router": "^4.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/three": "^0.185.4",
+    "@vitejs/plugin-vue": "^5.0.0",
+    "typescript": "^5.4.0",
+    "vite": "^5.4.0",
+    "vue-tsc": "^2.0.0"
+  }
+}

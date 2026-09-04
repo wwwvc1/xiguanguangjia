@@ -1,0 +1,135 @@
+{
+  "data": [
+    {
+      "id": "image-001",
+      "title": "现代极简 - 登录页",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787850780000,
+      "devMetadata": {
+        "imageSrc": "assets/scheme-minimal-login.jpg"
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "image-002",
+      "title": "现代极简 - 仪表盘",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787850780000,
+      "devMetadata": {
+        "imageSrc": "assets/scheme-minimal-dashboard.jpg"
+      },
+      "canvasData": {
+        "x": 2200,
+        "y": 0
+      }
+    },
+    {
+      "id": "image-003",
+      "title": "现代极简 - 用户管理",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787850780000,
+      "devMetadata": {
+        "imageSrc": "assets/scheme-minimal-users.jpg"
+      },
+      "canvasData": {
+        "x": 4400,
+        "y": 0
+      }
+    },
+    {
+      "id": "image-004",
+      "title": "深色科技 - 登录页",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787850780000,
+      "devMetadata": {
+        "imageSrc": "assets/scheme-dark-tech-login.jpg"
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 1400
+      }
+    },
+    {
+      "id": "image-005",
+      "title": "深色科技 - 仪表盘",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787850780000,
+      "devMetadata": {
+        "imageSrc": "assets/scheme-dark-tech-dashboard.jpg"
+      },
+      "canvasData": {
+        "x": 2200,
+        "y": 1400
+      }
+    },
+    {
+      "id": "image-006",
+      "title": "深色科技 - AI 模型管理",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787850780000,
+      "devMetadata": {
+        "imageSrc": "assets/scheme-dark-tech-llm.jpg"
+      },
+      "canvasData": {
+        "x": 4400,
+        "y": 1400
+      }
+    },
+    {
+      "id": "image-007",
+      "title": "暖色亲和 - 登录页",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787850780000,
+      "devMetadata": {
+        "imageSrc": "assets/scheme-warm-life-login.jpg"
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 2800
+      }
+    },
+    {
+      "id": "image-008",
+      "title": "暖色亲和 - 仪表盘",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787850780000,
+      "devMetadata": {
+        "imageSrc": "assets/scheme-warm-life-dashboard.jpg"
+      },
+      "canvasData": {
+        "x": 2200,
+        "y": 2800
+      }
+    },
+    {
+      "id": "image-009",
+      "title": "暖色亲和 - 知识库管理",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787850780000,
+      "devMetadata": {
+        "imageSrc": "assets/scheme-warm-life-knowledge.jpg"
+      },
+      "canvasData": {
+        "x": 4400,
+        "y": 2800
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "freeSize",
+    "projectName": "三套管理后台视觉方案效果图"
+  }
+}

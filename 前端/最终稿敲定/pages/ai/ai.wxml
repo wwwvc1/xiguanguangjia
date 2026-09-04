@@ -1,0 +1,154 @@
+<view class="ai-page">
+  <!-- 自定义导航栏 -->
+  <view class="custom-nav" style="height: {{navHeight}}px; padding-top: {{statusBarHeight}}px;">
+    <view class="nav-content" style="padding-right: {{capsuleRight || 0}}px;">
+      <view style="width: 36px;"></view>
+      <text class="nav-title">AI 聊天</text>
+      <view style="width: 36px;"></view>
+    </view>
+  </view>
+
+  <!-- 固定工具栏：Tab 切换 + 智能创建按钮（不随消息滚动） -->
+  <view class="chat-toolbar">
+    <view class="chat-tab-bar pit">
+      <view class="chat-tab {{currentTab === 'habit' ? 'active' : ''}}" bindtap="switchTab" data-tab="habit">习惯小助理</view>
+      <view class="chat-tab {{currentTab === 'general' ? 'active' : ''}}" bindtap="switchTab" data-tab="general">通通懂你</view>
+    </view>
+    <view class="model-row" bindtap="onOpenModelPicker">
+      <text class="model-label">模型:</text>
+      <text class="model-name">{{activeModelName}}</text>
+      <text class="model-arrow">▾</text>
+    </view>
+    <view class="fab-row">
+      <view class="fab-inline bump-sm" bindtap="onFabTap">✨ 智能创建任务</view>
+    </view>
+  </view>
+
+  <!-- 中间可滚动区域(显式高度,确保能滚) -->
+  <scroll-view
+    class="chat-scroll"
+    scroll-y
+    scroll-into-view="{{scrollIntoView}}"
+    scroll-with-animation="{{!isLoading}}"
+    enhanced
+    show-scrollbar="{{true}}"
+    style="height: calc(100vh - {{navHeight}}px - 290rpx);"
+  >
+    <!-- 空状态 -->
+    <view wx:if="{{messages.length === 0}}" class="chat-empty">
+      <view class="chat-avatar">
+        <image wx:if="{{aiAvatar}}" src="{{aiAvatar}}" class="avatar-img" mode="aspectFill" />
+        <text wx:else>🤖</text>
+      </view>
+      <text class="chat-empty-text">你好，我是你的 AI 聊天助手</text>
+      <text class="chat-empty-hint" wx:if="{{currentTab === 'habit'}}">试试问我：我这周的运动习惯怎么样？</text>
+      <text class="chat-empty-hint" wx:if="{{currentTab === 'general'}}">随便聊聊，我什么都知道一点~</text>
+    </view>
+
+    <!-- 消息列表 -->
+    <block wx:for="{{messages}}" wx:key="id">
+      <!-- AI 消息：带头像 -->
+      <view wx:if="{{item.role === 'ai'}}" class="ai-row">
+        <view class="chat-avatar-sm">
+          <image wx:if="{{aiAvatar}}" src="{{aiAvatar}}" class="avatar-img-sm" mode="aspectFill" />
+          <text wx:else>🤖</text>
+        </view>
+        <view id="{{item.id}}" class="chat-bubble ai">
+          <!-- 工具执行链(可折叠) -->
+          <view wx:if="{{item.toolChain && item.toolChain.length > 0}}" class="tool-chain pit-sm">
+            <view class="tool-chain-header">
+              <text class="tool-chain-title">🔧 已执行 {{item.toolChain.length}} 步操作</text>
+            </view>
+            <view class="tool-chain-body">
+              <view wx:for="{{item.toolChain}}" wx:key="id" class="tool-item">
+                <text class="tool-status {{item.ok === null ? 'pending' : (item.ok ? 'ok' : 'fail')}}">
+                  {{item.ok === null ? '⏳' : (item.ok ? '✓' : '✕')}}
+                </text>
+                <text class="tool-name">{{item.label}}</text>
+                <text wx:if="{{item.summary}}" class="tool-summary">{{item.summary}}</text>
+              </view>
+            </view>
+          </view>
+          <text>{{item.content}}</text>
+          <view wx:if="{{item.sources && item.sources.length > 0}}" class="source-hint">
+            <text class="source-label">📖 参考来源</text>
+            <view wx:for="{{item.sources}}" wx:key="*this" wx:for-item="src" class="source-item">
+              <text>{{src}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+      <!-- 用户消息：不带头像 -->
+      <view wx:else id="{{item.id}}" class="chat-bubble user">
+        <text user-select="true" space="emsp">{{item.content}}</text>
+      </view>
+    </block>
+
+    <!-- 加载中 — 打字点动画 -->
+    <view wx:if="{{isLoading}}" class="ai-row">
+      <view class="chat-avatar-sm">
+        <image wx:if="{{aiAvatar}}" src="{{aiAvatar}}" class="avatar-img-sm" mode="aspectFill" />
+        <text wx:else>🤖</text>
+      </view>
+      <view class="chat-bubble ai">
+        <view class="typing-dots">
+          <view class="dot"></view>
+          <view class="dot"></view>
+          <view class="dot"></view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部锚点：流式输出时自动滚动到这里，保证最新内容可见 -->
+    <view id="chat-bottom" class="chat-bottom-anchor"></view>
+  </scroll-view>
+
+  <!-- 模型选择弹窗 -->
+  <view class="modal-mask" wx:if="{{showModelPicker}}" bindtap="onCloseModelPicker">
+    <view class="picker-content pit" catchtap="stopPropagation">
+      <text class="picker-title">选择 AI 模型</text>
+      <scroll-view scroll-y style="max-height: 60vh;">
+        <view
+          wx:for="{{modelList}}"
+          wx:key="id"
+          class="picker-item {{item.id === activeModelId ? 'selected' : ''}}"
+          bindtap="onSelectModel"
+          data-id="{{item.id}}"
+        >
+          <view class="picker-item-info">
+            <text class="picker-item-name">{{item.name}}</text>
+            <text class="picker-item-sub">{{item.model_name}}</text>
+          </view>
+          <view class="picker-item-tags">
+            <view class="tag tag-default" wx:if="{{item.is_system_default}}">系统</view>
+            <view class="tag tag-user" wx:elif="{{item.owner_user_id}}">我的</view>
+            <text wx:if="{{item.id === activeModelId}}" class="tag tag-active">✓ 当前</text>
+          </view>
+        </view>
+      </scroll-view>
+      <view class="picker-footer" bindtap="onManageModels">⚙️ 管理我的模型</view>
+    </view>
+  </view>
+
+  <!-- 底部输入栏 — 跟 .ai-page 同级,不被父容器影响 -->
+  <view class="input-bar-fixed">
+    <view class="pit input-wrapper">
+      <textarea
+        class="chat-input"
+        placeholder="输入你的问题..."
+        value="{{inputValue}}"
+        bindinput="onInputChange"
+        maxlength="500"
+        confirm-type="send"
+        bindconfirm="sendMessage"
+        show-confirm-bar="{{false}}"
+      />
+      <view class="send-btn {{inputValue.trim() ? 'active' : ''}}" bindtap="sendMessage" wx:if="{{!isLoading}}">
+        <text>发送</text>
+      </view>
+      <view class="send-btn loading" wx:if="{{isLoading}}">
+        <text>...</text>
+      </view>
+    </view>
+  </view>
+</view>

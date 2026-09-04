@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440">
+<title>数据流 · 玻璃嵌套 Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ---------- Tokens ---------- */
+:root {
+  --bg: #ffffff;
+  --bg-soft: #fafafa;
+  --surface-1: rgba(255,255,255,0.4);
+  --surface-2: rgba(255,255,255,0.6);
+  --surface-3: rgba(255,255,255,0.96);
+  --border: rgba(0,0,0,0.08);
+  --border-strong: rgba(0,0,0,0.12);
+  --text-1: #0a0a0a;
+  --text-2: #525252;
+  --text-3: #a3a3a3;
+  --accent-data: #10b981;
+  --accent-data-soft: rgba(16,185,129,0.12);
+  --accent-active: #3b82f6;
+  --accent-active-soft: rgba(59,130,246,0.12);
+  --shadow-1: 0 0 0 1px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
+  --shadow-2: 0 0 0 1px rgba(0,0,0,0.06), 0 12px 40px rgba(0,0,0,0.08);
+  --shadow-3: 0 0 0 1px rgba(0,0,0,0.08), 0 16px 56px rgba(0,0,0,0.12);
+  --radius-1: 16px;
+  --radius-2: 12px;
+  --radius-3: 8px;
+  --easing: cubic-bezier(0.16, 1, 0.3, 1);
+  --grad-purple-cyan: linear-gradient(135deg, #a855f7, #06b6d4);
+  --grad-data: linear-gradient(135deg, #10b981, #3b82f6);
+  --transition-theme: color 0.4s ease, background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+}
+[data-theme="dark"] {
+  --bg: #0a0a0a;
+  --bg-soft: #0f0f10;
+  --surface-1: rgba(255,255,255,0.03);
+  --surface-2: rgba(255,255,255,0.06);
+  --surface-3: rgba(20,20,22,0.96);
+  --border: rgba(255,255,255,0.08);
+  --border-strong: rgba(255,255,255,0.14);
+  --text-1: #fafafa;
+  --text-2: #a3a3a3;
+  --text-3: #6b6b6b;
+  --accent-data: #34d399;
+  --accent-data-soft: rgba(52,211,153,0.14);
+  --accent-active: #60a5fa;
+  --accent-active-soft: rgba(96,165,250,0.14);
+  --shadow-1: 0 0 0 1px rgba(255,255,255,0.05), 0 8px 24px rgba(0,0,0,0.5);
+  --shadow-2: 0 0 0 1px rgba(255,255,255,0.06), 0 12px 40px rgba(0,0,0,0.6);
+  --shadow-3: 0 0 0 1px rgba(255,255,255,0.08), 0 16px 56px rgba(0,0,0,0.7);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text-1);
+  font-size: 14px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  transition: var(--transition-theme);
+  overflow-x: hidden;
+  letter-spacing: -0.01em;
+}
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+input { font-family: inherit; }
+
+/* ---------- Background gradient (data flow visual depth) ---------- */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 20%, var(--accent-data-soft), transparent 40%),
+    radial-gradient(circle at 80% 80%, var(--accent-active-soft), transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.6;
+  transition: opacity 0.4s ease;
+}
+
+/* ---------- Header ---------- */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+  background: var(--surface-3);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-bottom: 1px solid var(--border);
+  transition: var(--transition-theme);
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; }
+.brand-mark {
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  background: var(--grad-data);
+  position: relative;
+}
+.brand-mark::after {
+  content: ''; position: absolute; inset: 4px;
+  border-radius: 3px;
+  background: var(--bg);
+}
+.brand-mark::before {
+  content: ''; position: absolute; inset: 7px;
+  border-radius: 2px;
+  background: var(--grad-data);
+}
+
+.tabs { display: flex; gap: 4px; padding: 4px; background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-2); }
+.tab {
+  padding: 8px 16px;
+  border-radius: var(--radius-3);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  transition: color 0.2s var(--easing), background 0.2s var(--easing);
+  position: relative;
+}
+.tab:hover { color: var(--text-1); }
+.tab.active { background: var(--surface-3); color: var(--text-1); box-shadow: var(--shadow-1); }
+
+.header-actions { display: flex; align-items: center; gap: 8px; }
+
+/* ---------- Theme toggle ---------- */
+.theme-toggle {
+  width: 64px; height: 32px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  position: relative;
+  cursor: pointer;
+  transition: var(--transition-theme);
+}
+.theme-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  box-shadow: var(--shadow-1);
+  transition: transform 0.4s var(--easing), background 0.4s ease;
+}
+[data-theme="dark"] .theme-toggle::after { transform: translateX(32px); }
+.theme-icon {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: var(--text-2);
+  pointer-events: none;
+}
+.theme-icon.sun { left: 8px; }
+.theme-icon.moon { right: 8px; }
+
+/* ---------- Layout ---------- */
+main { position: relative; z-index: 1; padding: 32px; max-width: 1440px; margin: 0 auto; }
+.tab-content { display: none; animation: fadeIn 0.5s var(--easing); }
+.tab-content.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ---------- Login Tab ---------- */
+.login-wrap {
+  min-height: calc(100vh - 200px);
+  display: grid;
+  place-items: center;
+  padding: 48px 32px;
+}
+.login-card {
+  width: 380px;
+  padding: 40px;
+  background: var(--surface-3);
+  backdrop-filter: blur(20px) saturate(200%);
+  -webkit-backdrop-filter: blur(20px) saturate(200%);
+  border-radius: var(--radius-1);
+  box-shadow: var(--shadow-2);
+  border: 1px solid var(--border);
+  transition: var(--transition-theme);
+}
+.login-card h1 {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+.login-card p.sub { color: var(--text-2); font-size: 13px; margin-bottom: 32px; }
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 12px; font-weight: 500; color: var(--text-2); margin-bottom: 6px; }
+.field input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--radius-3);
+  border: 1px solid var(--border);
+  background: var(--bg-soft);
+  color: var(--text-1);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.field input:focus { border-color: var(--accent-active); box-shadow: 0 0 0 3px var(--accent-active-soft); }
+.btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--radius-3);
+  background: var(--text-1);
+  color: var(--bg);
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 8px;
+  transition: transform 0.2s var(--easing), box-shadow 0.2s ease;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-1); }
+.btn:active { transform: translateY(0); }
+.login-hint { margin-top: 16px; text-align: center; font-size: 12px; color: var(--text-3); }
+
+/* ---------- KPI Cards ---------- */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.kpi {
+  position: relative;
+  padding: 20px;
+  background: var(--surface-3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: var(--radius-1);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+  transition: var(--transition-theme), transform 0.3s var(--easing), box-shadow 0.3s ease;
+}
+.kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
+.kpi::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--grad-data);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.kpi.bump-active::before { opacity: 1; animation: kpiPulse 0.8s var(--easing); }
+@keyframes kpiPulse { 0% { transform: scaleX(0); opacity: 1; } 100% { transform: scaleX(1); opacity: 1; } }
+.kpi-label { font-size: 12px; color: var(--text-2); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.kpi-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-data); }
+.kpi-value { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; }
+.kpi-delta { font-size: 12px; color: var(--accent-data); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+.kpi-spark { margin-top: 12px; height: 32px; }
+
+/* ---------- Dashboard ---------- */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.earth-card {
+  position: relative;
+  grid-column: 1 / -1;
+  height: 520px;
+  background: var(--surface-3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: var(--radius-1);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+  transition: var(--transition-theme);
+}
+#earth-canvas { width: 100%; height: 100%; display: block; cursor: grab; }
+#earth-canvas:active { cursor: grabbing; }
+.earth-overlay { position: absolute; top: 0; left: 0; right: 0; padding: 24px 28px; pointer-events: none; display: flex; justify-content: space-between; align-items: flex-start; }
+.earth-title { font-size: 13px; color: var(--text-2); }
+.earth-title strong { display: block; font-size: 18px; font-weight: 600; color: var(--text-1); margin-bottom: 2px; letter-spacing: -0.02em; }
+.earth-legend { display: flex; gap: 16px; pointer-events: auto; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-2); padding: 6px 10px; background: var(--surface-2); border-radius: var(--radius-3); backdrop-filter: blur(10px); border: 1px solid var(--border); }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-data); }
+.legend-dot.blue { background: var(--accent-active); }
+
+/* City node label */
+.city-label {
+  position: absolute;
+  transform: translate(-50%, -150%);
+  font-size: 10px;
+  color: var(--text-1);
+  background: var(--surface-3);
+  padding: 3px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+  pointer-events: none;
+  font-weight: 500;
+  transition: opacity 0.2s ease;
+}
+.city-label::after {
+  content: '';
+  position: absolute;
+  bottom: -3px; left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 5px; height: 5px;
+  background: var(--surface-3);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+/* ---------- Side panels ---------- */
+.side-panel {
+  background: var(--surface-3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: var(--radius-1);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-1);
+  padding: 20px;
+  transition: var(--transition-theme);
+}
+.panel-title { font-size: 13px; font-weight: 600; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+.panel-title .meta { font-size: 11px; color: var(--text-2); font-weight: 400; }
+.stream { display: flex; flex-direction: column; gap: 8px; }
+.stream-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border-radius: var(--radius-3);
+  border: 1px solid var(--border);
+  transition: background 0.2s ease, transform 0.2s var(--easing);
+}
+.stream-item:hover { background: var(--surface-3); transform: translateX(2px); }
+.stream-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: var(--accent-data); }
+.stream-text { flex: 1; font-size: 12px; color: var(--text-1); }
+.stream-meta { font-size: 11px; color: var(--text-2); }
+
+/* ---------- Real-time tab ---------- */
+.realtime-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.realtime-header h2 { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+.realtime-stats { display: flex; gap: 24px; }
+.live-stat { font-size: 12px; color: var(--text-2); }
+.live-stat strong { display: block; font-size: 18px; font-weight: 600; color: var(--text-1); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.live-indicator { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--accent-data); font-weight: 500; }
+.live-pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-data); position: relative; }
+.live-pulse::after {
+  content: ''; position: absolute; inset: -4px;
+  border-radius: 50%;
+  border: 1px solid var(--accent-data);
+  animation: liveRing 1.5s ease-out infinite;
+}
+@keyframes liveRing { 0% { transform: scale(0.6); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
+
+.activity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.activity-card {
+  position: relative;
+  padding: 14px 16px;
+  background: var(--surface-3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: var(--radius-2);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-1);
+  transition: transform 0.3s var(--easing), box-shadow 0.3s ease, opacity 0.3s ease;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: cardIn 0.5s var(--easing) forwards;
+}
+.activity-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
+@keyframes cardIn { to { opacity: 1; transform: translateY(0); } }
+.activity-card.removing { animation: cardOut 0.4s var(--easing) forwards; }
+@keyframes cardOut { to { opacity: 0; transform: translateY(-8px) scale(0.98); } }
+.activity-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.activity-tag { font-size: 10px; padding: 2px 7px; border-radius: 999px; background: var(--accent-data-soft); color: var(--accent-data); font-weight: 500; }
+.activity-tag.blue { background: var(--accent-active-soft); color: var(--accent-active); }
+.activity-time { font-size: 11px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.activity-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; letter-spacing: -0.01em; }
+.activity-desc { font-size: 12px; color: var(--text-2); line-height: 1.5; }
+.activity-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-2); }
+
+/* ---------- Modal: 3-layer glass ---------- */
+.modal-outer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  /* Outer layer: backdrop modal */
+  background: rgba(255,255,255,0.4);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  animation: modalBackdrop 0.4s var(--easing);
+}
+[data-theme="dark"] .modal-outer { background: rgba(10,10,10,0.4); }
+.modal-outer.show { display: flex; }
+@keyframes modalBackdrop { from { opacity: 0; } to { opacity: 1; } }
+.modal-card {
+  width: 480px;
+  max-width: 100%;
+  padding: 28px;
+  /* Middle layer: info card with gradient border */
+  background: var(--surface-2);
+  backdrop-filter: blur(20px) saturate(200%);
+  -webkit-backdrop-filter: blur(20px) saturate(200%);
+  border-radius: var(--radius-1);
+  box-shadow: var(--shadow-3);
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  position: relative;
+  animation: modalIn 0.5s var(--easing);
+}
+.modal-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-1);
+  padding: 1px;
+  background: var(--grad-purple-cyan);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+@keyframes modalIn { from { opacity: 0; transform: translateY(20px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.modal-close {
+  position: absolute;
+  top: 16px; right: 16px;
+  width: 28px; height: 28px;
+  border-radius: var(--radius-3);
+  display: grid; place-items: center;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: 14px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.modal-close:hover { background: var(--surface-2); color: var(--text-1); }
+
+.modal-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.city-flag { width: 40px; height: 40px; border-radius: var(--radius-2); background: var(--grad-data); display: grid; place-items: center; color: white; font-weight: 600; font-size: 14px; }
+.modal-title h3 { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+.modal-title .sub { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+
+/* Inner layer data cards */
+.inner-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.inner-card {
+  padding: 12px 14px;
+  /* Inner layer: data card, most refined */
+  background: var(--surface-3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: var(--radius-3);
+  border: 1px solid var(--border);
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.02), 0 2px 8px rgba(0,0,0,0.04);
+}
+[data-theme="dark"] .inner-card { box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 2px 8px rgba(0,0,0,0.4); }
+.inner-card .label { font-size: 10px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 500; }
+.inner-card .value { font-size: 18px; font-weight: 600; margin-top: 4px; letter-spacing: -0.02em; }
+.inner-card .delta { font-size: 11px; color: var(--accent-data); margin-top: 2px; }
+
+.modal-chart {
+  height: 80px;
+  background: var(--surface-3);
+  border-radius: var(--radius-3);
+  border: 1px solid var(--border);
+  padding: 8px;
+}
+.modal-chart svg { width: 100%; height: 100%; }
+
+/* ---------- Particle canvas (overlay) ---------- */
+#particle-canvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 30;
+}
+
+/* ---------- Tooltip (Earth city hover) ---------- */
+.tooltip {
+  position: absolute;
+  z-index: 40;
+  padding: 8px 12px;
+  background: var(--surface-3);
+  backdrop-filter: blur(20px) saturate(200%);
+  -webkit-backdrop-filter: blur(20px) saturate(200%);
+  border-radius: var(--radius-3);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-2);
+  font-size: 12px;
+  pointer-events: none;
+  transform: translate(-50%, -100%) translateY(-8px);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  white-space: nowrap;
+}
+.tooltip.show { opacity: 1; }
+.tooltip .name { font-weight: 600; margin-bottom: 2px; }
+.tooltip .meta { color: var(--text-2); font-size: 11px; }
+
+/* ---------- Utility ---------- */
+.flex { display: flex; }
+.between { justify-content: space-between; }
+.center { align-items: center; }
+.gap-8 { gap: 8px; }
+.mt-8 { margin-top: 8px; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1100px) {
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="brand">
+    <div class="brand-mark"></div>
+    <span>Dataflow Admin</span>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="login" role="tab">登录</button>
+    <button class="tab" data-tab="dashboard" role="tab">仪表盘</button>
+    <button class="tab" data-tab="realtime" role="tab">实时数据</button>
+  </nav>
+  <div class="header-actions">
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+      <span class="theme-icon sun">☀</span>
+      <span class="theme-icon moon">☾</span>
+    </button>
+  </div>
+</header>
+
+<main>
+  <!-- ========== LOGIN ========== -->
+  <section id="tab-login" class="tab-content active">
+    <div class="login-wrap">
+      <div class="login-card">
+        <h1>欢迎回来</h1>
+        <p class="sub">登录以查看全球数据流</p>
+        <div class="field">
+          <label for="email">邮箱</label>
+          <input id="email" type="email" placeholder="you@company.com" autocomplete="username">
+        </div>
+        <div class="field">
+          <label for="pwd">密码</label>
+          <input id="pwd" type="password" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <button class="btn" onclick="simulateLogin()">登录</button>
+        <p class="login-hint">默认账户自动填充 · 演示版</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== DASHBOARD ========== -->
+  <section id="tab-dashboard" class="tab-content">
+    <div class="kpi-grid">
+      <div class="kpi" data-kpi="0">
+        <div class="kpi-label"><span class="kpi-dot"></span>活跃用户 · Beijing</div>
+        <div class="kpi-value" id="kpi-val-0">128,492</div>
+        <div class="kpi-delta">+12.4% <span>7d</span></div>
+        <svg class="kpi-spark" viewBox="0 0 200 32" preserveAspectRatio="none"><polyline points="0,24 20,20 40,22 60,14 80,16 100,10 120,12 140,6 160,8 180,4 200,2" fill="none" stroke="var(--accent-data)" stroke-width="1.5"/></svg>
+      </div>
+      <div class="kpi" data-kpi="1">
+        <div class="kpi-label"><span class="kpi-dot"></span>活跃用户 · New York</div>
+        <div class="kpi-value" id="kpi-val-1">86,317</div>
+        <div class="kpi-delta">+8.7% <span>7d</span></div>
+        <svg class="kpi-spark" viewBox="0 0 200 32" preserveAspectRatio="none"><polyline points="0,22 20,18 40,20 60,16 80,18 100,12 120,14 140,10 160,12 180,8 200,6" fill="none" stroke="var(--accent-data)" stroke-width="1.5"/></svg>
+      </div>
+      <div class="kpi" data-kpi="2">
+        <div class="kpi-label"><span class="kpi-dot"></span>活跃用户 · London</div>
+        <div class="kpi-value" id="kpi-val-2">54,289</div>
+        <div class="kpi-delta">+5.2% <span>7d</span></div>
+        <svg class="kpi-spark" viewBox="0 0 200 32" preserveAspectRatio="none"><polyline points="0,20 20,18 40,16 60,18 80,14 100,16 120,12 140,14 160,10 180,12 200,8" fill="none" stroke="var(--accent-data)" stroke-width="1.5"/></svg>
+      </div>
+      <div class="kpi" data-kpi="3">
+        <div class="kpi-label"><span class="kpi-dot"></span>活跃用户 · Tokyo</div>
+        <div class="kpi-value" id="kpi-val-3">71,624</div>
+        <div class="kpi-delta">+9.8% <span>7d</span></div>
+        <svg class="kpi-spark" viewBox="0 0 200 32" preserveAspectRatio="none"><polyline points="0,24 20,20 40,18 60,20 80,14 100,16 120,10 140,12 160,6 180,4 200,2" fill="none" stroke="var(--accent-data)" stroke-width="1.5"/></svg>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="earth-card">
+        <canvas id="earth-canvas"></canvas>
+        <div class="earth-overlay">
+          <div class="earth-title">
+            <strong>全球数据流</strong>
+            <span>点击城市节点查看详情 · 粒子正在飞向 KPI</span>
+          </div>
+          <div class="earth-legend">
+            <div class="legend-item"><span class="legend-dot"></span>节点</div>
+            <div class="legend-item"><span class="legend-dot blue"></span>路径</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dashboard-grid" style="margin-top:16px; grid-template-columns: 1fr 1fr;">
+      <div class="side-panel">
+        <div class="panel-title">实时事件流 <span class="meta" id="eventCounter">0 events</span></div>
+        <div class="stream" id="stream"></div>
+      </div>
+      <div class="side-panel">
+        <div class="panel-title">区域增长 <span class="meta">vs 上周</span></div>
+        <div class="stream" id="growthStream"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== REALTIME ========== -->
+  <section id="tab-realtime" class="tab-content">
+    <div class="realtime-header">
+      <div>
+        <h2>实时活动流</h2>
+        <div class="live-indicator" style="margin-top:6px;"><span class="live-pulse"></span>正在接收服务器推送</div>
+      </div>
+      <div class="realtime-stats">
+        <div class="live-stat">吞吐<strong id="throughput">0<span style="min">/s</span></strong></div>
+        <div class="live-stat">延迟<strong>42<span style="min">ms</span></strong></div>
+        <div class="live-stat">连接<strong id="connections">0</strong></div>
+      </div>
+    </div>
+    <div class="activity-grid" id="activityGrid"></div>
+  </section>
+</main>
+
+<!-- 3-layer glass modal: city info -->
+<div class="modal-outer" id="cityModal" onclick="if(event.target===this) closeModal()">
+  <div class="modal-card" id="modalCard">
+    <button class="modal-close" onclick="closeModal()" aria-label="Close">✕</button>
+    <div class="modal-header">
+      <div class="city-flag" id="modalFlag">BJ</div>
+      <div class="modal-title">
+        <h3 id="modalName">Beijing</h3>
+        <div class="sub" id="modalSub">39.9°N · 116.4°E</div>
+      </div>
+    </div>
+
+    <div class="inner-grid">
+      <div class="inner-card">
+        <div class="label">活跃用户</div>
+        <div class="value" id="modalUsers">128,492</div>
+        <div class="delta">+12.4% 7d</div>
+      </div>
+      <div class="inner-card">
+        <div class="label">增长率</div>
+        <div class="value" id="modalGrowth">12.4%</div>
+        <div class="delta">↑ 加速中</div>
+      </div>
+      <div class="inner-card">
+        <div class="label">会话数</div>
+        <div class="value" id="modalSessions">42,118</div>
+        <div class="delta">实时</div>
+      </div>
+      <div class="inner-card">
+        <div class="label">平均时长</div>
+        <div class="value" id="modalDuration">8m 24s</div>
+        <div class="delta">+0:42</div>
+      </div>
+    </div>
+
+    <div class="modal-chart">
+      <svg viewBox="0 0 400 60" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="modalGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--accent-data)" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="var(--accent-data)" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path id="modalArea" fill="url(#modalGrad)" d=""/>
+        <polyline id="modalLine" fill="none" stroke="var(--accent-data)" stroke-width="1.5"/>
+      </svg>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="btn" style="flex:1;background:var(--accent-active);color:white;">查看详细报告</button>
+      <button class="btn" style="flex:1;background:var(--surface-2);color:var(--text-1);border:1px solid var(--border);box-shadow:none;">导出 CSV</button>
+    </div>
+  </div>
+</div>
+
+<canvas id="particle-canvas"></canvas>
+<div class="tooltip" id="tooltip"><div class="name"></div><div class="meta"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+/* ======================================================
+   THEME TOGGLE — every transition motivated by legibility
+====================================================== */
+(function initTheme() {
+  const saved = localStorage.getItem('theme');
+  if (saved) document.documentElement.setAttribute('data-theme', saved);
+})();
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  // Three.js scene also needs bg update
+  if (scene) {
+    scene.background = null;
+    renderer.setClearColor(next === 'dark' ? 0x0a0a0a : 0xffffff, 0);
+  }
+});
+
+/* ======================================================
+   TAB SWITCH
+====================================================== */
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    if (tab.dataset.tab === 'dashboard') startEarth();
+    if (tab.dataset.tab === 'realtime') startRealtime();
+  });
+});
+
+function simulateLogin() {
+  const btn = document.querySelector('#tab-login .btn');
+  btn.textContent = '登录中...';
+  setTimeout(() => {
+    btn.textContent = '登录';
+    document.querySelector('[data-tab="dashboard"]').click();
+  }, 600);
+}
+
+/* ======================================================
+   CITIES — positions on 3D sphere + screen projection
+====================================================== */
+const CITIES = [
+  { id: 0, name: 'Beijing',  code: 'BJ', lat:  39.9, lng: 116.4, users: 128492, growth: 12.4, sessions: 42118 },
+  { id: 1, name: 'New York', code: 'NY', lat:  40.7, lng: -74.0, users:  86317, growth:  8.7, sessions: 31204 },
+  { id: 2, name: 'London',   code: 'LD', lat:  51.5, lng:  -0.1, users:  54289, growth:  5.2, sessions: 19842 },
+  { id: 3, name: 'Tokyo',    code: 'TK', lat:  35.7, lng: 139.7, users:  71624, growth:  9.8, sessions: 26381 },
+  { id: 4, name: 'Sydney',   code: 'SY', lat: -33.9, lng: 151.2, users:  18432, growth:  6.1, sessions:  6420 },
+  { id: 5, name: 'São Paulo',code: 'SP', lat: -23.5, lng: -46.6, users:  32891, growth: 14.2, sessions: 11420 },
+  { id: 6, name: 'Mumbai',   code: 'MB', lat:  19.1, lng:  72.9, users:  41528, growth: 11.6, sessions: 15932 },
+  { id: 7, name: 'Cape Town',code: 'CT', lat: -33.9, lng:  18.4, users:   9201, growth:  3.8, sessions:  3104 },
+];
+
+function latLngToVec3(lat, lng, r) {
+  const phi = (90 - lat) * Math.PI / 180;
+  const theta = (lng + 180) * Math.PI / 180;
+  return new THREE.Vector3(
+    -r * Math.sin(phi) * Math.cos(theta),
+     r * Math.cos(phi),
+     r * Math.sin(phi) * Math.sin(theta)
+  );
+}
+
+/* ======================================================
+   EARTH — three.js wireframe sphere + nodes
+====================================================== */
+let scene, camera, renderer, earthGroup, cityMeshes = [], arcLines = [];
+let earthStarted = false;
+let isDragging = false, prevMouse = { x: 0, y: 0 };
+let rotationVel = { x: 0.0015, y: 0 };
+
+function startEarth() {
+  if (earthStarted) return;
+  earthStarted = true;
+  initEarth();
+  animateEarth();
+}
+
+function initEarth() {
+  const canvas = document.getElementById('earth-canvas');
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  scene = new THREE.Scene();
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  scene.background = null;
+  camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 1000);
+  camera.position.set(0, 0, 5.2);
+  renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setSize(w, h);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(isDark ? 0x0a0a0a : 0xffffff, 0);
+
+  earthGroup = new THREE.Group();
+  scene.add(earthGroup);
+
+  // Earth sphere (dark base)
+  const sphereGeo = new THREE.SphereGeometry(2, 64, 48);
+  const sphereMat = new THREE.MeshBasicMaterial({
+    color: isDark ? 0x141416 : 0xe5e7eb,
+    transparent: true,
+    opacity: 0.85,
+  });
+  const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+  earthGroup.add(sphere);
+
+  // Wireframe grid
+  const wireGeo = new THREE.SphereGeometry(2.01, 24, 16);
+  const wireMat = new THREE.MeshBasicMaterial({
+    color: isDark ? 0x34d399 : 0x10b981,
+    wireframe: true,
+    transparent: true,
+    opacity: isDark ? 0.18 : 0.25,
+  });
+  earthGroup.add(new THREE.Mesh(wireGeo, wireMat));
+
+  // Atmospheric glow
+  const glowGeo = new THREE.SphereGeometry(2.18, 64, 48);
+  const glowMat = new THREE.MeshBasicMaterial({
+    color: isDark ? 0x34d399 : 0x10b981,
+    transparent: true,
+    opacity: 0.06,
+    side: THREE.BackSide,
+  });
+  earthGroup.add(new THREE.Mesh(glowGeo, glowMat));
+
+  // City nodes
+  CITIES.forEach(city => {
+    const pos = latLngToVec3(city.lat, city.lng, 2.02);
+    const mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(0.025, 12, 12),
+      new THREE.MeshBasicMaterial({ color: isDark ? 0x60a5fa : 0x3b82f6 })
+    );
+    mesh.position.copy(pos);
+    mesh.userData = city;
+    earthGroup.add(mesh);
+    cityMeshes.push(mesh);
+
+    // Pulse ring (functional: indicates live activity)
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.04, 0.05, 32),
+      new THREE.MeshBasicMaterial({ color: isDark ? 0x60a5fa : 0x3b82f6, transparent: true, opacity: 0.6, side: THREE.DoubleSide })
+    );
+    ring.position.copy(pos.clone().multiplyScalar(1.01));
+    ring.lookAt(0, 0, 0);
+    ring.userData = { pulse: Math.random() * Math.PI * 2, isRing: true };
+    earthGroup.add(ring);
+
+    // Dotted arc lines between cities (functional: shows data flow paths)
+    if (city.id < CITIES.length - 1) {
+      const next = CITIES[(city.id + 1) % CITIES.length];
+      const nextPos = latLngToVec3(next.lat, next.lng, 2.02);
+      const arc = createDottedArc(pos, nextPos, isDark);
+      earthGroup.add(arc);
+      arcLines.push(arc);
+    }
+  });
+
+  // Drag to rotate
+  canvas.addEventListener('mousedown', e => { isDragging = true; prevMouse = { x: e.clientX, y: e.clientY }; });
+  window.addEventListener('mouseup', () => { isDragging = false; });
+  window.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    const dx = e.clientX - prevMouse.x;
+    const dy = e.clientY - prevMouse.y;
+    earthGroup.rotation.y += dx * 0.005;
+    earthGroup.rotation.x += dy * 0.005;
+    prevMouse = { x: e.clientX, y: e.clientY };
+    rotationVel = { x: dy * 0.0005, y: dx * 0.0005 };
+  });
+
+  // City hover (raycast) — functional: tooltip on hover, click to open modal
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+  canvas.addEventListener('mousemove', e => {
+    if (isDragging) return;
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const hits = raycaster.intersectObjects(cityMeshes);
+    if (hits.length) {
+      const c = hits[0].object.userData;
+      showTooltip(e.clientX, e.clientY, c);
+      canvas.style.cursor = 'pointer';
+    } else {
+      hideTooltip();
+      canvas.style.cursor = 'grab';
+    }
+  });
+  canvas.addEventListener('click', e => {
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const hits = raycaster.intersectObjects(cityMeshes);
+    if (hits.length) openModal(hits[0].object.userData);
+  });
+
+  // Resize
+  window.addEventListener('resize', () => {
+    const r = canvas.parentElement.getBoundingClientRect();
+    camera.aspect = r.width / r.height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(r.width, r.height);
+  });
+}
+
+function createDottedArc(p1, p2, isDark) {
+  const points = [];
+  const dist = p1.distanceTo(p2);
+  const segments = Math.max(20, Math.floor(dist * 20));
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments;
+    const p = new THREE.Vector3().lerpVectors(p1, p2, t);
+    // Lift arc outward (functional: shows flight path above globe)
+    const dist = p.length();
+    p.normalize().multiplyScalar(dist + Math.sin(t * Math.PI) * 0.4);
+    points.push(p);
+  }
+  const geo = new THREE.BufferGeometry().setFromPoints(points);
+  const mat = new THREE.LineDashedMaterial({
+    color: isDark ? 0x60a5fa : 0x3b82f6,
+    dashSize: 0.06,
+    gapSize: 0.04,
+    transparent: true,
+    opacity: 0.4,
+  });
+  const line = new THREE.Line(geo, mat);
+  line.computeLineDistances();
+  return line;
+}
+
+function animateEarth() {
+  requestAnimationFrame(animateEarth);
+  if (!isDragging) {
+    earthGroup.rotation.y += rotationVel.y;
+    earthGroup.rotation.x += rotationVel.x;
+    // Damping
+    rotationVel.y *= 0.985;
+    rotationVel.x *= 0.985;
+  }
+  // Pulse rings (functional: shows live data activity)
+  earthGroup.children.forEach(c => {
+    if (c.userData && c.userData.isRing) {
+      c.userData.pulse += 0.04;
+      const s = 1 + Math.sin(c.userData.pulse) * 0.4;
+      c.scale.setScalar(s);
+      c.material.opacity = 0.6 - Math.sin(c.userData.pulse) * 0.4;
+      c.lookAt(camera.position);
+    }
+  });
+  renderer.render(scene, camera);
+  // Trigger particles periodically
+  triggerDataFlow();
+}
+
+/* ======================================================
+   PARTICLE SYSTEM — particles fly from Earth cities to KPI cards
+====================================================== */
+const particleCanvas = document.getElementById('particle-canvas');
+const pctx = particleCanvas.getContext('2d');
+let particles = [];
+let lastFlow = 0;
+
+function resizeParticleCanvas() {
+  particleCanvas.width = window.innerWidth * devicePixelRatio;
+  particleCanvas.height = window.innerHeight * devicePixelRatio;
+  particleCanvas.style.width = window.innerWidth + 'px';
+  particleCanvas.style.height = window.innerHeight + 'px';
+  pctx.scale(devicePixelRatio, devicePixelRatio);
+}
+resizeParticleCanvas();
+window.addEventListener('resize', resizeParticleCanvas);
+
+function getKpiCenter(kpiIndex) {
+  const el = document.querySelector(`.kpi[data-kpi="${kpiIndex}"]`);
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+}
+
+function projectCityToScreen(cityMesh) {
+  earthGroup.updateMatrixWorld(true);
+  const v = cityMesh.position.clone();
+  v.applyMatrix4(earthGroup.matrixWorld);
+  v.project(camera);
+  const canvas = renderer.domElement;
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: rect.left + (v.x * 0.5 + 0.5) * rect.width,
+    y: rect.top + (-v.y * 0.5 + 0.5) * rect.height,
+    visible: v.z < 1
+  };
+}
+
+function triggerDataFlow() {
+  const now = performance.now();
+  if (now - lastFlow < 900) return;
+  lastFlow = now;
+  // Pick a random city + matching KPI
+  const city = CITIES[Math.floor(Math.random() * 4)]; // first 4 KPIs map to first 4 cities
+  const mesh = cityMeshes[city.id];
+  if (!mesh) return;
+  const start = projectCityToScreen(mesh);
+  if (!start.visible) return;
+  const end = getKpiCenter(city.id);
+  if (!end) return;
+  particles.push({
+    from: start, to: end,
+    t: 0, duration: 1100 + Math.random() * 400,
+    color: '#10b981',
+    targetKpi: city.id,
+    delta: 1 + Math.floor(Math.random() * 3),
+  });
+}
+
+function animateParticles() {
+  requestAnimationFrame(animateParticles);
+  pctx.clearRect(0, 0, particleCanvas.width / devicePixelRatio, particleCanvas.height / devicePixelRatio);
+  particles = particles.filter(p => {
+    p.t += 16 / p.duration;
+    if (p.t >= 1) {
+      // Arrival: bump KPI
+      const el = document.getElementById('kpi-val-' + p.targetKpi);
+      const card = document.querySelector(`.kpi[data-kpi="${p.targetKpi}"]`);
+      if (el && card) {
+        const cur = parseInt(el.textContent.replace(/,/g, ''));
+        const target = cur + p.delta;
+        countUp(el, target, 700);
+        card.classList.remove('bump-active');
+        void card.offsetWidth; // restart anim
+        card.classList.add('bump-active');
+      }
+      return false;
+    }
+    const e = 1 - Math.pow(1 - p.t, 3); // ease out cubic
+    const x = p.from.x + (p.to.x - p.from.x) * e;
+    const y = p.from.y + (p.to.y - p.from.y) * e - Math.sin(p.t * Math.PI) * 80;
+    // Draw trail
+    const grad = pctx.createRadialGradient(x, y, 0, x, y, 16);
+    grad.addColorStop(0, 'rgba(16,185,129,0.8)');
+    grad.addColorStop(1, 'rgba(16,185,129,0)');
+    pctx.fillStyle = grad;
+    pctx.beginPath();
+    pctx.arc(x, y, 16, 0, Math.PI * 2);
+    pctx.fill();
+    // Core
+    pctx.fillStyle = '#ffffff';
+    pctx.beginPath();
+    pctx.arc(x, y, 2.5, 0, Math.PI * 2);
+    pctx.fill();
+    return true;
+  });
+}
+animateParticles();
+
+function countUp(el, target, duration) {
+  const start = parseInt(el.textContent.replace(/,/g, ''));
+  const t0 = performance.now();
+  function tick(now) {
+    const p = Math.min((now - t0) / duration, 1);
+    const e = 1 - Math.pow(1 - p, 3);
+    const cur = Math.floor(start + (target - start) * e);
+    el.textContent = cur.toLocaleString();
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+/* ======================================================
+   TOOLTIP
+====================================================== */
+const tooltip = document.getElementById('tooltip');
+function showTooltip(x, y, city) {
+  tooltip.querySelector('.name').textContent = city.name + ' · ' + city.code;
+  tooltip.querySelector('.meta').textContent = city.users.toLocaleString() + ' users';
+  tooltip.style.left = x + 'px';
+  tooltip.style.top = y + 'px';
+  tooltip.classList.add('show');
+}
+function hideTooltip() { tooltip.classList.remove('show'); }
+
+/* ======================================================
+   MODAL — open city info
+====================================================== */
+function openModal(city) {
+  document.getElementById('modalFlag').textContent = city.code;
+  document.getElementById('modalName').textContent = city.name;
+  document.getElementById('modalSub').textContent = city.lat + '° · ' + city.lng + '°';
+  document.getElementById('modalUsers').textContent = city.users.toLocaleString();
+  document.getElementById('modalGrowth').textContent = city.growth + '%';
+  document.getElementById('modalSessions').textContent = city.sessions.toLocaleString();
+  // Chart sparkline
+  const pts = [];
+  for (let i = 0; i < 12; i++) {
+    const x = (i / 11) * 400;
+    const y = 50 - (Math.sin(i * 0.5) * 10 + i * 2) - Math.random() * 4;
+    pts.push([x, y]);
+  }
+  const linePts = pts.map(p => p.join(',')).join(' ');
+  const area = `M0,60 L${pts.map(p => p.join(',')).join(' L')} L400,60 Z`;
+  document.getElementById('modalLine').setAttribute('points', linePts);
+  document.getElementById('modalArea').setAttribute('d', area);
+  document.getElementById('cityModal').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('cityModal').classList.remove('show');
+}
+
+/* ======================================================
+   EVENT STREAM (Dashboard side panel)
+====================================================== */
+const STREAMS = [
+  { text: '新用户注册', meta: 'Shanghai' },
+  { text: '支付成功 ¥299', meta: 'New York' },
+  { text: '数据同步完成', meta: 'London' },
+  { text: 'AI 对话触发', meta: 'Tokyo' },
+  { text: '目标达成', meta: 'Sydney' },
+  { text: '导出报表', meta: 'Mumbai' },
+];
+let streamIdx = 0;
+const streamEl = document.getElementById('stream');
+function pushStream() {
+  const s = STREAMS[streamIdx % STREAMS.length];
+  const div = document.createElement('div');
+  div.className = 'stream-item';
+  div.innerHTML = `<span class="stream-dot"></span><span class="stream-text">${s.text}</span><span class="stream-meta">${s.meta} · ${new Date().toLocaleTimeString()}</span>`;
+  streamEl.insertBefore(div, streamEl.firstChild);
+  while (streamEl.children.length > 6) streamEl.removeChild(streamEl.lastChild);
+  streamIdx++;
+  updateEventCounter();
+}
+let eventCount = 0;
+function updateEventCounter() {
+  eventCount++;
+  document.getElementById('eventCounter').textContent = eventCount + ' events';
+}
+
+const GROWTH = [
+  { text: 'São Paulo ↑14.2%', meta: '本周冠军' },
+  { text: 'Beijing ↑12.4%', meta: '稳定增长' },
+  { text: 'Mumbai ↑11.6%', meta: '加速中' },
+  { text: 'Tokyo ↑9.8%', meta: '保持节奏' },
+  { text: 'New York ↑8.7%', meta: '回归' },
+  { text: 'Sydney ↑6.1%', meta: '健康' },
+];
+const growthEl = document.getElementById('growthStream');
+GROWTH.forEach(g => {
+  const div = document.createElement('div');
+  div.className = 'stream-item';
+  div.innerHTML = `<span class="stream-dot"></span><span class="stream-text">${g.text}</span><span class="stream-meta">${g.meta}</span>`;
+  growthEl.appendChild(div);
+});
+
+setInterval(pushStream, 2500);
+pushStream();
+
+/* ======================================================
+   REALTIME TAB — server-pushed activity cards
+====================================================== */
+let realtimeStarted = false;
+function startRealtime() {
+  if (realtimeStarted) return;
+  realtimeStarted = true;
+  let conn = 0;
+  let throughput = 0;
+  setInterval(() => {
+    conn += Math.floor(Math.random() * 6) - 2;
+    conn = Math.max(120, Math.min(380, conn + 2));
+    throughput = Math.floor(20 + Math.random() * 12);
+    document.getElementById('connections').textContent = conn;
+    document.getElementById('throughput').innerHTML = throughput + '<span style="min">/s</span>';
+    pushActivity();
+  }, 1500);
+}
+
+const ACTIVITIES = [
+  { tag: 'check-in', city: 'Beijing', text: '用户连续打卡 30 天', desc: '触发成就解锁' },
+  { tag: 'finance', city: 'New York', text: '本月支出减少 12%', desc: '餐饮类下降最多' },
+  { tag: 'todo', city: 'Tokyo', text: '完成全部今日待办', desc: '连续 5 天达成' },
+  { tag: 'goal', city: 'London', text: '阅读目标进度 78%', desc: '超过上周 4%' },
+  { tag: 'ai', city: 'Sydney', text: 'AI 助手生成 12 条建议', desc: '用户采纳 8 条' },
+  { tag: 'check-in', city: 'Mumbai', text: '新用户首次打卡', desc: '欢迎加入习惯管家' },
+  { tag: 'finance', city: 'São Paulo', text: '预算告警', desc: '餐饮类别接近上限' },
+];
+let actIdx = 0;
+function pushActivity() {
+  const grid = document.getElementById('activityGrid');
+  const a = ACTIVITIES[actIdx % ACTIVITIES.length];
+  actIdx++;
+  const div = document.createElement('div');
+  div.className = 'activity-card';
+  div.style.animationDelay = '0s';
+  div.innerHTML = `
+    <div class="activity-head">
+      <span class="activity-tag ${a.tag === 'ai' || a.tag === 'todo' ? 'blue' : ''}">${a.tag}</span>
+      <span class="activity-time">${new Date().toLocaleTimeString()}</span>
+    </div>
+    <div class="activity-title">${a.text}</div>
+    <div class="activity-desc">${a.desc}</div>
+    <div class="activity-meta">
+      <span>📍 ${a.city}</span>
+      <span>实时</span>
+    </div>`;
+  grid.insertBefore(div, grid.firstChild);
+  // Cap at 12
+  while (grid.children.length > 12) {
+    const last = grid.lastChild;
+    last.classList.add('removing');
+    setTimeout(() => last.remove(), 400);
+  }
+}
+// seed a few cards
+for (let i = 0; i < 4; i++) pushActivity();
+
+</script>
+</body>
+</html>

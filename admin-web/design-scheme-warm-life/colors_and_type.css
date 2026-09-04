@@ -1,0 +1,41 @@
+:root {
+  --brand-background: #fffbf5;
+  --brand-foreground: #3e2723;
+  --brand-card: #ffffff;
+  --brand-card-foreground: #3e2723;
+  --brand-popover: #ffffff;
+  --brand-popover-foreground: #3e2723;
+  --brand-primary: #d97706;
+  --brand-primary-foreground: #ffffff;
+  --brand-muted: #f3e5d8;
+  --brand-muted-foreground: #8d6e63;
+  --brand-border: #f3e5d8;
+  --brand-input: #f3e5d8;
+  --brand-ring: #d97706;
+
+  --brand-radius-sm: 6px;
+  --brand-radius-md: 12px;
+  --brand-radius-lg: 16px;
+
+  --brand-surface: #fff8f0;
+  --brand-surface-2: #f3e5d8;
+  --brand-ink: #3e2723;
+  --brand-ink-2: #8d6e63;
+  --brand-ink-3: #a1887f;
+  --brand-line: #f3e5d8;
+
+  --brand-state-success: #65a30d;
+  --brand-state-warning: #ea580c;
+  --brand-state-error: #dc2626;
+  --brand-state-info: #0891b2;
+
+  --brand-shadow-1: 0 1px 2px rgba(62, 39, 35, 0.05), 0 1px 1px rgba(62, 39, 35, 0.03);
+  --brand-shadow-2: 0 10px 28px -8px rgba(217, 119, 6, 0.14);
+
+  --brand-font-sans: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --brand-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.light, :root {
+  color-scheme: light;
+}

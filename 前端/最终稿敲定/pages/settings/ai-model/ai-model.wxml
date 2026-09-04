@@ -1,0 +1,89 @@
+<view class="container">
+  <view class="custom-nav" style="height: {{navHeight}}px; padding-top: {{statusBarHeight}}px;">
+    <view class="nav-content">
+      <view class="nav-back" bindtap="onBack">‹</view>
+      <text class="nav-title">AI 模型</text>
+      <view style="width: 36px;"></view>
+    </view>
+  </view>
+
+  <scroll-view class="page-content" scroll-y>
+    <view class="section">
+      <text class="section-title">当前激活</text>
+      <view class="active-card pit">
+        <view class="active-info">
+          <text class="active-name">{{activeModel.name || '未设置'}}</text>
+          <text class="active-sub" wx:if="{{activeModel.model_name}}">{{activeModel.model_name}}</text>
+        </view>
+        <view class="active-tag" wx:if="{{activeModel.is_system_default}}">系统默认</view>
+      </view>
+    </view>
+
+    <view class="section">
+      <text class="section-title">我的自定义模型 ({{customModels.length}}/3)</text>
+      <view wx:if="{{customModels.length === 0}}" class="empty-tip">
+        <text>还没有添加自定义模型\n点击下方按钮添加你的第一个</text>
+      </view>
+      <view wx:for="{{customModels}}" wx:key="id">
+        <view class="model-card pit {{item.id === activeModelId ? 'active' : ''}}">
+          <view class="model-info">
+            <text class="model-name">{{item.name}}</text>
+            <text class="model-sub">{{item.model_name}}</text>
+            <text class="model-sub url">{{item.base_url}}</text>
+          </view>
+          <view class="model-actions">
+            <view class="action-pill primary" bindtap="onActivate" data-id="{{item.id}}" wx:if="{{item.id !== activeModelId}}">使用</view>
+            <view class="action-pill active-tag" wx:else>✓ 当前</view>
+            <view class="action-pill warn" bindtap="onEdit" data-item="{{item}}">编辑</view>
+            <view class="action-pill danger" bindtap="onDelete" data-id="{{item.id}}">删除</view>
+          </view>
+        </view>
+        <view class="divider" wx:if="{{index < customModels.length - 1}}"></view>
+      </view>
+
+      <view class="add-btn pit" bindtap="onAdd" wx:if="{{customModels.length < 3}}">
+        <text>+ 添加自定义模型</text>
+      </view>
+      <view class="add-btn disabled" wx:else>
+        <text>已达上限 3 个</text>
+      </view>
+    </view>
+
+    <view class="tip">
+      <text>💡 提示</text>
+      <text class="tip-text">· 自定义模型最多 3 个\n· Base URL 需是 OpenAI 兼容协议\n· API Key 仅你自己和管理员可见</text>
+    </view>
+
+    <view class="safe-bottom"></view>
+  </scroll-view>
+
+  <!-- 添加/编辑弹窗 -->
+  <view class="modal-mask" wx:if="{{showForm}}" bindtap="onFormCancel">
+    <view class="modal-content pit" catchtap="stopPropagation">
+      <text class="modal-title">{{editingId ? '编辑模型' : '添加模型'}}</text>
+
+      <text class="form-label">展示名</text>
+      <input class="form-input" placeholder="如:我的 OpenAI" value="{{form.name}}" bindinput="onFormInput" data-field="name" />
+
+      <text class="form-label">Base URL</text>
+      <input class="form-input" placeholder="https://api.openai.com/v1" value="{{form.base_url}}" bindinput="onFormInput" data-field="base_url" />
+
+      <text class="form-label">API Key</text>
+      <input class="form-input" password="{{!showKey}}" placeholder="{{editingId ? '留空不修改' : 'sk-...'}}" value="{{form.api_key}}" bindinput="onFormInput" data-field="api_key" />
+      <view class="form-tip" wx:if="{{editingId}}">
+        <view bindtap="onToggleShowKey">
+          <text wx:if="{{!showKey}}">👁 显示</text>
+          <text wx:else>🙈 隐藏</text>
+        </view>
+      </view>
+
+      <text class="form-label">模型标识</text>
+      <input class="form-input" placeholder="如:gpt-4o-mini" value="{{form.model_name}}" bindinput="onFormInput" data-field="model_name" />
+
+      <view class="modal-actions">
+        <view class="modal-btn cancel-btn" bindtap="onFormCancel">取消</view>
+        <view class="modal-btn confirm-btn" bindtap="onFormSave">保存</view>
+      </view>
+    </view>
+  </view>
+</view>

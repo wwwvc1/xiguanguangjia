@@ -1,0 +1,189 @@
+/* ============================================================
+ * 任务管理 tasks 页面(I 方案)
+ * ============================================================ */
+
+/* 任务卡片 */
+.task-card{
+  display: flex;
+  align-items: center;
+  padding: 24rpx 32rpx;
+  margin-bottom: 20rpx;
+  gap: 20rpx;
+}
+
+/* 操作按钮 */
+.task-actions{
+  display: flex;
+  gap: 12rpx;
+  flex-shrink: 0;
+}
+
+/* 进度 */
+.goal-info{
+  flex: 1;
+  min-width: 0;
+}
+.progress-label{
+  font-size: 22rpx;
+  color: var(--ink-3);
+  margin-left: 8rpx;
+  font-weight: 600;
+}
+
+/* 收支 */
+.finance-info{
+  flex: 1;
+  min-width: 0;
+}
+.finance-desc{
+  font-size: 24rpx;
+  color: var(--ink-3);
+  display: block;
+  margin-top: 4rpx;
+  font-weight: 500;
+}
+.finance-amount{
+  font-size: 32rpx;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-right: 12rpx;
+  letter-spacing: -0.01em;
+}
+.finance-amount.income{ color: var(--agar); }
+.finance-amount.expense{ color: var(--brick); }
+
+/* 底部操作栏 */
+.task-bottom-bar{
+  position: fixed;
+  left: 32rpx;
+  right: 32rpx;
+  bottom: 140rpx;
+  z-index: 50;
+}
+.task-bottom-inner{
+  display: flex;
+  align-items: center;
+  padding: 8rpx;
+  border-radius: var(--r-lg);
+}
+.bottom-btn{
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16rpx;
+  gap: 4rpx;
+  transition: all 0.2s ease;
+  border-radius: var(--r-md);
+}
+.bottom-btn:active{
+  background: var(--paper-2);
+}
+.btn-icon{
+  font-size: 36rpx;
+  font-weight: 300;
+  color: var(--agar);
+}
+.btn-text{
+  font-size: 22rpx;
+  color: var(--ink-2);
+  font-weight: 600;
+}
+.ai-btn .btn-icon{
+  color: var(--brick);
+}
+
+/* ===== 弹窗 ===== */
+.modal-mask{
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 26, 20, 0.40);
+  backdrop-filter: blur(4rpx);
+  -webkit-backdrop-filter: blur(4rpx);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-content{
+  width: 600rpx;
+  padding: 40rpx 32rpx;
+  margin: 0 32rpx;
+}
+.modal-title{
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--ink);
+  display: block;
+  text-align: center;
+  margin-bottom: 32rpx;
+  letter-spacing: -0.01em;
+}
+.form-input{ padding: 4rpx; }
+.form-input .modal-input{
+  padding: 28rpx 28rpx;
+  font-size: 28rpx;
+  color: var(--ink);
+  background: rgba(248, 245, 238, 0.62);
+  backdrop-filter: blur(20rpx) saturate(160%);
+  -webkit-backdrop-filter: blur(20rpx) saturate(160%);
+  border-radius: var(--r-md);
+  border: 1rpx solid var(--line);
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 88rpx;
+  line-height: 1.4;
+  box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.60);
+}
+.form-input .modal-input::placeholder{
+  color: var(--ink-2);
+  font-weight: 500;
+}
+.form-row{
+  display: flex;
+  gap: 16rpx;
+  margin-top: 16rpx;
+}
+.form-half{ flex: 1; }
+.type-toggle{
+  display: flex;
+  gap: 12rpx;
+}
+.type-btn{
+  padding: 16rpx 28rpx;
+  border-radius: var(--r-md);
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--ink-3);
+  background: var(--paper-2);
+  border: 1rpx solid var(--line-2);
+}
+.type-btn.active{
+  color: var(--paper);
+  background: var(--agar);
+  border-color: var(--agar);
+}
+
+.modal-actions{
+  display: flex;
+  gap: 24rpx;
+  margin-top: 32rpx;
+}
+.modal-btn{
+  flex: 1;
+  padding: 24rpx;
+  border-radius: var(--r-lg);
+  font-size: 30rpx;
+  font-weight: 700;
+  text-align: center;
+}
+.cancel-btn{
+  background: var(--paper-2);
+  color: var(--ink-2);
+  border: 1rpx solid var(--line-2);
+}
+.confirm-btn{
+  color: var(--paper);
+  background: var(--agar);
+  box-shadow: 0 6rpx 16rpx rgba(20, 42, 32, 0.20), inset 0 1rpx 0 rgba(255, 255, 255, 0.18);
+}

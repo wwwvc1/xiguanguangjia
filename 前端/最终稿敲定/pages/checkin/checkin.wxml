@@ -1,0 +1,89 @@
+<view class="container">
+  <view class="custom-nav" style="height: {{navHeight}}px; padding-top: {{statusBarHeight}}px;">
+    <view class="nav-content">
+      <view class="nav-back bump-sm" bindtap="onBack">
+        <text style="font-size: 20px; color: var(--ink-2);">‹</text>
+      </view>
+      <view class="nav-titles">
+        <text class="nav-meta">DAILY CHECK-IN</text>
+        <text class="nav-title serif">Mark <text class="serif-italic">Today.</text></text>
+      </view>
+      <view style="width: 36px;"></view>
+    </view>
+  </view>
+
+  <scroll-view class="page-content" scroll-y>
+    <view style="height: 20rpx;"></view>
+
+    <!-- 连续天数 hero 卡片(沉香绿渐变 + 米骨散光) -->
+    <view class="streak-hero">
+      <view class="streak-roman">{{streakRoman}}.</view>
+      <view class="streak-num-row">
+        <text class="streak-num">{{streak}}</text>
+        <text class="streak-unit">days</text>
+      </view>
+      <view class="streak-mark {{todayChecked ? 'done' : 'pending'}}">
+        <text wx:if="{{todayChecked}}">✓ TODAY MARKED</text>
+        <text wx:else>· TAP TO MARK</text>
+      </view>
+    </view>
+
+    <!-- 今日状态大按钮 -->
+    <view class="checkin-action">
+      <view
+        class="checkin-btn {{todayChecked ? 'done' : ''}}"
+        bindtap="onCheckin"
+        wx:if="{{!todayChecked}}"
+      >
+        <text wx:if="{{!checking}}">✓ MARK TODAY</text>
+        <text wx:else>...</text>
+      </view>
+      <view class="checkin-btn done" wx:else>
+        <text>✓ TODAY COMPLETED</text>
+      </view>
+    </view>
+
+    <!-- 备注输入(仅未打卡时显示) -->
+    <view class="note-section" wx:if="{{!todayChecked}}">
+      <text class="note-label">打卡备注(可选)</text>
+      <textarea
+        class="note-input"
+        placeholder="今天有什么感悟?"
+        value="{{note}}"
+        bindinput="onNoteInput"
+        maxlength="100"
+        auto-height
+      />
+    </view>
+
+    <!-- 最近 30 天日历(7 列网格) -->
+    <view class="section-title" style="margin: 24rpx 12rpx 16rpx;">
+      <text>最近 <text class="brick-italic">{{daysInMonth}}</text> 天</text>
+      <text class="section-count">{{count}} MARKED</text>
+    </view>
+    <view class="cal-grid">
+      <view
+        wx:for="{{calendar}}"
+        wx:key="date"
+        class="cal-day {{item.checked ? 'checked' : ''}} {{item.isToday ? 'today' : ''}}"
+      >
+        <text class="cal-day-num">{{item.day}}</text>
+        <text wx:if="{{item.checked}}" class="cal-day-tick">✓</text>
+      </view>
+    </view>
+
+    <!-- 历史记录 -->
+    <view class="section-title" wx:if="{{history.length > 0}}" style="margin-top: 28rpx;">
+      <text>打卡记录</text>
+    </view>
+    <view class="history-list" wx:if="{{history.length > 0}}">
+      <view wx:for="{{history}}" wx:key="id" class="history-item bump">
+        <view class="history-date">{{item.date}}</view>
+        <view class="history-note" wx:if="{{item.note}}">{{item.note}}</view>
+        <view class="history-note empty" wx:else>(无备注)</view>
+      </view>
+    </view>
+
+    <view class="safe-bottom"></view>
+  </scroll-view>
+</view>

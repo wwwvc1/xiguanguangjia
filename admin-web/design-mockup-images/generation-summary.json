@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0",
+  "skillProvenance": {
+    "name": "solo-graphic-generation",
+    "version": "2026.08.06.21.24.57",
+    "release": "unsupported-size-user-confirmation"
+  },
+  "requestedSizeVerbatim": "1920x1080",
+  "actualToolImageSize": "2048x1800",
+  "userConfirmedSizeDifference": true,
+  "confirmedSizeReason": "1920x1080 不满足后端最低 3,686,400 像素要求；用户选择 2048x1800 替代",
+  "assetCount": 9,
+  "assets": [
+    {
+      "filename": "assets/scheme-minimal-login.jpg",
+      "title": "现代极简 - 登录页",
+      "intendedSize": "2048x1800",
+      "status": "success",
+      "canvasNodeId": "image-001"
+    },
+    {
+      "filename": "assets/scheme-minimal-dashboard.jpg",
+      "title": "现代极简 - 仪表盘",
+      "intendedSize": "2048x1800",
+      "status": "success",
+      "canvasNodeId": "image-002"
+    },
+    {
+      "filename": "assets/scheme-minimal-users.jpg",
+      "title": "现代极简 - 用户管理",
+      "intendedSize": "2048x1800",
+      "status": "success",
+      "canvasNodeId": "image-003"
+    },
+    {
+      "filename": "assets/scheme-dark-tech-login.jpg",
+      "title": "深色科技 - 登录页",
+      "intendedSize": "2048x1800",
+      "status": "success",
+      "canvasNodeId": "image-004"
+    },
+    {
+      "filename": "assets/scheme-dark-tech-dashboard.jpg",
+      "title": "深色科技 - 仪表盘",
+      "intendedSize": "2048x1800",
+      "status": "success",
+      "canvasNodeId": "image-005"
+    },
+    {
+      "filename": "assets/scheme-dark-tech-llm.jpg",
+      "title": "深色科技 - AI 模型管理",
+      "intendedSize": "2048x1800",
+      "status": "success",
+      "canvasNodeId": "image-006"
+    },
+    {
+      "filename": "assets/scheme-warm-life-login.jpg",
+      "title": "暖色亲和 - 登录页",
+      "intendedSize": "2048x1800",
+      "status": "success",
+      "canvasNodeId": "image-007"
+    },
+    {
+      "filename": "assets/scheme-warm-life-dashboard.jpg",
+      "title": "暖色亲和 - 仪表盘",
+      "intendedSize": "2048x1800",
+      "status": "success",
+      "canvasNodeId": "image-008"
+    },
+    {
+      "filename": "assets/scheme-warm-life-knowledge.jpg",
+      "title": "暖色亲和 - 知识库管理",
+      "intendedSize": "2048x1800",
+      "status": "success",
+      "canvasNodeId": "image-009"
+    }
+  ],
+  "failedAssets": []
+}

@@ -1,0 +1,138 @@
+<view class="container">
+  <!-- 自定义导航栏 -->
+  <view class="custom-nav" style="height: {{navHeight}}px; padding-top: {{statusBarHeight}}px;">
+    <view class="nav-content">
+      <view class="nav-back bump-sm" bindtap="onBack">
+        <text style="font-size: 20px; color: var(--ink-2);">‹</text>
+      </view>
+      <text class="nav-title">AI 智能助手</text>
+      <view class="nav-action bump-sm" bindtap="onResetSession">
+        <text style="font-size: 24rpx; color: var(--ink-2);">清空</text>
+      </view>
+    </view>
+  </view>
+
+  <scroll-view
+    class="chat-scroll"
+    scroll-y
+    scroll-into-view="{{scrollToId}}"
+    scroll-with-animation
+  >
+    <!-- 欢迎区(无消息时) -->
+    <view class="welcome" wx:if="{{messages.length === 0 && !isGenerating}}">
+      <view class="ai-avatar">🤖</view>
+      <text class="welcome-title">我是你的习惯管家</text>
+      <text class="welcome-desc">可以帮你增删改查待办、目标、收支、饮食</text>
+      <text class="welcome-desc">想干啥直接说就行 👇</text>
+    </view>
+
+    <!-- 对话消息列表 -->
+    <view class="chat-list">
+      <view
+        wx:for="{{messages}}"
+        wx:key="id"
+        wx:for-index="msgIdx"
+        id="msg-{{item.id}}"
+      >
+        <!-- 用户消息 -->
+        <view class="msg-row user" wx:if="{{item.role === 'user'}}">
+          <view class="msg-bubble user-bubble">{{item.content}}</view>
+        </view>
+
+        <!-- AI 消息 -->
+        <view class="msg-row ai" wx:if="{{item.role === 'ai'}}">
+          <view class="ai-avatar-sm">🤖</view>
+          <view class="msg-bubble ai-bubble">
+            <text user-select="true" decode="true" space="emsp">{{item.content}}</text>
+          </view>
+        </view>
+
+        <!-- 工具执行结果卡片(只读) -->
+        <view class="action-card" wx:if="{{item.role === 'actions' && item.actions.length}}">
+          <view class="action-card-title">📋 执行结果</view>
+          <view class="action-item" wx:for="{{item.actions}}" wx:for-item="act" wx:key="tool">
+            <view class="action-tool">{{actionLabel(act.tool)}}</view>
+            <view class="action-detail">
+              <text wx:if="{{act.result.created}}">已创建 {{act.result.created.text || act.result.created.name || '项目'}}</text>
+              <text wx:elif="{{act.result.deleted}}">已删除 {{act.result.deleted.text || act.result.deleted.name || ('#' + act.result.deleted.id)}}</text>
+              <text wx:elif="{{act.result.updated}}">已更新 #{{act.result.updated.id}}</text>
+              <text wx:elif="{{act.result.items}}">{{act.result.count}} 项</text>
+              <text wx:elif="{{act.result.income !== undefined}}">收入 ¥{{act.result.income}} / 支出 ¥{{act.result.expense}}</text>
+              <text wx:elif="{{act.result.error}}">⚠ {{act.result.error}}</text>
+              <text wx:else>完成</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 待确认操作卡片 -->
+        <view class="confirm-card" wx:if="{{item.role === 'confirm'}}">
+          <view class="confirm-header">⚠ 等待确认</view>
+          <view class="confirm-body">{{item.confirmationRequest}}</view>
+          <view class="confirm-actions">
+            <button class="confirm-btn cancel" bindtap="onCancelConfirm" data-msg-id="{{item.id}}">取消</button>
+            <button class="confirm-btn ok" bindtap="onAcceptConfirm" data-msg-id="{{item.id}}">✓ 确认执行</button>
+          </view>
+        </view>
+
+        <!-- 查询结果列表(只读) -->
+        <view class="result-card" wx:if="{{item.role === 'result' && item.items && item.items.length}}">
+          <view class="result-card-title">
+            {{resultTitle(item.kind)}} ({{item.items.length}})
+          </view>
+          <view class="result-item" wx:for="{{item.items}}" wx:for-item="ri" wx:key="id">
+            <text class="ri-name" wx:if="{{ri.text}}">{{ri.text}}</text>
+            <text class="ri-name" wx:elif="{{ri.name}}">{{ri.name}}</text>
+            <text class="ri-name" wx:elif="{{ri.description}}">{{ri.description}}</text>
+            <text class="ri-meta" wx:if="{{ri.due_date}}">截止 {{ri.due_date}}</text>
+            <text class="ri-meta" wx:elif="{{ri.time}}">{{ri.time}}</text>
+            <text class="ri-meta" wx:elif="{{ri.date}}">{{ri.date}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 加载中提示 -->
+      <view class="msg-row ai" wx:if="{{isGenerating}}">
+        <view class="ai-avatar-sm">🤖</view>
+        <view class="msg-bubble ai-bubble loading">
+          <text class="dot"></text><text class="dot"></text><text class="dot"></text>
+        </view>
+      </view>
+    </view>
+
+    <view class="safe-bottom"></view>
+  </scroll-view>
+
+  <!-- 输入区 -->
+  <view class="input-bar">
+    <view class="examples-inline" wx:if="{{messages.length === 0}}">
+      <view
+        class="ex-tag bump-sm"
+        wx:for="{{examples}}"
+        wx:key="*this"
+        data-text="{{item}}"
+        bindtap="onExampleTap"
+      >{{item}}</view>
+    </view>
+    <view class="input-row">
+      <textarea
+        class="input-field"
+        placeholder="说点什么... 例如:把刚才那个删了"
+        value="{{inputValue}}"
+        bindinput="onInput"
+        bindconfirm="onSend"
+        auto-height
+        maxlength="500"
+        show-confirm-bar="{{false}}"
+        cursor-spacing="20"
+        adjust-position="{{true}}"
+      />
+      <button
+        class="send-btn {{isGenerating || !inputValue ? 'disabled' : ''}}"
+        bindtap="onSend"
+      >
+        <text wx:if="{{!isGenerating}}">发送</text>
+        <text wx:else>...</text>
+      </button>
+    </view>
+  </view>
+</view>

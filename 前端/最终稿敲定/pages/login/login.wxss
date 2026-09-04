@@ -1,0 +1,96 @@
+/* ============================================================
+ * 登录 login 页面(I 方案)
+ * ============================================================ */
+
+.login-page{
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: transparent;
+  position: relative;
+  overflow: hidden;
+}
+.login-page::before{
+  content: "";
+  position: absolute;
+  top: 60rpx;
+  right: -80rpx;
+  width: 320rpx;
+  height: 320rpx;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(20, 42, 32, 0.18), transparent 70%);
+  pointer-events: none;
+}
+
+.login-content{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 32rpx;
+  position: relative;
+  z-index: 1;
+}
+
+.login-logo{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 120rpx;
+  margin-bottom: 100rpx;
+}
+.logo-circle{
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 72rpx;
+  margin-bottom: 32rpx;
+  background: linear-gradient(140deg, var(--agar), var(--agar-2));
+  color: var(--paper);
+  box-shadow: 0 16rpx 36rpx rgba(20, 42, 32, 0.30), inset 0 1rpx 0 rgba(255, 255, 255, 0.20);
+}
+.app-name{
+  font-size: 44rpx;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 12rpx;
+  letter-spacing: -0.02em;
+}
+.app-desc{
+  font-size: 28rpx;
+  color: var(--ink-3);
+  font-weight: 500;
+}
+
+.login-actions{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+.wechat-login-btn{
+  width: 100%;
+  padding: 32rpx;
+  border-radius: var(--r-lg);
+  border: none;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--paper);
+  background: var(--agar);
+  box-shadow: 0 12rpx 28rpx rgba(20, 42, 32, 0.30), inset 0 1rpx 0 rgba(255, 255, 255, 0.20);
+  letter-spacing: 0.04em;
+}
+.wechat-login-btn:active{
+  transform: scale(0.98);
+  background: var(--agar-2);
+}
+.login-hint{
+  font-size: 24rpx;
+  color: var(--ink-3);
+  margin-top: 32rpx;
+  text-align: center;
+  line-height: 1.6;
+  font-weight: 500;
+}

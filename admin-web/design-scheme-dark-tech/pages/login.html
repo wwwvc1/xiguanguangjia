@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录页</title>
+    <style id="theme-vars">
+:root {
+  --brand-background: #0b1120;
+  --brand-foreground: #f3f4f6;
+  --brand-card: #111827;
+  --brand-card-foreground: #f3f4f6;
+  --brand-popover: #111827;
+  --brand-popover-foreground: #f3f4f6;
+  --brand-primary: #06b6d4;
+  --brand-primary-foreground: #020617;
+  --brand-muted: #1f2937;
+  --brand-muted-foreground: #9ca3af;
+  --brand-border: #1f2937;
+  --brand-input: #1f2937;
+  --brand-ring: #06b6d4;
+
+  --brand-radius-sm: 4px;
+  --brand-radius-md: 8px;
+  --brand-radius-lg: 12px;
+
+  --brand-surface: #111827;
+  --brand-surface-2: #1f2937;
+  --brand-ink: #f3f4f6;
+  --brand-ink-2: #9ca3af;
+  --brand-ink-3: #6b7280;
+  --brand-line: #1f2937;
+
+  --brand-state-success: #22c55e;
+  --brand-state-warning: #eab308;
+  --brand-state-error: #f87171;
+  --brand-state-info: #38bdf8;
+
+  --brand-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 1px rgba(0, 0, 0, 0.15);
+  --brand-shadow-2: 0 8px 30px -8px rgba(6, 182, 212, 0.18);
+
+  --brand-font-sans: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --brand-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.dark, :root {
+  color-scheme: dark;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--brand-background);
+    --color-foreground: var(--brand-foreground);
+    --color-card: var(--brand-card);
+    --color-card-foreground: var(--brand-card-foreground);
+    --color-popover: var(--brand-popover);
+    --color-popover-foreground: var(--brand-popover-foreground);
+    --color-primary: var(--brand-primary);
+    --color-primary-foreground: var(--brand-primary-foreground);
+    --color-muted: var(--brand-muted);
+    --color-muted-foreground: var(--brand-muted-foreground);
+    --color-border: var(--brand-border);
+    --color-input: var(--brand-input);
+    --color-ring: var(--brand-ring);
+    --radius-sm: var(--brand-radius-sm);
+    --radius-md: var(--brand-radius-md);
+    --radius-lg: var(--brand-radius-lg);
+  }
+  @layer base {
+    body { background: var(--brand-background); color: var(--brand-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--brand-background); }
+      .text-background { color: var(--brand-background); }
+      .border-background { border-color: var(--brand-background); }
+      .ring-background { --tw-ring-color: var(--brand-background); }
+      .bg-foreground { background-color: var(--brand-foreground); }
+      .text-foreground { color: var(--brand-foreground); }
+      .border-foreground { border-color: var(--brand-foreground); }
+      .ring-foreground { --tw-ring-color: var(--brand-foreground); }
+      .bg-card { background-color: var(--brand-card); }
+      .text-card { color: var(--brand-card); }
+      .border-card { border-color: var(--brand-card); }
+      .ring-card { --tw-ring-color: var(--brand-card); }
+      .bg-card-foreground { background-color: var(--brand-card-foreground); }
+      .text-card-foreground { color: var(--brand-card-foreground); }
+      .border-card-foreground { border-color: var(--brand-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--brand-card-foreground); }
+      .bg-popover { background-color: var(--brand-popover); }
+      .text-popover { color: var(--brand-popover); }
+      .border-popover { border-color: var(--brand-popover); }
+      .ring-popover { --tw-ring-color: var(--brand-popover); }
+      .bg-popover-foreground { background-color: var(--brand-popover-foreground); }
+      .text-popover-foreground { color: var(--brand-popover-foreground); }
+      .border-popover-foreground { border-color: var(--brand-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--brand-popover-foreground); }
+      .bg-primary { background-color: var(--brand-primary); }
+      .text-primary { color: var(--brand-primary); }
+      .border-primary { border-color: var(--brand-primary); }
+      .ring-primary { --tw-ring-color: var(--brand-primary); }
+      .bg-primary-foreground { background-color: var(--brand-primary-foreground); }
+      .text-primary-foreground { color: var(--brand-primary-foreground); }
+      .border-primary-foreground { border-color: var(--brand-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--brand-primary-foreground); }
+      .bg-muted { background-color: var(--brand-muted); }
+      .text-muted { color: var(--brand-muted); }
+      .border-muted { border-color: var(--brand-muted); }
+      .ring-muted { --tw-ring-color: var(--brand-muted); }
+      .bg-muted-foreground { background-color: var(--brand-muted-foreground); }
+      .text-muted-foreground { color: var(--brand-muted-foreground); }
+      .border-muted-foreground { border-color: var(--brand-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--brand-muted-foreground); }
+      .bg-border { background-color: var(--brand-border); }
+      .text-border { color: var(--brand-border); }
+      .border-border { border-color: var(--brand-border); }
+      .ring-border { --tw-ring-color: var(--brand-border); }
+      .bg-input { background-color: var(--brand-input); }
+      .text-input { color: var(--brand-input); }
+      .border-input { border-color: var(--brand-input); }
+      .ring-input { --tw-ring-color: var(--brand-input); }
+      .bg-ring { background-color: var(--brand-ring); }
+      .text-ring { color: var(--brand-ring); }
+      .border-ring { border-color: var(--brand-ring); }
+      .ring-ring { --tw-ring-color: var(--brand-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+    <style id="critical-layout">
+      html, body { min-height: 100%; }
+      body { overflow-x: hidden; }
+      #login-card { width: 100%; max-width: 420px; }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="relative flex min-h-screen w-full items-center justify-center overflow-x-hidden bg-background px-4 py-8">
+      <div class="pointer-events-none absolute inset-0 opacity-[0.03]" style="background-image: radial-gradient(circle, var(--brand-foreground) 1px, transparent 1px); background-size: 24px 24px;"></div>
+      <section id="login-card" class="relative z-10 w-full rounded-[var(--brand-radius-lg)] border border-border bg-card p-8 shadow-2xl">
+        <div id="hero-brand" class="mb-8 flex flex-col items-center text-center">
+          <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-[var(--brand-radius-md)] bg-primary/10 text-primary">
+            <i data-lucide="layout-dashboard" class="h-7 w-7"></i>
+          </div>
+          <h1 class="text-2xl font-semibold tracking-tight text-card-foreground">习惯管家</h1>
+          <p class="mt-2 text-sm text-muted-foreground">管理你的日常习惯，追踪每一步成长</p>
+        </div>
+        <form id="login-form" class="space-y-5" onsubmit="event.preventDefault();">
+          <div>
+            <label for="username" class="mb-2 block text-sm font-medium text-card-foreground">账号</label>
+            <div class="relative">
+              <i data-lucide="user" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"></i>
+              <input id="username" name="username" type="text" autocomplete="username" placeholder="请输入账号" class="h-11 w-full rounded-[var(--brand-radius-md)] border border-border bg-[var(--brand-surface-2)] px-10 text-sm text-card-foreground placeholder:text-muted-foreground outline-none transition focus:border-[var(--brand-ring)] focus:ring-2 focus:ring-[var(--brand-ring)]" />
+            </div>
+          </div>
+          <div>
+            <label for="password" class="mb-2 block text-sm font-medium text-card-foreground">密码</label>
+            <div class="relative">
+              <i data-lucide="lock" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"></i>
+              <input id="password" name="password" type="password" autocomplete="current-password" placeholder="请输入密码" class="h-11 w-full rounded-[var(--brand-radius-md)] border border-border bg-[var(--brand-surface-2)] px-10 text-sm text-card-foreground placeholder:text-muted-foreground outline-none transition focus:border-[var(--brand-ring)] focus:ring-2 focus:ring-[var(--brand-ring)]" />
+            </div>
+          </div>
+          <button id="login-btn" type="submit" class="mt-2 h-11 w-full rounded-[var(--brand-radius-md)] bg-primary font-medium text-primary-foreground transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--brand-ring)]">
+            登录
+          </button>
+        </form>
+        <div id="footer-links" class="mt-6 flex items-center justify-between text-sm">
+          <a href="#" class="text-muted-foreground transition hover:text-card-foreground">忘记密码？</a>
+          <a href="#" class="text-muted-foreground transition hover:text-card-foreground">注册账号</a>
+        </div>
+      </section>
+    </main>
+    <script>if(window.lucide) lucide.createIcons();</script>
+</body>
+</html>

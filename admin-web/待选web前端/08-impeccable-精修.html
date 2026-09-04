@@ -1,0 +1,2767 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440, initial-scale=1">
+<title>习惯管家 · 运营后台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<style>
+/* ============================================================
+   Design Tokens
+   ============================================================ */
+:root {
+  /* Surfaces - light */
+  --bg: #fafafa;
+  --bg-elevated: #ffffff;
+  --surface-1: rgba(255, 255, 255, 0.6);     /* frosted */
+  --surface-2: rgba(255, 255, 255, 0.35);    /* crystal */
+  --surface-3: rgba(255, 255, 255, 0.88);    /* mist */
+  --border-soft: rgba(10, 10, 10, 0.06);
+  --border: rgba(10, 10, 10, 0.08);
+  --border-strong: rgba(10, 10, 10, 0.12);
+
+  /* Text - 4 levels of gray */
+  --text-1: #0a0a0a;
+  --text-2: #525252;
+  --text-3: #a3a3a3;
+  --text-4: #d4d4d4;
+
+  /* Accent - brand purple */
+  --accent: #8b5cf6;
+  --accent-hover: #7c3aed;
+  --accent-soft: #f5f3ff;
+  --accent-line: rgba(139, 92, 246, 0.2);
+
+  /* Geometry */
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-pill: 999px;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgba(10, 10, 10, 0.04);
+  --shadow: 0 1px 3px rgba(10, 10, 10, 0.05), 0 1px 2px rgba(10, 10, 10, 0.04);
+  --shadow-lg: 0 4px 16px rgba(10, 10, 10, 0.06);
+
+  /* Motion */
+  --t-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  --t-base: 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  --t-theme: 400ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Glass tuning */
+  --blur-frosted: 40px;
+  --blur-crystal: 12px;
+  --blur-mist: 20px;
+  --glass-saturation: 180%;
+
+  /* Layout */
+  --top-h: 64px;
+  --side-w: 240px;
+  --content-max: 1280px;
+}
+
+[data-theme="dark"] {
+  --bg: #0a0a0a;
+  --bg-elevated: #171717;
+  --surface-1: rgba(255, 255, 255, 0.04);
+  --surface-2: rgba(255, 255, 255, 0.06);
+  --surface-3: rgba(255, 255, 255, 0.08);
+  --border-soft: rgba(255, 255, 255, 0.05);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+
+  --text-1: #fafafa;
+  --text-2: #a3a3a3;
+  --text-3: #525252;
+  --text-4: #262626;
+
+  --accent: #a78bfa;
+  --accent-hover: #c4b5fd;
+  --accent-soft: #1e1b4b;
+  --accent-line: rgba(167, 139, 250, 0.22);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================================
+   Reset + Base
+   ============================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  font-feature-settings: "ss01", "cv11";
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text-1);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background var(--t-theme), color var(--t-theme);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Single subtle halo - 6% opacity */
+body::before {
+  content: '';
+  position: fixed;
+  top: -30%;
+  right: -10%;
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 65%);
+  opacity: 0.06;
+  filter: blur(200px);
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity var(--t-theme);
+}
+
+[data-theme="dark"] body::before {
+  opacity: 0.08;
+}
+
+button, input, select, textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* Custom selection */
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Custom scrollbar - subtle */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--bg);
+  transition: background var(--t-fast);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+
+/* Focus ring */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ============================================================
+   Glass Primitives - 3 types
+   ============================================================ */
+.glass-frosted {
+  background: var(--surface-1);
+  backdrop-filter: blur(var(--blur-frosted)) saturate(var(--glass-saturation));
+  -webkit-backdrop-filter: blur(var(--blur-frosted)) saturate(var(--glass-saturation));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.glass-crystal {
+  background: var(--surface-2);
+  backdrop-filter: blur(var(--blur-crystal));
+  -webkit-backdrop-filter: blur(var(--blur-crystal));
+  border-radius: var(--radius);
+  position: relative;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.08) 100%),
+    var(--surface-2);
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+.glass-crystal::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg,
+    rgba(255,255,255,0.6) 0%,
+    rgba(255,255,255,0.05) 40%,
+    rgba(255,255,255,0.05) 60%,
+    rgba(255,255,255,0.3) 100%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.glass-crystal::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+}
+
+[data-theme="dark"] .glass-crystal {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.02) 100%),
+    var(--surface-2);
+}
+[data-theme="dark"] .glass-crystal::before {
+  background: linear-gradient(135deg,
+    rgba(255,255,255,0.2) 0%,
+    rgba(255,255,255,0.02) 40%,
+    rgba(255,255,255,0.02) 60%,
+    rgba(255,255,255,0.12) 100%);
+}
+[data-theme="dark"] .glass-crystal::after {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.glass-mist {
+  background: var(--surface-3);
+  backdrop-filter: blur(var(--blur-mist));
+  -webkit-backdrop-filter: blur(var(--blur-mist));
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+}
+
+/* ============================================================
+   App Shell
+   ============================================================ */
+.app {
+  display: grid;
+  grid-template-columns: var(--side-w) 1fr;
+  grid-template-rows: var(--top-h) 1fr;
+  grid-template-areas:
+    "top top"
+    "side main";
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* Top bar */
+.top {
+  grid-area: top;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  transition: background var(--t-theme), border-color var(--t-theme);
+}
+
+.top-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+.top-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  display: grid;
+  place-items: center;
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+  position: relative;
+  overflow: hidden;
+}
+.top-mark::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: calc(var(--radius-sm) - 1px);
+  background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 50%);
+  pointer-events: none;
+}
+.top-product {
+  color: var(--text-1);
+}
+.top-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 4px;
+}
+.top-module {
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.top-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.top-link {
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  transition: color var(--t-fast), background var(--t-fast);
+}
+.top-link:hover { color: var(--text-1); background: var(--surface-1); }
+.top-link.active { color: var(--text-1); background: var(--surface-2); }
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  position: relative;
+  transition: color var(--t-fast), background var(--t-fast);
+}
+.icon-btn:hover { color: var(--text-1); background: var(--surface-1); }
+.icon-btn svg { width: 18px; height: 18px; }
+
+.icon-btn .dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg-elevated);
+}
+
+/* Theme toggle */
+.theme-toggle {
+  width: 56px;
+  height: 30px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  position: relative;
+  cursor: pointer;
+  transition: background var(--t-theme), border-color var(--t-theme);
+}
+.theme-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow);
+  display: grid;
+  place-items: center;
+  transition: transform var(--t-base), background var(--t-theme);
+}
+[data-theme="dark"] .theme-toggle-thumb {
+  transform: translateX(26px);
+}
+.theme-toggle-thumb svg {
+  width: 12px;
+  height: 12px;
+  color: var(--text-2);
+  transition: transform var(--t-base);
+}
+[data-theme="dark"] .theme-toggle-thumb svg { transform: rotate(180deg); }
+
+/* User avatar */
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  display: grid;
+  place-items: center;
+  color: white;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 12px 4px 4px;
+  border-radius: var(--radius-pill);
+  transition: background var(--t-fast);
+}
+.user-chip:hover { background: var(--surface-1); }
+.user-chip-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-1);
+}
+.user-chip-role {
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+/* ============================================================
+   Side nav
+   ============================================================ */
+.side {
+  grid-area: side;
+  background: var(--bg-elevated);
+  border-right: 1px solid var(--border);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: background var(--t-theme), border-color var(--t-theme);
+}
+
+.side-section {
+  padding: 16px 12px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+}
+
+.side-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast);
+  position: relative;
+}
+.side-item:hover { background: var(--surface-1); color: var(--text-1); }
+.side-item.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.side-item.active::before {
+  content: '';
+  position: absolute;
+  left: -16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 18px;
+  background: var(--accent);
+  border-radius: 0 3px 3px 0;
+}
+.side-item svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.side-item .badge {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-weight: 500;
+}
+.side-item.active .badge {
+  background: var(--accent);
+  color: white;
+}
+
+.side-foot {
+  margin-top: auto;
+  padding: 16px 12px;
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.side-foot-status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  position: relative;
+}
+.side-foot-status::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: #10b981;
+  opacity: 0.25;
+  animation: pulse 2.5s ease-out infinite;
+}
+@keyframes pulse {
+  0% { transform: scale(0.8); opacity: 0.4; }
+  100% { transform: scale(2); opacity: 0; }
+}
+.side-foot-info { font-size: 12px; color: var(--text-2); }
+.side-foot-info b { display: block; color: var(--text-1); font-weight: 500; font-size: 13px; }
+
+/* ============================================================
+   Main content
+   ============================================================ */
+.main {
+  grid-area: main;
+  padding: 32px 32px 64px;
+  overflow-y: auto;
+}
+
+.view {
+  display: none;
+}
+.view.active { display: block; animation: viewIn 280ms ease-out; }
+@keyframes viewIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.view-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+.view-header-text h1 {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+.view-header-text p {
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast);
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--text-1);
+  color: var(--bg);
+}
+.btn-primary:hover { background: var(--accent); }
+.btn-secondary {
+  background: var(--surface-1);
+  color: var(--text-1);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { background: var(--surface-2); border-color: var(--border-strong); }
+.btn-ghost {
+  color: var(--text-2);
+}
+.btn-ghost:hover { color: var(--text-1); background: var(--surface-1); }
+.btn svg { width: 14px; height: 14px; }
+
+/* ============================================================
+   Tab 1: Login
+   ============================================================ */
+.login-view {
+  display: none;
+  min-height: calc(100vh - var(--top-h));
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  position: relative;
+}
+.login-view.active { display: flex; }
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 40px;
+  text-align: center;
+}
+.login-mark {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 20px;
+  border-radius: var(--radius);
+  background: var(--accent);
+  display: grid;
+  place-items: center;
+  color: white;
+  font-weight: 700;
+  font-size: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.login-mark::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: calc(var(--radius) - 1px);
+  background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 50%);
+  pointer-events: none;
+}
+.login-title {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+.login-sub {
+  font-size: 13px;
+  color: var(--text-2);
+  margin-bottom: 28px;
+}
+
+.field {
+  margin-bottom: 14px;
+  text-align: left;
+}
+.field-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  margin-bottom: 6px;
+}
+.field-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  color: var(--text-1);
+  font-size: 13px;
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.field-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--bg-elevated);
+}
+.field-input::placeholder { color: var(--text-3); }
+
+.login-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  margin: 6px 0 24px;
+  color: var(--text-2);
+}
+.login-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.checkbox {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--bg-elevated);
+  cursor: pointer;
+  position: relative;
+  transition: background var(--t-fast), border-color var(--t-fast);
+}
+.checkbox:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.checkbox:checked::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0px;
+  width: 5px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+}
+.login-row a {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.btn-block {
+  width: 100%;
+  justify-content: center;
+  padding: 11px 14px;
+}
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0;
+  color: var(--text-3);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.login-divider::before, .login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.login-social {
+  display: flex;
+  gap: 8px;
+}
+.login-social .btn {
+  flex: 1;
+  justify-content: center;
+}
+.login-foot {
+  margin-top: 24px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.login-foot a {
+  color: var(--text-1);
+  font-weight: 500;
+}
+
+/* ============================================================
+   Tab 2: Dashboard
+   ============================================================ */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.kpi-card {
+  padding: 20px;
+  transition: transform var(--t-fast), box-shadow var(--t-fast);
+}
+.kpi-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+.kpi-label {
+  font-size: 12px;
+  color: var(--text-2);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.kpi-label .tag {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text-3);
+}
+.kpi-value {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 8px;
+  color: var(--text-1);
+}
+.kpi-meta {
+  font-size: 11px;
+  color: var(--text-3);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.kpi-delta {
+  color: #10b981;
+  font-weight: 500;
+}
+.kpi-delta.neg { color: #ef4444; }
+.kpi-spark {
+  margin-top: 12px;
+  height: 32px;
+  width: 100%;
+}
+
+/* Main dashboard layout */
+.dash-main {
+  display: grid;
+  grid-template-columns: 1.7fr 1fr;
+  gap: 16px;
+}
+
+.earth-card {
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+  min-height: 480px;
+}
+.earth-head {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 20px 24px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  z-index: 10;
+  pointer-events: none;
+}
+.earth-head > * { pointer-events: auto; }
+.earth-head h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.earth-head p {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.earth-stage {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+}
+.earth-stage:active { cursor: grabbing; }
+#earth-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.earth-info {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+.earth-pill {
+  padding: 8px 12px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-1);
+}
+.earth-pill b {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.earth-pill .led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.earth-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 11px;
+  color: var(--text-3);
+  pointer-events: none;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0;
+  transition: opacity var(--t-base);
+}
+.earth-card:hover .earth-hint { opacity: 0.6; }
+
+/* Side info */
+.side-info {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.info-card {
+  padding: 20px;
+}
+.info-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.info-card-head h3 {
+  font-size: 13px;
+  font-weight: 600;
+}
+.info-card-head .more {
+  font-size: 11px;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: color var(--t-fast);
+}
+.info-card-head .more:hover { color: var(--accent); }
+
+.timezones {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tz-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+.tz-row:last-child { border-bottom: none; }
+.tz-city {
+  font-size: 13px;
+  font-weight: 500;
+}
+.tz-time {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-1);
+}
+.tz-time .ampm {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-left: 4px;
+  font-weight: 500;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.act-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.act-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+.act-text {
+  flex: 1;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.act-text b {
+  font-weight: 600;
+  color: var(--text-1);
+}
+.act-text .muted { color: var(--text-3); }
+.act-time {
+  font-size: 11px;
+  color: var(--text-3);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   Tab 3: Users
+   ============================================================ */
+.users-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.search {
+  flex: 1;
+  max-width: 320px;
+  position: relative;
+}
+.search svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  color: var(--text-3);
+}
+.search input {
+  width: 100%;
+  padding: 9px 12px 9px 34px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-1);
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.search input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--bg-elevated);
+}
+
+.users-layout {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 16px;
+}
+
+.users-table-card {
+  padding: 0;
+  overflow: hidden;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.table th {
+  text-align: left;
+  padding: 14px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  white-space: nowrap;
+}
+.table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text-1);
+  vertical-align: middle;
+}
+.table tr:hover td { background: var(--surface-1); }
+.table tr.selected td { background: var(--accent-soft); }
+
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.user-avatar-sm {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: white;
+  font-weight: 600;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.user-name { font-weight: 500; }
+.user-email { color: var(--text-3); font-size: 11px; margin-top: 1px; }
+
+.role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+.role-pill.admin {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.role-pill.member { color: var(--text-2); }
+.role-pill.guest { background: transparent; border: 1px solid var(--border); }
+
+.status-led {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.status-led::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-3);
+}
+.status-led.active::before { background: #10b981; }
+.status-led.idle::before { background: #f59e0b; }
+.status-led.off::before { background: var(--text-3); }
+
+.table .num {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.table-foot {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-3);
+  border-top: 1px solid var(--border-soft);
+}
+.pager { display: flex; gap: 4px; }
+.pager button {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.pager button:hover { background: var(--surface-2); color: var(--text-1); }
+.pager button.active { background: var(--text-1); color: var(--bg); }
+
+/* Right panel: nested glass showcase */
+.detail-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.detail-card {
+  padding: 20px;
+}
+.detail-card-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.detail-card-label .glass-tag {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.profile-card {
+  padding: 24px 20px;
+  text-align: center;
+}
+.profile-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  margin: 0 auto 12px;
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  display: grid;
+  place-items: center;
+  color: white;
+  font-weight: 600;
+  font-size: 24px;
+}
+.profile-name { font-weight: 600; font-size: 15px; margin-bottom: 2px; }
+.profile-handle { color: var(--text-3); font-size: 12px; margin-bottom: 14px; }
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--border-soft);
+  margin-bottom: 14px;
+}
+.ps {
+  text-align: center;
+}
+.ps-v {
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.ps-l {
+  font-size: 10px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 2px;
+}
+
+.profile-meta {
+  text-align: left;
+  font-size: 12px;
+  color: var(--text-2);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.profile-meta-row {
+  display: flex;
+  justify-content: space-between;
+}
+.profile-meta-row b {
+  color: var(--text-1);
+  font-weight: 500;
+}
+
+/* Nested glass showcase - the inner glass shows through */
+.nested-card {
+  padding: 14px;
+  border-radius: var(--radius);
+}
+.nested-card .inner {
+  margin-top: 10px;
+  padding: 12px;
+  font-size: 12px;
+  color: var(--text-2);
+  border-radius: var(--radius-sm);
+}
+.demo-strip {
+  margin-top: 10px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  overflow: hidden;
+  position: relative;
+}
+.demo-strip .fill {
+  position: absolute;
+  inset: 0;
+  width: 0;
+  background: var(--accent);
+  border-radius: var(--radius-pill);
+  transition: width 600ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ============================================================
+   Tab 4: Settings
+   ============================================================ */
+.settings-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 24px;
+}
+.settings-side {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.settings-side-item {
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--text-2);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.settings-side-item:hover { background: var(--surface-1); color: var(--text-1); }
+.settings-side-item.active { background: var(--accent-soft); color: var(--accent); }
+
+.settings-main { display: flex; flex-direction: column; gap: 20px; }
+
+.settings-section {
+  padding: 24px;
+}
+.settings-section h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.settings-section .desc {
+  font-size: 12px;
+  color: var(--text-2);
+  margin-bottom: 20px;
+}
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.theme-card {
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  background: var(--surface-1);
+  cursor: pointer;
+  transition: border-color var(--t-fast), background var(--t-fast);
+  text-align: left;
+}
+.theme-card:hover { background: var(--surface-2); }
+.theme-card.active {
+  border-color: var(--accent);
+}
+.theme-swatch {
+  height: 48px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+  border: 1px solid var(--border-soft);
+  display: flex;
+  overflow: hidden;
+}
+.theme-swatch > div { flex: 1; }
+.theme-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+.theme-meta {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 1px;
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+}
+.slider-row + .slider-row {
+  border-top: 1px solid var(--border-soft);
+}
+.slider-label {
+  flex: 0 0 140px;
+  font-size: 13px;
+  color: var(--text-1);
+}
+.slider-hint {
+  font-size: 11px;
+  color: var(--text-3);
+}
+.slider {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.slider input[type="range"] {
+  flex: 1;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-2);
+  outline: none;
+}
+.slider input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-1);
+  cursor: pointer;
+  transition: background var(--t-fast), transform var(--t-fast);
+}
+.slider input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  background: var(--accent);
+}
+.slider-value {
+  flex: 0 0 48px;
+  text-align: right;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+.toggle-row:last-child { border-bottom: none; }
+.toggle-row-info h4 {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-1);
+  margin-bottom: 2px;
+}
+.toggle-row-info p {
+  font-size: 11px;
+  color: var(--text-3);
+}
+.switch {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background var(--t-fast);
+  flex-shrink: 0;
+}
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--t-fast);
+}
+.switch.on { background: var(--accent); border-color: var(--accent); }
+.switch.on::after { transform: translateX(16px); }
+
+/* Live preview block */
+.preview-card {
+  padding: 20px;
+  margin-top: 8px;
+}
+.preview-card-head {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  margin-bottom: 12px;
+}
+.preview-stack {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.preview-block {
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  color: var(--text-2);
+  border: 1px solid var(--border-soft);
+}
+.preview-block b { display: block; color: var(--text-1); font-size: 12px; margin-bottom: 4px; }
+
+/* Count-up demo */
+.countup {
+  font-size: 36px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* SVG sparkline (path drawing) */
+.sparkline-path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.sparkline-fill {
+  fill: var(--accent);
+  opacity: 0.08;
+}
+
+/* Notification dropdown */
+.notif-pop {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  width: 320px;
+  padding: 8px;
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  z-index: 200;
+  display: none;
+}
+.notif-pop.open { display: block; animation: popIn 180ms ease-out; }
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.notif-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  transition: background var(--t-fast);
+  cursor: pointer;
+}
+.notif-item:hover { background: var(--surface-1); }
+.notif-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-top: 6px;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+.notif-dot.read { background: var(--text-4); }
+.notif-body { flex: 1; }
+.notif-title { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+.notif-text { font-size: 12px; color: var(--text-2); line-height: 1.4; }
+.notif-time { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+
+/* Utility */
+.row { display: flex; align-items: center; gap: 8px; }
+.muted { color: var(--text-2); }
+.sep { color: var(--text-4); margin: 0 6px; }
+
+/* Login mode - hide sidebar */
+.app.login-mode { grid-template-columns: 1fr; grid-template-areas: "top" "main"; }
+.app.login-mode .side { display: none; }
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .app { grid-template-columns: 1fr; grid-template-areas: "top" "main"; }
+  .side { display: none; }
+  .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+  .dash-main { grid-template-columns: 1fr; }
+  .users-layout { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Top bar -->
+  <header class="top">
+    <div class="row">
+      <div class="top-brand">
+        <div class="top-mark">习</div>
+        <span class="top-product">习惯管家</span>
+        <div class="top-divider"></div>
+        <span class="top-module">运营后台</span>
+      </div>
+    </div>
+
+    <nav class="top-nav">
+      <a class="top-link active" data-tab="dashboard">仪表盘</a>
+      <a class="top-link" data-tab="users">用户</a>
+      <a class="top-link" data-tab="settings">主题</a>
+      <a class="top-link" data-tab="login">登录</a>
+    </nav>
+
+    <div class="top-actions">
+      <div style="position: relative;">
+        <button class="icon-btn" id="notif-btn" aria-label="通知">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <span class="dot"></span>
+        </button>
+        <div class="notif-pop" id="notif-pop">
+          <div class="notif-item">
+            <div class="notif-dot"></div>
+            <div class="notif-body">
+              <div class="notif-title">新功能上线</div>
+              <div class="notif-text">AI 智能创建已支持自定义工作流</div>
+              <div class="notif-time">5 分钟前</div>
+            </div>
+          </div>
+          <div class="notif-item">
+            <div class="notif-dot"></div>
+            <div class="notif-body">
+              <div class="notif-title">本周活跃用户</div>
+              <div class="notif-text">较上周增长 12.4%，超出预期</div>
+              <div class="notif-time">2 小时前</div>
+            </div>
+          </div>
+          <div class="notif-item">
+            <div class="notif-dot read"></div>
+            <div class="notif-body">
+              <div class="notif-title">系统维护</div>
+              <div class="notif-text">9 月 5 日凌晨 2 点进行例行维护</div>
+              <div class="notif-time">昨天</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="theme-toggle" id="theme-toggle" aria-label="切换主题">
+        <div class="theme-toggle-thumb">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        </div>
+      </button>
+
+      <div class="user-chip">
+        <div class="avatar">王</div>
+        <div>
+          <div class="user-chip-name">王长</div>
+          <div class="user-chip-role">超级管理员</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Side nav -->
+  <aside class="side">
+    <div class="side-section">工作区</div>
+    <div class="side-item active" data-tab="dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+      <span>仪表盘</span>
+    </div>
+    <div class="side-item" data-tab="users">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>用户管理</span>
+      <span class="badge">2.4k</span>
+    </div>
+    <div class="side-item" data-tab="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>主题设置</span>
+    </div>
+
+    <div class="side-section">数据</div>
+    <div class="side-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
+      <span>数据洞察</span>
+    </div>
+    <div class="side-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <span>财务</span>
+    </div>
+    <div class="side-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>
+      <span>AI 模型</span>
+      <span class="badge">3</span>
+    </div>
+
+    <div class="side-section">日志</div>
+    <div class="side-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <span>审计日志</span>
+    </div>
+
+    <div class="side-foot">
+      <div class="side-foot-status"></div>
+      <div class="side-foot-info">
+        <b>所有系统正常</b>
+        <span>v2.4.1 · 99.98%</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main content area -->
+  <main class="main">
+
+    <!-- ========== DASHBOARD VIEW ========== -->
+    <section class="view active" id="view-dashboard">
+      <div class="view-header">
+        <div class="view-header-text">
+          <h1>仪表盘</h1>
+          <p>实时业务指标与全球用户分布</p>
+        </div>
+        <div class="row">
+          <button class="btn btn-ghost">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            导出
+          </button>
+          <button class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            刷新数据
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI row -->
+      <div class="dashboard-grid">
+        <div class="kpi-card glass-frosted">
+          <div class="kpi-label">
+            <span>活跃用户</span>
+            <span class="tag">实时</span>
+          </div>
+          <div class="kpi-value" data-count="24832" data-format="int">0</div>
+          <div class="kpi-meta">
+            <span class="kpi-delta">+12.4%</span>
+            <span class="muted">vs 上周</span>
+          </div>
+          <svg class="kpi-spark" viewBox="0 0 100 32" preserveAspectRatio="none">
+            <path class="sparkline-fill" d="M0,28 L10,22 L20,24 L30,18 L40,20 L50,12 L60,15 L70,8 L80,10 L90,4 L100,2 L100,32 L0,32 Z"/>
+            <path class="sparkline-path" d="M0,28 L10,22 L20,24 L30,18 L40,20 L50,12 L60,15 L70,8 L80,10 L90,4 L100,2"/>
+          </svg>
+        </div>
+
+        <div class="kpi-card glass-frosted">
+          <div class="kpi-label">
+            <span>今日打卡</span>
+            <span class="tag">今日</span>
+          </div>
+          <div class="kpi-value" data-count="18642" data-format="int">0</div>
+          <div class="kpi-meta">
+            <span class="kpi-delta">+8.2%</span>
+            <span class="muted">vs 昨日</span>
+          </div>
+          <svg class="kpi-spark" viewBox="0 0 100 32" preserveAspectRatio="none">
+            <path class="sparkline-fill" d="M0,24 L10,20 L20,18 L30,22 L40,15 L50,17 L60,10 L70,12 L80,8 L90,6 L100,8 L100,32 L0,32 Z"/>
+            <path class="sparkline-path" d="M0,24 L10,20 L20,18 L30,22 L40,15 L50,17 L60,10 L70,12 L80,8 L90,6 L100,8"/>
+          </svg>
+        </div>
+
+        <div class="kpi-card glass-frosted">
+          <div class="kpi-label">
+            <span>AI 调用</span>
+            <span class="tag">7 天</span>
+          </div>
+          <div class="kpi-value" data-count="86420" data-format="int">0</div>
+          <div class="kpi-meta">
+            <span class="kpi-delta">+24.6%</span>
+            <span class="muted">vs 上周</span>
+          </div>
+          <svg class="kpi-spark" viewBox="0 0 100 32" preserveAspectRatio="none">
+            <path class="sparkline-fill" d="M0,26 L10,22 L20,20 L30,16 L40,18 L50,10 L60,12 L70,6 L80,8 L90,4 L100,2 L100,32 L0,32 Z"/>
+            <path class="sparkline-path" d="M0,26 L10,22 L20,20 L30,16 L40,18 L50,10 L60,12 L70,6 L80,8 L90,4 L100,2"/>
+          </svg>
+        </div>
+
+        <div class="kpi-card glass-frosted">
+          <div class="kpi-label">
+            <span>留存率</span>
+            <span class="tag">30 天</span>
+          </div>
+          <div class="kpi-value" data-count="78.4" data-format="pct" data-decimals="1">0</div>
+          <div class="kpi-meta">
+            <span class="kpi-delta neg">-1.2%</span>
+            <span class="muted">vs 上月</span>
+          </div>
+          <svg class="kpi-spark" viewBox="0 0 100 32" preserveAspectRatio="none">
+            <path class="sparkline-fill" d="M0,12 L10,10 L20,14 L30,11 L40,16 L50,13 L60,18 L70,15 L80,20 L90,17 L100,22 L100,32 L0,32 Z"/>
+            <path class="sparkline-path" d="M0,12 L10,10 L20,14 L30,11 L40,16 L50,13 L60,18 L70,15 L80,20 L90,17 L100,22"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Earth + side info -->
+      <div class="dash-main">
+        <div class="earth-card glass-frosted">
+          <div class="earth-head">
+            <div>
+              <h3>全球用户分布</h3>
+              <p>实时地理位置，10 个主要节点</p>
+            </div>
+            <div class="row">
+              <button class="btn btn-secondary" style="padding: 6px 10px; font-size: 12px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width: 12px; height: 12px;"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                24h
+              </button>
+              <button class="btn btn-ghost" style="padding: 6px 10px; font-size: 12px;">7d</button>
+              <button class="btn btn-ghost" style="padding: 6px 10px; font-size: 12px;">30d</button>
+            </div>
+          </div>
+
+          <div class="earth-stage" id="earth-stage">
+            <canvas id="earth-canvas"></canvas>
+            <div class="earth-hint">DRAG · SCROLL</div>
+          </div>
+
+          <div class="earth-info">
+            <div class="earth-pill glass-mist">
+              <span class="led"></span>
+              <span>在线 <b id="earth-online">8,234</b></span>
+            </div>
+            <div class="earth-pill glass-mist">
+              <span>FPS <b id="earth-fps">60</b></span>
+            </div>
+            <div class="earth-pill glass-mist" style="margin-left: auto;">
+              <span>UTC <b id="earth-utc">--:--:--</b></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="side-info">
+          <!-- Time zones card -->
+          <div class="info-card glass-crystal">
+            <div class="info-card-head">
+              <h3>主要时区</h3>
+              <span class="more">查看全部</span>
+            </div>
+            <div class="timezones" id="tz-list">
+              <!-- filled by JS -->
+            </div>
+          </div>
+
+          <!-- Activity card -->
+          <div class="info-card glass-crystal">
+            <div class="info-card-head">
+              <h3>实时活动</h3>
+              <span class="more">查看全部</span>
+            </div>
+            <div class="activity-list">
+              <div class="act-row">
+                <div class="act-dot" style="background: #10b981;"></div>
+                <div class="act-text">
+                  <b>北京</b> 用户群组打卡峰值 <span class="muted">达到 1,240 / 分钟</span>
+                </div>
+                <div class="act-time">刚刚</div>
+              </div>
+              <div class="act-row">
+                <div class="act-dot" style="background: #8b5cf6;"></div>
+                <div class="act-text">
+                  新模型 <b>GLM-4.6</b> 已部署 <span class="muted">响应时间下降 18%</span>
+                </div>
+                <div class="act-time">2 分钟</div>
+              </div>
+              <div class="act-row">
+                <div class="act-dot" style="background: #f59e0b;"></div>
+                <div class="act-text">
+                  <b>旧金山</b> 节点延迟上升 <span class="muted">当前 142ms</span>
+                </div>
+                <div class="act-time">5 分钟</div>
+              </div>
+              <div class="act-row">
+                <div class="act-dot" style="background: #3b82f6;"></div>
+                <div class="act-text">
+                  <b>东京</b> 新用户注册高峰 <span class="muted">+312 / 小时</span>
+                </div>
+                <div class="act-time">12 分钟</div>
+              </div>
+              <div class="act-row">
+                <div class="act-dot" style="background: #10b981;"></div>
+                <div class="act-text">
+                  数据库 <b>主从同步</b> 已完成 <span class="muted">耗时 1.8s</span>
+                </div>
+                <div class="act-time">18 分钟</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== USERS VIEW ========== -->
+    <section class="view" id="view-users">
+      <div class="view-header">
+        <div class="view-header-text">
+          <h1>用户管理</h1>
+          <p>2,431 个注册用户 · 今日新增 47</p>
+        </div>
+        <div class="row">
+          <button class="btn btn-secondary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            导出 CSV
+          </button>
+          <button class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11h-6M19 8v6"/></svg>
+            添加用户
+          </button>
+        </div>
+      </div>
+
+      <div class="users-toolbar">
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" placeholder="按邮箱、姓名搜索...">
+        </div>
+        <button class="btn btn-ghost">所有角色</button>
+        <button class="btn btn-ghost">所有状态</button>
+        <button class="btn btn-ghost" style="margin-left: auto;">排序：注册时间 ↓</button>
+      </div>
+
+      <div class="users-layout">
+        <!-- Table card - 3 nested glass types demonstrated -->
+        <div class="users-table-card glass-frosted">
+          <table class="table">
+            <thead>
+              <tr>
+                <th style="width: 40px;"><input type="checkbox" class="checkbox" id="check-all"></th>
+                <th>用户</th>
+                <th>角色</th>
+                <th>状态</th>
+                <th>打卡</th>
+                <th>注册时间</th>
+                <th style="width: 60px;"></th>
+              </tr>
+            </thead>
+            <tbody id="users-tbody">
+              <!-- filled by JS -->
+            </tbody>
+          </table>
+          <div class="table-foot">
+            <span>显示 <b>1-10</b> 共 <b>2,431</b></span>
+            <div class="pager">
+              <button>‹</button>
+              <button class="active">1</button>
+              <button>2</button>
+              <button>3</button>
+              <button>…</button>
+              <button>243</button>
+              <button>›</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right detail panel -->
+        <div class="detail-panel">
+          <!-- Top: profile (mist glass) -->
+          <div class="profile-card glass-mist">
+            <div class="profile-avatar">王</div>
+            <div class="profile-name">王长</div>
+            <div class="profile-handle">@wangchang</div>
+            <div class="profile-stats">
+              <div class="ps"><div class="ps-v">287</div><div class="ps-l">打卡</div></div>
+              <div class="ps"><div class="ps-v">42</div><div class="ps-l">连续</div></div>
+              <div class="ps"><div class="ps-v">12</div><div class="ps-l">成就</div></div>
+            </div>
+            <div class="profile-meta">
+              <div class="profile-meta-row"><span>邮箱</span><b>wang@example.com</b></div>
+              <div class="profile-meta-row"><span>位置</span><b>北京 · CN</b></div>
+              <div class="profile-meta-row"><span>注册</span><b>2026-03-12</b></div>
+            </div>
+          </div>
+
+          <!-- Middle: nested glass showcase -->
+          <div class="nested-card glass-crystal">
+            <div class="detail-card-label">
+              <span>嵌套玻璃 · Crystal</span>
+              <span class="glass-tag">1px 渐变描边</span>
+            </div>
+            <div style="font-size: 13px; font-weight: 500; color: var(--text-1);">本月达成率</div>
+            <div class="demo-strip"><div class="fill" style="width: 78%;"></div></div>
+            <div class="inner glass-mist">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span>习惯完成</span><b>78%</b>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span>任务完成</span><b>92%</b>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom: nested frosted inside crystal -->
+          <div class="nested-card glass-crystal">
+            <div class="detail-card-label">
+              <span>嵌套玻璃 · Frosted</span>
+              <span class="glass-tag">blur 40px</span>
+            </div>
+            <div style="font-size: 13px; font-weight: 500; margin-bottom: 8px;">最近活动</div>
+            <div class="inner glass-frosted">
+              <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-2);">
+                <span>晨跑 5km</span><span>06:42</span>
+              </div>
+            </div>
+            <div class="inner glass-frosted" style="margin-top: 6px;">
+              <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-2);">
+                <span>阅读 30 分钟</span><span>21:18</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== SETTINGS VIEW ========== -->
+    <section class="view" id="view-settings">
+      <div class="view-header">
+        <div class="view-header-text">
+          <h1>主题设置</h1>
+          <p>个性化外观与交互细节</p>
+        </div>
+        <button class="btn btn-primary">保存更改</button>
+      </div>
+
+      <div class="settings-layout">
+        <nav class="settings-side">
+          <div class="settings-side-item active">外观</div>
+          <div class="settings-side-item">动效</div>
+          <div class="settings-side-item">玻璃质感</div>
+          <div class="settings-side-item">排版</div>
+          <div class="settings-side-item">高级</div>
+        </nav>
+
+        <div class="settings-main">
+          <!-- Theme section -->
+          <div class="settings-section glass-frosted">
+            <h3>主题模式</h3>
+            <p class="desc">选择适合当前环境的配色，自动持久化到本地</p>
+
+            <div class="theme-grid">
+              <div class="theme-card active" data-theme-mode="light">
+                <div class="theme-swatch">
+                  <div style="background: #fafafa;"></div>
+                  <div style="background: #ffffff;"></div>
+                  <div style="background: #0a0a0a;"></div>
+                </div>
+                <div class="theme-name">浅色</div>
+                <div class="theme-meta">默认 · 白天</div>
+              </div>
+              <div class="theme-card" data-theme-mode="dark">
+                <div class="theme-swatch">
+                  <div style="background: #0a0a0a;"></div>
+                  <div style="background: #171717;"></div>
+                  <div style="background: #fafafa;"></div>
+                </div>
+                <div class="theme-name">深色</div>
+                <div class="theme-meta">OLED 友好</div>
+              </div>
+              <div class="theme-card" data-theme-mode="auto">
+                <div class="theme-swatch">
+                  <div style="background: #fafafa;"></div>
+                  <div style="background: #ffffff; flex: 0.5;"></div>
+                  <div style="background: #171717;"></div>
+                </div>
+                <div class="theme-name">跟随系统</div>
+                <div class="theme-meta">智能切换</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Motion section -->
+          <div class="settings-section glass-frosted">
+            <h3>动效强度</h3>
+            <p class="desc">控制页面动画与微交互的速度与幅度</p>
+
+            <div class="slider-row">
+              <div class="slider-label">
+                <div>动效强度</div>
+                <div class="slider-hint">影响过渡时长</div>
+              </div>
+              <div class="slider">
+                <input type="range" min="0" max="100" value="70" id="motion-slider">
+                <div class="slider-value" id="motion-value">70%</div>
+              </div>
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label">
+                <div>玻璃模糊</div>
+                <div class="slider-hint">调整 backdrop-blur</div>
+              </div>
+              <div class="slider">
+                <input type="range" min="0" max="100" value="60" id="glass-slider">
+                <div class="slider-value" id="glass-value">60%</div>
+              </div>
+            </div>
+
+            <div class="toggle-row">
+              <div class="toggle-row-info">
+                <h4>减少动效</h4>
+                <p>尊重系统的「减少动效」偏好设置</p>
+              </div>
+              <div class="switch"></div>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-row-info">
+                <h4>数字滚动动画</h4>
+                <p>KPI 卡片的数字从 0 滚动到目标值</p>
+              </div>
+              <div class="switch on"></div>
+            </div>
+          </div>
+
+          <!-- Live preview section -->
+          <div class="preview-card glass-mist">
+            <div class="preview-card-head">实时预览</div>
+            <div class="preview-stack">
+              <div class="preview-block glass-frosted">
+                <b>Frosted</b>
+                <div>40px 模糊 + 180% 饱和度</div>
+              </div>
+              <div class="preview-block glass-crystal">
+                <b>Crystal</b>
+                <div>1px 渐变描边 + 内阴影</div>
+              </div>
+              <div class="preview-block glass-mist">
+                <b>Mist</b>
+                <div>20px 模糊 + 半透白</div>
+              </div>
+            </div>
+            <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-soft); display: flex; align-items: baseline; gap: 12px;">
+              <div class="countup" data-count="24832">0</div>
+              <span class="muted" style="font-size: 12px;">实时活跃用户（动效 + count-up）</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== LOGIN VIEW ========== -->
+    <section class="login-view" id="view-login">
+      <div class="login-card glass-crystal">
+        <div class="login-mark">习</div>
+        <div class="login-title">登录运营后台</div>
+        <div class="login-sub">使用管理员账号或扫码登录</div>
+
+        <div class="field">
+          <label class="field-label">邮箱</label>
+          <input class="field-input" type="email" placeholder="you@company.com" value="admin@xiguan.app">
+        </div>
+        <div class="field">
+          <label class="field-label">密码</label>
+          <input class="field-input" type="password" placeholder="••••••••" value="123456">
+        </div>
+
+        <div class="login-row">
+          <label>
+            <input type="checkbox" class="checkbox" checked>
+            <span>保持登录 30 天</span>
+          </label>
+          <a href="#">忘记密码</a>
+        </div>
+
+        <button class="btn btn-primary btn-block">
+          登录
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+
+        <div class="login-divider">或</div>
+
+        <div class="login-social">
+          <button class="btn btn-secondary">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8.69 12c0-1.4.7-2.6 1.76-3.36-.6-.86-1.5-1.4-2.56-1.4-1.1 0-2.06.7-2.56 1.76-.5 1.06-.36 2.4.4 3.36.7.86 1.86 1.36 2.96.86.5-.16 1-.56 0-1.22zm6.2 0c0-1.4-.7-2.6-1.76-3.36.6-.86 1.5-1.4 2.56-1.4 1.1 0 2.06.7 2.56 1.76.5 1.06.36 2.4-.4 3.36-.7.86-1.86 1.36-2.96.86-.5-.16-1-.56 0-1.22z"/></svg>
+            微信
+          </button>
+          <button class="btn btn-secondary">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8h20M6 12h2M11 12h2"/></svg>
+            SSO
+          </button>
+          <button class="btn btn-secondary">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v6m0 10v6M4.22 4.22l4.24 4.24m7.08 7.08l4.24 4.24M1 12h6m10 0h6M4.22 19.78l4.24-4.24m7.08-7.08l4.24-4.24"/></svg>
+            扫码
+          </button>
+        </div>
+
+        <div class="login-foot">
+          还没有账号？ <a href="#">联系管理员</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+/* ============================================================
+   Tab switching
+   ============================================================ */
+const tabs = document.querySelectorAll('[data-tab]');
+const views = {
+  dashboard: document.getElementById('view-dashboard'),
+  users: document.getElementById('view-users'),
+  settings: document.getElementById('view-settings'),
+  login: document.getElementById('view-login')
+};
+
+function activate(tab) {
+  // top nav
+  document.querySelectorAll('.top-link').forEach(l => l.classList.toggle('active', l.dataset.tab === tab));
+  // side nav (only for non-login)
+  document.querySelectorAll('.side-item').forEach(i => i.classList.toggle('active', i.dataset.tab === tab));
+  // main views
+  document.querySelectorAll('.view, .login-view').forEach(v => v.classList.remove('active'));
+  const app = document.querySelector('.app');
+  if (tab === 'login') {
+    document.getElementById('view-login').classList.add('active');
+    app.classList.add('login-mode');
+  } else {
+    app.classList.remove('login-mode');
+    views[tab].classList.add('active');
+  }
+  // resize earth on dashboard tab
+  if (tab === 'dashboard' && window.__earthResize) {
+    setTimeout(() => window.__earthResize(), 100);
+  }
+}
+
+tabs.forEach(el => el.addEventListener('click', () => activate(el.dataset.tab)));
+
+/* ============================================================
+   Theme toggle
+   ============================================================ */
+const themeToggle = document.getElementById('theme-toggle');
+const savedTheme = localStorage.getItem('impeccable-theme') || 'light';
+document.documentElement.dataset.theme = savedTheme;
+
+themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.dataset.theme;
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem('impeccable-theme', next);
+});
+
+// Theme cards in settings
+document.querySelectorAll('[data-theme-mode]').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('[data-theme-mode]').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    const mode = card.dataset.themeMode;
+    if (mode === 'auto') {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.dataset.theme = prefersDark ? 'dark' : 'light';
+    } else {
+      document.documentElement.dataset.theme = mode;
+    }
+  });
+});
+
+/* ============================================================
+   Notification popover
+   ============================================================ */
+const notifBtn = document.getElementById('notif-btn');
+const notifPop = document.getElementById('notif-pop');
+notifBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  notifPop.classList.toggle('open');
+});
+document.addEventListener('click', () => notifPop.classList.remove('open'));
+
+/* ============================================================
+   Count-up animation
+   ============================================================ */
+function countUp(el) {
+  const target = parseFloat(el.dataset.count);
+  const decimals = parseInt(el.dataset.decimals || 0);
+  const duration = 1200;
+  const start = performance.now();
+  const startVal = 0;
+
+  function tick(now) {
+    const t = Math.min(1, (now - start) / duration);
+    // expo out
+    const eased = 1 - Math.pow(2, -10 * t);
+    const val = startVal + (target - startVal) * eased;
+    el.textContent = decimals
+      ? val.toFixed(decimals)
+      : Math.floor(val).toLocaleString();
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+// Intersection-based trigger
+const countEls = document.querySelectorAll('[data-count]');
+const countObs = new IntersectionObserver(entries => {
+  entries.forEach(en => {
+    if (en.isIntersecting && !en.target.dataset.run) {
+      en.target.dataset.run = '1';
+      countUp(en.target);
+    }
+  });
+}, { threshold: 0.4 });
+countEls.forEach(el => countObs.observe(el));
+
+/* ============================================================
+   Timezones (auto-update)
+   ============================================================ */
+const tzList = document.getElementById('tz-list');
+const tzCities = [
+  { name: '北京', tz: 'Asia/Shanghai', offset: 8 },
+  { name: '纽约', tz: 'America/New_York', offset: -5 },
+  { name: '伦敦', tz: 'Europe/London', offset: 0 },
+  { name: '东京', tz: 'Asia/Tokyo', offset: 9 },
+  { name: '旧金山', tz: 'America/Los_Angeles', offset: -8 }
+];
+
+function renderTz() {
+  tzList.innerHTML = tzCities.map(c => {
+    const now = new Date();
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const local = new Date(utc + (3600000 * c.offset));
+    const hh = local.getHours().toString().padStart(2, '0');
+    const mm = local.getMinutes().toString().padStart(2, '0');
+    const ampm = local.getHours() >= 12 ? 'PM' : 'AM';
+    const h12 = local.getHours() % 12 || 12;
+    return `
+      <div class="tz-row">
+        <span class="tz-city">${c.name}</span>
+        <span class="tz-time">${h12.toString().padStart(2,'0')}:${mm}<span class="ampm">${ampm}</span></span>
+      </div>
+    `;
+  }).join('');
+}
+renderTz();
+setInterval(renderTz, 30000);
+
+// UTC clock
+function updateUtc() {
+  const now = new Date();
+  const h = now.getUTCHours().toString().padStart(2, '0');
+  const m = now.getUTCMinutes().toString().padStart(2, '0');
+  const s = now.getUTCSeconds().toString().padStart(2, '0');
+  document.getElementById('earth-utc').textContent = `${h}:${m}:${s}`;
+}
+updateUtc();
+setInterval(updateUtc, 1000);
+
+/* ============================================================
+   Users table - sample data
+   ============================================================ */
+const usersData = [
+  { name: '王长', email: 'wang@example.com', role: 'admin', status: 'active', checkin: 287, joined: '2026-03-12', color: 'linear-gradient(135deg, #8b5cf6, #ec4899)' },
+  { name: '陈思', email: 'chensi@example.com', role: 'member', status: 'active', checkin: 156, joined: '2026-04-02', color: 'linear-gradient(135deg, #3b82f6, #06b6d4)' },
+  { name: '李明', email: 'liming@example.com', role: 'member', status: 'idle', checkin: 89, joined: '2026-05-18', color: 'linear-gradient(135deg, #f59e0b, #ef4444)' },
+  { name: '赵雪', email: 'zhaoxue@example.com', role: 'guest', status: 'off', checkin: 12, joined: '2026-06-30', color: 'linear-gradient(135deg, #10b981, #84cc16)' },
+  { name: 'Alex Chen', email: 'alex@example.com', role: 'member', status: 'active', checkin: 412, joined: '2025-12-04', color: 'linear-gradient(135deg, #6366f1, #a855f7)' },
+  { name: '孙琪', email: 'sunqi@example.com', role: 'admin', status: 'active', checkin: 198, joined: '2026-01-22', color: 'linear-gradient(135deg, #f97316, #f43f5e)' },
+  { name: '周野', email: 'zhouye@example.com', role: 'member', status: 'idle', checkin: 64, joined: '2026-07-08', color: 'linear-gradient(135deg, #14b8a6, #0ea5e9)' },
+  { name: '林夏', email: 'linxia@example.com', role: 'member', status: 'active', checkin: 234, joined: '2026-02-14', color: 'linear-gradient(135deg, #ec4899, #d946ef)' },
+  { name: '徐来', email: 'xulai@example.com', role: 'guest', status: 'off', checkin: 4, joined: '2026-08-19', color: 'linear-gradient(135deg, #64748b, #475569)' },
+  { name: 'Maya', email: 'maya@example.com', role: 'member', status: 'active', checkin: 521, joined: '2025-11-08', color: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }
+];
+
+const usersTbody = document.getElementById('users-tbody');
+usersTbody.innerHTML = usersData.map((u, i) => `
+  <tr class="${i === 0 ? 'selected' : ''}">
+    <td><input type="checkbox" class="checkbox" ${i === 0 ? 'checked' : ''}></td>
+    <td>
+      <div class="user-cell">
+        <div class="user-avatar-sm" style="background: ${u.color};">${u.name.charAt(0)}</div>
+        <div>
+          <div class="user-name">${u.name}</div>
+          <div class="user-email">${u.email}</div>
+        </div>
+      </div>
+    </td>
+    <td><span class="role-pill ${u.role}">${u.role === 'admin' ? '管理员' : u.role === 'guest' ? '访客' : '成员'}</span></td>
+    <td><span class="status-led ${u.status}">${u.status === 'active' ? '活跃' : u.status === 'idle' ? '空闲' : '离线'}</span></td>
+    <td class="num">${u.checkin}</td>
+    <td><span class="muted">${u.joined}</span></td>
+    <td><button class="icon-btn" style="width: 28px; height: 28px;"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button></td>
+  </tr>
+`).join('');
+
+/* ============================================================
+   Sliders
+   ============================================================ */
+const motionSlider = document.getElementById('motion-slider');
+const motionValue = document.getElementById('motion-value');
+motionSlider.addEventListener('input', () => {
+  motionValue.textContent = motionSlider.value + '%';
+});
+
+const glassSlider = document.getElementById('glass-slider');
+const glassValue = document.getElementById('glass-value');
+glassSlider.addEventListener('input', () => {
+  const v = glassSlider.value;
+  glassValue.textContent = v + '%';
+  // tweak glass blur intensity live
+  const root = document.documentElement;
+  const scale = v / 60; // 60% = baseline
+  root.style.setProperty('--blur-frosted', (40 * scale) + 'px');
+  root.style.setProperty('--blur-crystal', (12 * scale) + 'px');
+  root.style.setProperty('--blur-mist', (20 * scale) + 'px');
+});
+
+document.querySelectorAll('.switch').forEach(sw => {
+  sw.addEventListener('click', () => sw.classList.toggle('on'));
+});
+
+/* ============================================================
+   Theme cards in settings - card-level selection only
+   ============================================================ */
+document.querySelectorAll('.theme-card').forEach(c => {
+  c.addEventListener('click', () => {
+    document.querySelectorAll('.theme-card').forEach(x => x.classList.remove('active'));
+    c.classList.add('active');
+  });
+});
+
+/* ============================================================
+   3D Earth - three.js
+   ============================================================ */
+(function initEarth() {
+  const canvas = document.getElementById('earth-canvas');
+  const stage = document.getElementById('earth-stage');
+  if (!canvas || !stage) return;
+
+  // City nodes - lat/lng
+  const cities = [
+    { name: '北京',     lat: 39.9,  lng: 116.4,  size: 8 },
+    { name: '东京',     lat: 35.7,  lng: 139.7,  size: 7 },
+    { name: '新加坡',   lat: 1.35,  lng: 103.8,  size: 6 },
+    { name: '悉尼',     lat: -33.9, lng: 151.2,  size: 5 },
+    { name: '迪拜',     lat: 25.3,  lng: 55.3,   size: 5 },
+    { name: '伦敦',     lat: 51.5,  lng: -0.1,   size: 7 },
+    { name: '巴黎',     lat: 48.9,  lng: 2.3,    size: 5 },
+    { name: '纽约',     lat: 40.7,  lng: -74.0,  size: 8 },
+    { name: '旧金山',   lat: 37.8,  lng: -122.4, size: 6 },
+    { name: '圣保罗',   lat: -23.5, lng: -46.6,  size: 5 }
+  ];
+
+  const scene = new THREE.Scene();
+  const w = stage.clientWidth || 600;
+  const h = stage.clientHeight || 480;
+  const camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
+  camera.position.set(0, 0, 4.2);
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setSize(w, h, false);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
+
+  // Earth - procedural texture via canvas
+  function makeEarthTexture() {
+    const c = document.createElement('canvas');
+    c.width = 1024; c.height = 512;
+    const ctx = c.getContext('2d');
+
+    // Ocean
+    const oceanGrad = ctx.createLinearGradient(0, 0, 0, 512);
+    oceanGrad.addColorStop(0, '#1e293b');
+    oceanGrad.addColorStop(0.5, '#0f172a');
+    oceanGrad.addColorStop(1, '#1e293b');
+    ctx.fillStyle = oceanGrad;
+    ctx.fillRect(0, 0, 1024, 512);
+
+    // Continents - rough silhouettes
+    ctx.fillStyle = '#334155';
+
+    // North America
+    ctx.beginPath();
+    ctx.moveTo(180, 80); ctx.lineTo(280, 70); ctx.lineTo(320, 130);
+    ctx.lineTo(310, 200); ctx.lineTo(280, 240); ctx.lineTo(240, 260);
+    ctx.lineTo(220, 220); ctx.lineTo(190, 180); ctx.lineTo(170, 130);
+    ctx.closePath(); ctx.fill();
+
+    // South America
+    ctx.beginPath();
+    ctx.moveTo(280, 280); ctx.lineTo(320, 270); ctx.lineTo(330, 340);
+    ctx.lineTo(310, 420); ctx.lineTo(280, 440); ctx.lineTo(265, 380);
+    ctx.lineTo(270, 320); ctx.closePath(); ctx.fill();
+
+    // Europe
+    ctx.beginPath();
+    ctx.moveTo(480, 90); ctx.lineTo(560, 80); ctx.lineTo(580, 130);
+    ctx.lineTo(560, 160); ctx.lineTo(510, 170); ctx.lineTo(480, 130);
+    ctx.closePath(); ctx.fill();
+
+    // Africa
+    ctx.beginPath();
+    ctx.moveTo(500, 200); ctx.lineTo(580, 190); ctx.lineTo(600, 280);
+    ctx.lineTo(570, 360); ctx.lineTo(530, 380); ctx.lineTo(500, 320);
+    ctx.lineTo(490, 250); ctx.closePath(); ctx.fill();
+
+    // Asia
+    ctx.beginPath();
+    ctx.moveTo(560, 80); ctx.lineTo(750, 90); ctx.lineTo(820, 140);
+    ctx.lineTo(800, 200); ctx.lineTo(720, 220); ctx.lineTo(640, 200);
+    ctx.lineTo(580, 150); ctx.closePath(); ctx.fill();
+
+    // India
+    ctx.beginPath();
+    ctx.moveTo(680, 200); ctx.lineTo(720, 210); ctx.lineTo(710, 280);
+    ctx.lineTo(680, 290); ctx.lineTo(670, 250); ctx.closePath(); ctx.fill();
+
+    // Australia
+    ctx.beginPath();
+    ctx.moveTo(800, 320); ctx.lineTo(880, 310); ctx.lineTo(890, 370);
+    ctx.lineTo(840, 390); ctx.lineTo(800, 370); ctx.closePath(); ctx.fill();
+
+    // Add subtle grain
+    for (let i = 0; i < 3000; i++) {
+      ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.04})`;
+      ctx.fillRect(Math.random() * 1024, Math.random() * 512, 1, 1);
+    }
+
+    return new THREE.CanvasTexture(c);
+  }
+
+  const earthGeom = new THREE.SphereGeometry(1.4, 64, 48);
+  const earthMat = new THREE.MeshPhongMaterial({
+    map: makeEarthTexture(),
+    specular: new THREE.Color(0x222222),
+    shininess: 8
+  });
+  const earth = new THREE.Mesh(earthGeom, earthMat);
+  scene.add(earth);
+
+  // Atmosphere - slightly larger sphere with backside material
+  const atmoGeom = new THREE.SphereGeometry(1.5, 64, 48);
+  const atmoMat = new THREE.ShaderMaterial({
+    vertexShader: `
+      varying vec3 vNormal;
+      void main() {
+        vNormal = normalize(normalMatrix * normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      varying vec3 vNormal;
+      uniform vec3 glowColor;
+      uniform float intensity;
+      void main() {
+        float fresnel = pow(1.0 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.5);
+        gl_FragColor = vec4(glowColor, fresnel * intensity);
+      }
+    `,
+    uniforms: {
+      glowColor: { value: new THREE.Color(0x8b5cf6) },
+      intensity: { value: 0.6 }
+    },
+    blending: THREE.AdditiveBlending,
+    side: THREE.BackSide,
+    transparent: true
+  });
+  const atmosphere = new THREE.Mesh(atmoGeom, atmoMat);
+  scene.add(atmosphere);
+
+  // Lighting
+  const ambient = new THREE.AmbientLight(0xffffff, 0.45);
+  scene.add(ambient);
+  const sun = new THREE.DirectionalLight(0xffffff, 0.9);
+  sun.position.set(5, 3, 5);
+  scene.add(sun);
+
+  // City markers
+  const cityGroup = new THREE.Group();
+  const latLngToVec3 = (lat, lng, r) => {
+    const phi = (90 - lat) * Math.PI / 180;
+    const theta = (lng + 180) * Math.PI / 180;
+    return new THREE.Vector3(
+      -r * Math.sin(phi) * Math.cos(theta),
+      r * Math.cos(phi),
+      r * Math.sin(phi) * Math.sin(theta)
+    );
+  };
+
+  cities.forEach(c => {
+    const pos = latLngToVec3(c.lat, c.lng, 1.41);
+    // Core
+    const dot = new THREE.Mesh(
+      new THREE.SphereGeometry(c.size * 0.008, 8, 8),
+      new THREE.MeshBasicMaterial({ color: 0xffffff })
+    );
+    dot.position.copy(pos);
+    cityGroup.add(dot);
+
+    // Glow ring
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(c.size * 0.012, c.size * 0.016, 24),
+      new THREE.MeshBasicMaterial({ color: 0x8b5cf6, transparent: true, opacity: 0.5, side: THREE.DoubleSide })
+    );
+    ring.position.copy(pos);
+    ring.lookAt(0, 0, 0);
+    cityGroup.add(ring);
+
+    // Pulse
+    const pulse = new THREE.Mesh(
+      new THREE.RingGeometry(c.size * 0.005, c.size * 0.008, 24),
+      new THREE.MeshBasicMaterial({ color: 0x8b5cf6, transparent: true, opacity: 0.8, side: THREE.DoubleSide })
+    );
+    pulse.position.copy(pos);
+    pulse.lookAt(0, 0, 0);
+    pulse.userData.baseScale = 1;
+    cityGroup.add(pulse);
+  });
+  scene.add(cityGroup);
+
+  // Orbit lines (great circles between cities)
+  function drawArc(a, b) {
+    const va = latLngToVec3(a.lat, a.lng, 1.42);
+    const vb = latLngToVec3(b.lat, b.lng, 1.42);
+    const dist = va.distanceTo(vb);
+    const segments = Math.max(20, Math.floor(dist * 30));
+    const points = [];
+    for (let i = 0; i <= segments; i++) {
+      const t = i / segments;
+      const v = new THREE.Vector3().lerpVectors(va, vb, t);
+      const lift = 1 + Math.sin(t * Math.PI) * 0.18;
+      v.normalize().multiplyScalar(1.42 * lift);
+      points.push(v);
+    }
+    const geom = new THREE.BufferGeometry().setFromPoints(points);
+    const mat = new THREE.LineBasicMaterial({ color: 0x8b5cf6, transparent: true, opacity: 0.32 });
+    return new THREE.Line(geom, mat);
+  }
+  const arcs = [
+    drawArc(cities[0], cities[7]), // Beijing - NYC
+    drawArc(cities[0], cities[1]), // Beijing - Tokyo
+    drawArc(cities[0], cities[2]), // Beijing - Singapore
+    drawArc(cities[5], cities[7]), // London - NYC
+    drawArc(cities[1], cities[8]), // Tokyo - SF
+    drawArc(cities[5], cities[4]), // London - Dubai
+    drawArc(cities[7], cities[8]), // NYC - SF
+  ];
+  arcs.forEach(a => scene.add(a));
+
+  // Mouse interaction - drag rotate + wheel zoom
+  let isDragging = false;
+  let prevX = 0, prevY = 0;
+  let targetRotY = 0.5, targetRotX = 0.15;
+  let rotY = targetRotY, rotX = targetRotX;
+  let camDist = 4.2, targetCamDist = 4.2;
+
+  stage.addEventListener('mousedown', e => {
+    isDragging = true;
+    prevX = e.clientX;
+    prevY = e.clientY;
+  });
+  window.addEventListener('mouseup', () => isDragging = false);
+  window.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    const dx = e.clientX - prevX;
+    const dy = e.clientY - prevY;
+    targetRotY += dx * 0.005;
+    targetRotX += dy * 0.005;
+    targetRotX = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, targetRotX));
+    prevX = e.clientX;
+    prevY = e.clientY;
+  });
+
+  stage.addEventListener('wheel', e => {
+    e.preventDefault();
+    targetCamDist += e.deltaY * 0.003;
+    targetCamDist = Math.max(2.8, Math.min(7, targetCamDist));
+  }, { passive: false });
+
+  // Touch support
+  let touchStartX = 0, touchStartY = 0;
+  stage.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      isDragging = true;
+    }
+  });
+  stage.addEventListener('touchmove', e => {
+    if (!isDragging || e.touches.length !== 1) return;
+    const dx = e.touches[0].clientX - touchStartX;
+    const dy = e.touches[0].clientY - touchStartY;
+    targetRotY += dx * 0.005;
+    targetRotX += dy * 0.005;
+    targetRotX = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, targetRotX));
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  });
+  stage.addEventListener('touchend', () => isDragging = false);
+
+  // FPS counter
+  let fpsFrames = 0, fpsLast = performance.now();
+  const fpsEl = document.getElementById('earth-fps');
+
+  function animate() {
+    requestAnimationFrame(animate);
+    // auto-rotate when not dragging
+    if (!isDragging) targetRotY += 0.001;
+    // smooth
+    rotY += (targetRotY - rotY) * 0.08;
+    rotX += (targetRotX - rotX) * 0.08;
+    camDist += (targetCamDist - camDist) * 0.08;
+
+    earth.rotation.y = rotY;
+    earth.rotation.x = rotX;
+    atmosphere.rotation.y = rotY;
+    atmosphere.rotation.x = rotX;
+    cityGroup.rotation.y = rotY;
+    cityGroup.rotation.x = rotX;
+    arcs.forEach(a => { a.rotation.y = rotY; a.rotation.x = rotX; });
+
+    camera.position.z = camDist;
+
+    // Pulse rings
+    cityGroup.children.forEach((c, i) => {
+      if (i % 3 === 2) {
+        const t = (performance.now() / 1000 + i * 0.2) % 2;
+        const scale = 1 + t * 1.5;
+        c.scale.setScalar(scale);
+        c.material.opacity = 0.8 - t * 0.4;
+      }
+    });
+
+    renderer.render(scene, camera);
+
+    // FPS
+    fpsFrames++;
+    const now = performance.now();
+    if (now - fpsLast > 1000) {
+      fpsEl.textContent = Math.round(fpsFrames * 1000 / (now - fpsLast));
+      fpsFrames = 0;
+      fpsLast = now;
+    }
+  }
+  animate();
+
+  function resize() {
+    const w = stage.clientWidth;
+    const h = stage.clientHeight;
+    if (!w || !h) return;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h, false);
+  }
+  window.__earthResize = resize;
+  window.addEventListener('resize', resize);
+  resize();
+
+  // Online count fluctuation
+  const onlineEl = document.getElementById('earth-online');
+  setInterval(() => {
+    const base = 8234;
+    const drift = Math.floor(Math.random() * 200) - 100;
+    onlineEl.textContent = (base + drift).toLocaleString();
+  }, 3000);
+})();
+
+/* ============================================================
+   Sparkline path drawing on first load
+   ============================================================ */
+const sparkPaths = document.querySelectorAll('.sparkline-path');
+const sparkObs = new IntersectionObserver(entries => {
+  entries.forEach(en => {
+    if (en.isIntersecting && !en.target.dataset.drawn) {
+      en.target.dataset.drawn = '1';
+      const len = en.target.getTotalLength();
+      en.target.style.strokeDasharray = len;
+      en.target.style.strokeDashoffset = len;
+      en.target.style.transition = 'stroke-dashoffset 1200ms cubic-bezier(0.16, 1, 0.3, 1)';
+      requestAnimationFrame(() => {
+        en.target.style.strokeDashoffset = '0';
+      });
+    }
+  });
+}, { threshold: 0.5 });
+sparkPaths.forEach(p => sparkObs.observe(p));
+
+/* ============================================================
+   Table select all
+   ============================================================ */
+const checkAll = document.getElementById('check-all');
+checkAll.addEventListener('change', e => {
+  document.querySelectorAll('#users-tbody .checkbox').forEach(c => c.checked = e.target.checked);
+});
+</script>
+</body>
+</html>

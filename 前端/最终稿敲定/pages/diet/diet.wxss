@@ -1,0 +1,250 @@
+/* ============================================================
+ * 饮食记录 diet 页面(I 方案)
+ * ============================================================ */
+
+.diet-header{
+  padding: 44rpx 36rpx 36rpx;
+  margin: 0 0 32rpx;
+  background: rgba(251, 250, 246, 0.55);
+  backdrop-filter: blur(28rpx) saturate(180%);
+  -webkit-backdrop-filter: blur(28rpx) saturate(180%);
+  border: 1rpx solid rgba(255, 255, 255, 0.65);
+  border-radius: var(--r-lg);
+  box-shadow: 0 8rpx 24rpx rgba(20, 42, 32, 0.08), inset 0 1rpx 0 rgba(255, 255, 255, 0.85);
+  position: relative;
+  overflow: hidden;
+}
+.diet-header::before{
+  content: "";
+  position: absolute;
+  top: 0; left: 16rpx; right: 16rpx;
+  height: 1rpx;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.95), transparent);
+  pointer-events: none;
+}
+.diet-header-label{
+  font-size: 11px;
+  color: var(--ink-3);
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  margin-bottom: 12rpx;
+  display: block;
+}
+.diet-header-num-row{
+  display: flex;
+  align-items: baseline;
+  gap: 12rpx;
+  margin-bottom: 12rpx;
+}
+.diet-header-num{
+  font-family: Georgia, 'Times New Roman', 'Noto Serif CJK SC', serif;
+  font-size: 96rpx;
+  font-weight: 500;
+  font-style: italic;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.diet-header-unit{
+  font-family: Georgia, 'Times New Roman', 'Noto Serif CJK SC', serif;
+  font-size: 32rpx;
+  font-style: italic;
+  font-weight: 500;
+  color: var(--ink-3);
+  letter-spacing: 0.02em;
+}
+.diet-header-sub{
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  font-size: 24rpx;
+  color: var(--ink-3);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.diet-header-sep{
+  color: var(--ink-4);
+  font-weight: 700;
+}
+.diet-header .deco{
+  position: absolute;
+  right: 40rpx;
+  top: 40rpx;
+  font-size: 72rpx;
+  opacity: 0.18;
+}
+
+.meal-group{ margin-bottom: 28rpx; }
+.meal-title{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx 32rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.meal-title .cal{
+  font-size: 26rpx;
+  color: var(--brick);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.meal-items{
+  padding: 8rpx 32rpx;
+  margin-bottom: 8rpx;
+  position: relative;
+}
+.meal-items::before{
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 32rpx;
+  right: 32rpx;
+  height: 2rpx;
+  background: linear-gradient(90deg, transparent, var(--agar) 30%, var(--bone) 70%, transparent);
+  opacity: 0.40;
+}
+.meal-items .empty-tip{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 36rpx 0 28rpx;
+  font-weight: 500;
+}
+.meal-items .empty-tip .empty-icon{
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: rgba(20, 42, 32, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
+  color: var(--agar);
+  font-weight: 300;
+  margin-bottom: 12rpx;
+}
+.meal-items .empty-tip .empty-text{
+  font-size: 26rpx;
+  color: var(--ink-2);
+  font-weight: 500;
+}
+.meal-item{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22rpx 0;
+  border-bottom: 1rpx solid var(--line-2);
+}
+.meal-item:last-child{ border-bottom: none; }
+.meal-item .name{
+  font-size: 30rpx;
+  color: var(--ink);
+  font-weight: 600;
+}
+.meal-item .portion{
+  font-size: 24rpx;
+  color: var(--ink-3);
+  margin-top: 2rpx;
+  font-weight: 500;
+}
+.meal-item .cal{
+  font-size: 30rpx;
+  color: var(--brick);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* 餐别选择 */
+.meal-type-row{
+  display: flex;
+  gap: 12rpx;
+  margin-bottom: 24rpx;
+}
+.meal-type-row .type-btn{
+  flex: 1;
+  padding: 18rpx 0;
+  border-radius: var(--r-md);
+  font-size: 26rpx;
+  text-align: center;
+  color: var(--ink-3);
+  background: var(--paper-2);
+  border: 1rpx solid var(--line-2);
+  transition: all 0.2s ease;
+  font-weight: 600;
+}
+.meal-type-row .type-btn.active{
+  color: var(--paper);
+  background: var(--agar);
+  border-color: var(--agar);
+}
+
+/* ===== 弹窗 ===== */
+.modal-mask{
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 26, 20, 0.40);
+  backdrop-filter: blur(4rpx);
+  -webkit-backdrop-filter: blur(4rpx);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-content{
+  width: 600rpx;
+  padding: 40rpx 32rpx;
+  margin: 0 32rpx;
+}
+.modal-title{
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--ink);
+  display: block;
+  text-align: center;
+  margin-bottom: 32rpx;
+  letter-spacing: -0.01em;
+}
+.form-input{ padding: 4rpx; }
+.form-input .modal-input{
+  padding: 28rpx 28rpx;
+  font-size: 28rpx;
+  color: var(--ink);
+  background: rgba(248, 245, 238, 0.62);
+  backdrop-filter: blur(20rpx) saturate(160%);
+  -webkit-backdrop-filter: blur(20rpx) saturate(160%);
+  border-radius: var(--r-md);
+  border: 1rpx solid var(--line);
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 88rpx;
+  line-height: 1.4;
+  box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.60);
+}
+.form-input .modal-input::placeholder{
+  color: var(--ink-2);
+  font-weight: 500;
+}
+.modal-actions{ display: flex; gap: 24rpx; margin-top: 32rpx; }
+.modal-btn{
+  flex: 1;
+  padding: 24rpx;
+  border-radius: var(--r-lg);
+  font-size: 30rpx;
+  font-weight: 700;
+  text-align: center;
+}
+.cancel-btn{
+  background: var(--paper-2);
+  color: var(--ink-2);
+  border: 1rpx solid var(--line-2);
+}
+.confirm-btn{
+  color: var(--paper);
+  background: var(--agar);
+  box-shadow: 0 6rpx 16rpx rgba(20, 42, 32, 0.20), inset 0 1rpx 0 rgba(255, 255, 255, 0.18);
+}

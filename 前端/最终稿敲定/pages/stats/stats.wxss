@@ -1,0 +1,190 @@
+/* ============================================================
+ * 数据洞察 stats 页面(I 方案)
+ * ============================================================ */
+
+/* 概览 */
+.overview-row{
+  display: flex;
+  gap: 16rpx;
+  padding: 0 32rpx;
+  margin-bottom: 24rpx;
+}
+.ov-card{
+  flex: 1;
+  padding: 24rpx 16rpx;
+  text-align: center;
+}
+.ov-label{
+  font-size: 22rpx;
+  color: var(--ink-3);
+  display: block;
+  margin-bottom: 8rpx;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.ov-value{
+  font-size: 32rpx;
+  font-weight: 700;
+  display: block;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+/* 通用区块 */
+.section-block{
+  margin: 0 32rpx 24rpx;
+  padding: 28rpx 24rpx;
+}
+.block-title{
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--ink);
+  display: block;
+  margin-bottom: 24rpx;
+  letter-spacing: -0.01em;
+}
+
+/* 趋势柱状图 */
+.trend-scroll{ white-space: nowrap; }
+.trend-chart{
+  display: inline-flex;
+  gap: 8rpx;
+  align-items: flex-end;
+  height: 240rpx;
+  padding: 8rpx 0;
+}
+.trend-bar-col{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 64rpx;
+  height: 100%;
+  justify-content: flex-end;
+}
+.bar-value{
+  font-size: 18rpx;
+  color: var(--ink-3);
+  margin-bottom: 4rpx;
+  font-weight: 600;
+}
+.bar{
+  width: 32rpx;
+  border-radius: 8rpx 8rpx 0 0;
+  min-height: 4rpx;
+  background: var(--agar);
+}
+.bar.high{ background: var(--agar-2); }
+.bar.mid{ background: var(--agar); }
+.bar.low{ background: var(--brick); opacity: 0.5; }
+.bar-label{
+  font-size: 16rpx;
+  color: var(--ink-3);
+  margin-top: 8rpx;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-weight: 500;
+}
+
+/* 各日完成率 */
+.weekday-list{
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.weekday-row{
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+.wd-name{
+  font-size: 26rpx;
+  color: var(--ink);
+  width: 64rpx;
+  flex-shrink: 0;
+  font-weight: 600;
+}
+.wd-bar-bg{
+  flex: 1;
+  height: 16rpx;
+  background: var(--paper-2);
+  border-radius: 8rpx;
+  border: 1rpx solid var(--line-2);
+  overflow: hidden;
+}
+.wd-bar{
+  height: 100%;
+  background: linear-gradient(90deg, var(--agar), var(--agar-2));
+  border-radius: 8rpx;
+  min-width: 4rpx;
+  transition: width 0.3s;
+}
+.wd-rate{
+  font-size: 24rpx;
+  color: var(--ink-2);
+  width: 80rpx;
+  text-align: right;
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+/* 分类列表 */
+.cat-list{
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+.cat-row{
+  display: flex;
+  align-items: center;
+  padding: 16rpx 20rpx;
+  background: var(--paper-2);
+  border-radius: var(--r-sm);
+  border: 1rpx solid var(--line-2);
+}
+.cat-name{
+  flex: 1;
+  font-size: 28rpx;
+  color: var(--ink);
+  font-weight: 600;
+}
+.cat-count{
+  font-size: 24rpx;
+  color: var(--ink-3);
+  margin-right: 16rpx;
+  font-weight: 500;
+}
+.cat-amount{
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--brick);
+  letter-spacing: -0.01em;
+}
+
+/* 关联分析 */
+.corr-card{
+  padding: 20rpx 24rpx;
+  margin-bottom: 12rpx;
+  background: var(--paper-2);
+  border: 1rpx solid var(--line-2);
+  border-radius: var(--r-md);
+}
+.corr-card.tinted{
+  background: var(--bone);
+  border-color: rgba(20, 42, 32, 0.18);
+}
+.corr-title{
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--ink);
+  display: block;
+  margin-bottom: 8rpx;
+  letter-spacing: -0.01em;
+}
+.corr-detail{
+  font-size: 24rpx;
+  color: var(--ink-2);
+  line-height: 1.5;
+  display: block;
+  font-weight: 500;
+}

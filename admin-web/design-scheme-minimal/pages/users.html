@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户管理</title>
+    <style id="theme-vars">
+:root {
+  --brand-background: #ffffff;
+  --brand-foreground: #1f2937;
+  --brand-card: #ffffff;
+  --brand-card-foreground: #1f2937;
+  --brand-popover: #ffffff;
+  --brand-popover-foreground: #1f2937;
+  --brand-primary: #2563eb;
+  --brand-primary-foreground: #ffffff;
+  --brand-muted: #f3f4f6;
+  --brand-muted-foreground: #6b7280;
+  --brand-border: #e5e7eb;
+  --brand-input: #e5e7eb;
+  --brand-ring: #2563eb;
+
+  --brand-radius-sm: 4px;
+  --brand-radius-md: 8px;
+  --brand-radius-lg: 12px;
+
+  --brand-surface: #f9fafb;
+  --brand-surface-2: #f3f4f6;
+  --brand-ink: #1f2937;
+  --brand-ink-2: #6b7280;
+  --brand-ink-3: #9ca3af;
+  --brand-line: #e5e7eb;
+
+  --brand-state-success: #10b981;
+  --brand-state-warning: #f59e0b;
+  --brand-state-error: #ef4444;
+  --brand-state-info: #3b82f6;
+
+  --brand-shadow-1: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 1px rgba(15, 23, 42, 0.03);
+  --brand-shadow-2: 0 8px 24px -8px rgba(15, 23, 42, 0.14);
+
+  --brand-font-sans: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --brand-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.light, :root {
+  color-scheme: light;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--brand-background);
+    --color-foreground: var(--brand-foreground);
+    --color-card: var(--brand-card);
+    --color-card-foreground: var(--brand-card-foreground);
+    --color-popover: var(--brand-popover);
+    --color-popover-foreground: var(--brand-popover-foreground);
+    --color-primary: var(--brand-primary);
+    --color-primary-foreground: var(--brand-primary-foreground);
+    --color-muted: var(--brand-muted);
+    --color-muted-foreground: var(--brand-muted-foreground);
+    --color-border: var(--brand-border);
+    --color-input: var(--brand-input);
+    --color-ring: var(--brand-ring);
+    --radius-sm: var(--brand-radius-sm);
+    --radius-md: var(--brand-radius-md);
+    --radius-lg: var(--brand-radius-lg);
+  }
+  @layer base {
+    body { background: var(--brand-background); color: var(--brand-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--brand-background); }
+      .text-background { color: var(--brand-background); }
+      .border-background { border-color: var(--brand-background); }
+      .ring-background { --tw-ring-color: var(--brand-background); }
+      .bg-foreground { background-color: var(--brand-foreground); }
+      .text-foreground { color: var(--brand-foreground); }
+      .border-foreground { border-color: var(--brand-foreground); }
+      .ring-foreground { --tw-ring-color: var(--brand-foreground); }
+      .bg-card { background-color: var(--brand-card); }
+      .text-card { color: var(--brand-card); }
+      .border-card { border-color: var(--brand-card); }
+      .ring-card { --tw-ring-color: var(--brand-card); }
+      .bg-card-foreground { background-color: var(--brand-card-foreground); }
+      .text-card-foreground { color: var(--brand-card-foreground); }
+      .border-card-foreground { border-color: var(--brand-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--brand-card-foreground); }
+      .bg-popover { background-color: var(--brand-popover); }
+      .text-popover { color: var(--brand-popover); }
+      .border-popover { border-color: var(--brand-popover); }
+      .ring-popover { --tw-ring-color: var(--brand-popover); }
+      .bg-popover-foreground { background-color: var(--brand-popover-foreground); }
+      .text-popover-foreground { color: var(--brand-popover-foreground); }
+      .border-popover-foreground { border-color: var(--brand-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--brand-popover-foreground); }
+      .bg-primary { background-color: var(--brand-primary); }
+      .text-primary { color: var(--brand-primary); }
+      .border-primary { border-color: var(--brand-primary); }
+      .ring-primary { --tw-ring-color: var(--brand-primary); }
+      .bg-primary-foreground { background-color: var(--brand-primary-foreground); }
+      .text-primary-foreground { color: var(--brand-primary-foreground); }
+      .border-primary-foreground { border-color: var(--brand-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--brand-primary-foreground); }
+      .bg-muted { background-color: var(--brand-muted); }
+      .text-muted { color: var(--brand-muted); }
+      .border-muted { border-color: var(--brand-muted); }
+      .ring-muted { --tw-ring-color: var(--brand-muted); }
+      .bg-muted-foreground { background-color: var(--brand-muted-foreground); }
+      .text-muted-foreground { color: var(--brand-muted-foreground); }
+      .border-muted-foreground { border-color: var(--brand-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--brand-muted-foreground); }
+      .bg-border { background-color: var(--brand-border); }
+      .text-border { color: var(--brand-border); }
+      .border-border { border-color: var(--brand-border); }
+      .ring-border { --tw-ring-color: var(--brand-border); }
+      .bg-input { background-color: var(--brand-input); }
+      .text-input { color: var(--brand-input); }
+      .border-input { border-color: var(--brand-input); }
+      .ring-input { --tw-ring-color: var(--brand-input); }
+      .bg-ring { background-color: var(--brand-ring); }
+      .text-ring { color: var(--brand-ring); }
+      .border-ring { border-color: var(--brand-ring); }
+      .ring-ring { --tw-ring-color: var(--brand-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+      .badge-success { background-color: color-mix(in srgb, var(--brand-state-success) 10%, transparent); color: var(--brand-state-success); }
+      .badge-error { background-color: color-mix(in srgb, var(--brand-state-error) 10%, transparent); color: var(--brand-state-error); }
+      .text-state-success { color: var(--brand-state-success); }
+      .text-state-error { color: var(--brand-state-error); }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="flex min-h-screen bg-background">
+      <aside class="hidden md:flex w-[220px] flex-col border-r border-border bg-card">
+        <div class="h-16 flex items-center px-6 border-b border-border">
+          <span class="text-lg font-semibold text-foreground">习惯管家</span>
+        </div>
+        <nav class="flex-1 p-4 space-y-1">
+          <a href="dashboard.html" class="flex items-center gap-3 px-3 py-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+            <span>仪表盘</span>
+          </a>
+          <a href="users.html" class="flex items-center gap-3 px-3 py-2 rounded-md bg-primary/10 text-primary font-medium">
+            <i data-lucide="users" class="w-4 h-4"></i>
+            <span>用户管理</span>
+          </a>
+          <a href="ai-models.html" class="flex items-center gap-3 px-3 py-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+            <i data-lucide="bot" class="w-4 h-4"></i>
+            <span>AI 模型</span>
+          </a>
+          <a href="knowledge.html" class="flex items-center gap-3 px-3 py-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+            <i data-lucide="book-open" class="w-4 h-4"></i>
+            <span>知识库</span>
+          </a>
+          <a href="logs.html" class="flex items-center gap-3 px-3 py-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+            <i data-lucide="file-text" class="w-4 h-4"></i>
+            <span>系统日志</span>
+          </a>
+        </nav>
+      </aside>
+      <div class="flex-1 flex flex-col min-w-0">
+        <header class="h-16 bg-card border-b border-border flex items-center justify-between px-6">
+          <h1 class="text-lg font-semibold text-foreground">用户管理</h1>
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">A</div>
+          </div>
+        </header>
+        <div class="flex-1 p-6 bg-muted/50 overflow-auto">
+          <section class="bg-card rounded-md border border-border shadow-1 p-4 mb-4">
+            <div class="flex flex-wrap items-center gap-3">
+              <div class="relative flex-1 min-w-[200px]">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
+                <input type="text" placeholder="搜索用户昵称或邮箱" class="w-full h-9 pl-9 pr-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
+              <select class="h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="">全部状态</option>
+                <option value="active">正常</option>
+                <option value="banned">已封禁</option>
+              </select>
+              <select class="h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="">全部角色</option>
+                <option value="admin">管理员</option>
+                <option value="user">普通用户</option>
+              </select>
+              <button class="h-9 px-3 inline-flex items-center gap-2 rounded-md border border-border bg-background text-sm text-foreground hover:bg-muted transition-colors">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                <span>刷新</span>
+              </button>
+            </div>
+          </section>
+          <section class="bg-card rounded-md border border-border shadow-1 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm text-left">
+                <thead class="bg-muted text-muted-foreground border-b border-border">
+                  <tr>
+                    <th class="px-4 py-3 font-medium">用户</th>
+                    <th class="px-4 py-3 font-medium">角色</th>
+                    <th class="px-4 py-3 font-medium">状态</th>
+                    <th class="px-4 py-3 font-medium">数据</th>
+                    <th class="px-4 py-3 font-medium">AI 配额</th>
+                    <th class="px-4 py-3 font-medium">时间</th>
+                    <th class="px-4 py-3 font-medium text-right">操作</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-border text-foreground">
+                  <tr class="hover:bg-muted/40 transition-colors">
+                    <td class="px-4 py-3">
+                      <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium">陈</div>
+                        <div>
+                          <div class="font-medium">陈雨轩</div>
+                          <div class="text-xs text-muted-foreground">chenyx@example.com</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary text-primary-foreground">管理员</span></td>
+                    <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium badge-success">正常</span></td>
+                    <td class="px-4 py-3 text-muted-foreground">12 条习惯 / 87%</td>
+                    <td class="px-4 py-3">
+                      <div class="flex items-center gap-2">
+                        <div class="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div class="h-full bg-primary rounded-full" style="width: 50%"></div>
+                        </div>
+                        <span class="text-xs text-muted-foreground">5k/10k</span>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3 text-muted-foreground whitespace-nowrap">2024-03-12 10:23</td>
+                    <td class="px-4 py-3">
+                      <div class="flex items-center justify-end gap-3">
+                        <button class="text-primary hover:underline text-xs">查看</button>
+                        <button class="text-state-error hover:underline text-xs">封禁</button>
+                        <div class="relative group">
+                          <button class="p-1 rounded-md hover:bg-muted text-muted-foreground">
+                            <i data-lucide="more-horizontal" class="w-4 h-4"></i>
+                          </button>
+                          <div class="absolute right-0 top-full mt-1 hidden group-hover:block w-28 bg-card border border-border rounded-md shadow-2 p-1 z-10">
+                            <button class="w-full text-left px-2 py-1.5 text-xs text-foreground hover:bg-muted rounded-md">重置密码</button>
+                            <button class="w-full text-left px-2 py-1.5 text-xs text-foreground hover:bg-muted rounded-md">编辑资料</button>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-muted/40 transition-colors">
+                    <td class="px-4 py-3">
+                      <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-xs font-medium">李</div>
+                        <div>
+                          <div class="font-medium">李思远</div>
+                          <div class="text-xs text-muted-foreground">lisiyuan@example.com</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">普通用户</span></td>
+                    <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium badge-success">正常</span></td>
+                    <td class="px-4 py-3 text-muted-foreground">8 条习惯 / 62%</td>
+                    <td class="px-4 py-3">
+                      <div class="flex items-center gap-2">
+                        <div class="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div class="h-full bg-primary rounded-full" style="width: 24%"></div>
+                        </div>
+                        <span class="text-xs text-muted-foreground">1.2k/5k</span>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3 text-muted-foreground whitespace-nowrap">2024-03-11 09:15</td>
+                    <td class="px-4 py-3">
+                      <div class="flex items-center justify-end gap-3">
+                        <button class="text-primary hover:underline text-xs">查看</button>
+                        <button class="text-state-error hover:underline text-xs">封禁</button>
+                        <div class="relative group">
+                          <button class="p-1 rounded-md hover:bg-muted text-muted-foreground">
+                            <i data-lucide="more-horizontal" class="w-4 h-4"></i>
+                          </button>
+                          <div class="absolute right-0 top-full mt-1 hidden group-hover:block w-28 bg-card border border-border rounded-md shadow-2 p-1 z-10">
+                            <button class="w-full text-left px-2 py-1.5 text-xs text-foreground hover:bg-muted rounded-md">重置密码</button>
+                            <button class="w-full text-left px-2 py-1.5 text-xs text-foreground hover:bg-muted rounded-md">编辑资料</button>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-muted/40 transition-colors">
+                    <td class="px-4 py-3">
+                      <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-xs font-medium">王</div>
+                        <div>
+                          <div class="font-medium">王小明</div>
+                          <div class="text-xs text-muted-foreground">wangxm@example.com</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">普通用户</span></td>
+                    <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium badge-error">已封禁</span></td>
+                    <td class="px-4 py-3 text-muted-foreground">3 条习惯 / 31%</td>
+                    <td class="px-4 py-3">
+                      <div class="flex items-center gap-2">
+                        <div class="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div class="h-full bg-primary rounded-full" style="width: 0%"></div>
+                        </div>
+                        <span class="text-xs text-muted-foreground">0/2k</span>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3 text-muted-foreground whitespace-nowrap">2024-02-28 14:30</td>
+                    <td class="px-4 py-3">
+                      <div class="flex items-center justify-end gap-3">
+                        <button class="text-primary hover:underline text-xs">查看</button>
+                        <button class="text-state-success hover:underline text-xs">解禁</button>
+                        <div class="relative group">
+                          <button class="p-1 rounded-md hover:bg-muted text-muted-foreground">
+                            <i data-lucide="more-horizontal" class="w-4 h-4"></i>
+                          </button>
+                          <div class="absolute right-0 top-full mt-1 hidden group-hover:block w-28 bg-card border border-border rounded-md shadow-2 p-1 z-10">
+                            <button class="w-full text-left px-2 py-1.5 text-xs text-foreground hover:bg-muted rounded-md">重置密码</button>
+                            <button class="w-full text-left px-2 py-1.5 text-xs text-foreground hover:bg-muted rounded-md">编辑资料</button>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-muted/40 transition-colors">
+                    <td class="px-4 py-3">
+                      <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium">张</div>
+                        <div>
+                          <div class="font-medium">张晓云</div>
+                          <div class="text-xs text-muted-foreground">zhangxy@example.com</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">普通用户</span></td>
+                    <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium badge-success">正常</span></td>
+                    <td class="px-4 py-3 text-muted-foreground">15 条习惯 / 91%</td>
+                    <td class="px-4 py-3">
+                      <div class="flex items-center gap-2">
+                        <div class="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div class="h-full bg-primary rounded-full" style="width: 68%"></div>
+                        </div>
+                        <span class="text-xs text-muted-foreground">3.4k/5k</span>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3 text-muted-foreground whitespace-nowrap">2024-03-10 18:45</td>
+                    <td class="px-4 py-3">
+                      <div class="flex items-center justify-end gap-3">
+                        <button class="text-primary hover:underline text-xs">查看</button>
+                        <button class="text-state-error hover:underline text-xs">封禁</button>
+                        <div class="relative group">
+                          <button class="p-1 rounded-md hover:bg-muted text-muted-foreground">
+                            <i data-lucide="more-horizontal" class="w-4 h-4"></i>
+                          </button>
+                          <div class="absolute right-0 top-full mt-1 hidden group-hover:block w-28 bg-card border border-border rounded-md shadow-2 p-1 z-10">
+                            <button class="w-full text-left px-2 py-1.5 text-xs text-foreground hover:bg-muted rounded-md">重置密码</button>
+                            <button class="w-full text-left px-2 py-1.5 text-xs text-foreground hover:bg-muted rounded-md">编辑资料</button>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-muted/40 transition-colors">
+                    <td class="px-4 py-3">
+                      <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium">刘</div>
+                        <div>
+                          <div class="font-medium">刘子豪</div>
+                          <div class="text-xs text-muted-foreground">liuzh@example.com</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary text-primary-foreground">管理员</span></td>
+                    <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium badge-success">正常</span></td>
+                    <td class="px-4 py-3 text-muted-foreground">6 条习惯 / 74%</td>
+                    <td class="px-4 py-3">
+                      <div class="flex items-center gap-2">
+                        <div class="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div class="h-full bg-primary rounded-full" style="width: 80%"></div>
+                        </div>
+                        <span class="text-xs text-muted-foreground">8k/10k</span>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3 text-muted-foreground whitespace-nowrap">2024-03-09 11:00</td>
+                    <td class="px-4 py-3">
+                      <div class="flex items-center justify-end gap-3">
+                        <button class="text-primary hover:underline text-xs">查看</button>
+                        <button class="text-state-error hover:underline text-xs">封禁</button>
+                        <div class="relative group">
+                          <button class="p-1 rounded-md hover:bg-muted text-muted-foreground">
+                            <i data-lucide="more-horizontal" class="w-4 h-4"></i>
+                          </button>
+                          <div class="absolute right-0 top-full mt-1 hidden group-hover:block w-28 bg-card border border-border rounded-md shadow-2 p-1 z-10">
+                            <button class="w-full text-left px-2 py-1.5 text-xs text-foreground hover:bg-muted rounded-md">重置密码</button>
+                            <button class="w-full text-left px-2 py-1.5 text-xs text-foreground hover:bg-muted rounded-md">编辑资料</button>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-muted/40 transition-colors">
+                    <td class="px-4 py-3">
+                      <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-xs font-medium">赵</div>
+                        <div>
+                          <div class="font-medium">赵文静</div>
+                          <div class="text-xs text-muted-foreground">zhaowj@example.com</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">普通用户</span></td>
+                    <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium badge-success">正常</span></td>
+                    <td class="px-4 py-3 text-muted-foreground">9 条习惯 / 55%</td>
+                    <td class="px-4 py-3">
+                      <div class="flex items-center gap-2">
+                        <div class="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div class="h-full bg-primary rounded-full" style="width: 42%"></div>
+                          </div>
+                        <span class="text-xs text-muted-foreground">2.1k/5k</span>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3 text-muted-foreground whitespace-nowrap">2024-03-08 16:20</td>
+                    <td class="px-4 py-3">
+                      <div class="flex items-center justify-end gap-3">
+                        <button class="text-primary hover:underline text-xs">查看</button>
+                        <button class="text-state-error hover:underline text-xs">封禁</button>
+                        <div class="relative group">
+                          <button class="p-1 rounded-md hover:bg-muted text-muted-foreground">
+                            <i data-lucide="more-horizontal" class="w-4 h-4"></i>
+                          </button>
+                          <div class="absolute right-0 top-full mt-1 hidden group-hover:block w-28 bg-card border border-border rounded-md shadow-2 p-1 z-10">
+                            <button class="w-full text-left px-2 py-1.5 text-xs text-foreground hover:bg-muted rounded-md">重置密码</button>
+                            <button class="w-full text-left px-2 py-1.5 text-xs text-foreground hover:bg-muted rounded-md">编辑资料</button>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-border">
+              <span class="text-xs text-muted-foreground">共 6 条记录</span>
+              <div class="flex items-center gap-1">
+                <button class="h-8 w-8 inline-flex items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-muted disabled:opacity-50" disabled>
+                  <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                </button>
+                <button class="h-8 w-8 inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground text-xs font-medium">1</button>
+                <button class="h-8 w-8 inline-flex items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-muted text-xs font-medium">2</button>
+                <button class="h-8 w-8 inline-flex items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-muted text-xs font-medium">3</button>
+                <button class="h-8 w-8 inline-flex items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-muted">
+                  <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

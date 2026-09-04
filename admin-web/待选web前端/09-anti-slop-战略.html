@@ -1,0 +1,1647 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HabitOS Admin Console</title>
+<style>
+/* =========================================================
+   09-anti-slop-strategic
+   Single-file admin preview. Apple + Linear language.
+   One accent. One radius. Zero glow. Zero particles.
+   ========================================================= */
+
+:root {
+  /* tokens */
+  --bg: #f5f5f7;
+  --bg-elev: #ffffff;
+  --surface: rgba(255,255,255,0.72);
+  --surface-2: rgba(255,255,255,0.92);
+  --border: rgba(0,0,0,0.08);
+  --border-strong: rgba(0,0,0,0.14);
+  --text-1: #1d1d1f;
+  --text-2: #424245;
+  --text-3: #6e6e73;
+  --text-4: #86868b;
+  --text-5: #d2d2d7;
+  --accent: #0071e3;
+  --accent-press: #0062bf;
+  --accent-soft: rgba(0,113,227,0.08);
+  --ok: #2c8a4a;
+  --warn: #b88500;
+  --err: #c8392e;
+  --radius: 12px;
+  --radius-sm: 12px;
+  --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
+  --shadow-press: 0 1px 2px rgba(0,0,0,0.06);
+  --t: cubic-bezier(0.16, 1, 0.3, 1);
+  --t-color: color 0.4s var(--t), background-color 0.4s var(--t), border-color 0.4s var(--t), fill 0.4s var(--t), stroke 0.4s var(--t);
+  /* page-level ambient glow: extremely faint, opacity 0.04 */
+  --ambient: radial-gradient(900px 540px at 18% 12%, rgba(0,113,227,0.04), transparent 60%),
+             radial-gradient(700px 500px at 92% 88%, rgba(0,113,227,0.03), transparent 65%);
+}
+
+[data-theme="dark"] {
+  --bg: #1d1d1f;
+  --bg-elev: #232326;
+  --surface: rgba(255,255,255,0.06);
+  --surface-2: rgba(255,255,255,0.10);
+  --border: rgba(255,255,255,0.10);
+  --border-strong: rgba(255,255,255,0.18);
+  --text-1: #f5f5f7;
+  --text-2: #d2d2d7;
+  --text-3: #a1a1a6;
+  --text-4: #86868b;
+  --text-5: #424245;
+  --accent: #2997ff;
+  --accent-press: #6cb6ff;
+  --accent-soft: rgba(41,151,255,0.14);
+  --shadow: 0 1px 2px rgba(0,0,0,0.30), 0 8px 24px rgba(0,0,0,0.40);
+  --shadow-press: 0 1px 2px rgba(0,0,0,0.45);
+  --ambient: radial-gradient(900px 540px at 18% 12%, rgba(41,151,255,0.06), transparent 60%),
+             radial-gradient(700px 500px at 92% 88%, rgba(41,151,255,0.05), transparent 65%);
+}
+
+/* reset */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
+  background: var(--bg);
+  color: var(--text-1);
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: var(--t-color);
+  min-height: 100dvh;
+}
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+input { font: inherit; color: inherit; }
+a { color: inherit; text-decoration: none; }
+::selection { background: var(--accent-soft); color: var(--text-1); }
+img, svg { display: block; max-width: 100%; }
+
+/* numerics always tabular */
+.num, .kpi-value, .stat, .meta, .mono, code, .glass-card .v {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* ambient page background (very faint) */
+.page-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--ambient), var(--bg);
+  transition: var(--t-color);
+}
+
+/* ============================================
+   TOP NAV
+   ============================================ */
+.topnav {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  transition: var(--t-color);
+}
+.brand {
+  font-weight: 300;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  color: var(--text-1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.brand .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-left: 16px;
+}
+.tab {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: var(--text-3);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: var(--t-color);
+}
+.tab:hover { color: var(--text-1); background: var(--surface); }
+.tab[aria-selected="true"] {
+  background: var(--surface-2);
+  color: var(--text-1);
+}
+.tab .badge {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  letter-spacing: 0;
+}
+
+.spacer { flex: 1; }
+
+.nav-actions { display: flex; align-items: center; gap: 12px; }
+
+/* theme toggle (segmented switch) */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  height: 28px;
+}
+.theme-toggle button {
+  width: 28px; height: 22px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  transition: var(--t-color);
+}
+.theme-toggle button:hover { color: var(--text-1); }
+.theme-toggle button[aria-pressed="true"] {
+  background: var(--bg-elev);
+  color: var(--text-1);
+  box-shadow: var(--shadow-press);
+}
+.theme-toggle svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+
+.avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+}
+
+/* ============================================
+   LAYOUT
+   ============================================ */
+main {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+}
+
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ============================================
+   HERO  (shared across panels)
+   ============================================ */
+.hero {
+  padding-top: 56px;
+  padding-bottom: 32px;
+  max-width: 1200px;
+}
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.eyebrow::before {
+  content: '';
+  width: 18px;
+  height: 1px;
+  background: var(--text-4);
+}
+.hero h1 {
+  font-size: 44px;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  font-weight: 600;
+  margin: 0 0 12px;
+  max-width: 18ch;
+  color: var(--text-1);
+}
+.hero h1 em {
+  font-style: normal;
+  color: var(--accent);
+  font-weight: 600;
+}
+.hero p.sub {
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-3);
+  max-width: 56ch;
+  margin: 0 0 24px;
+}
+.cta-row { display: inline-flex; gap: 12px; }
+
+.btn {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.18s var(--t), color 0.18s var(--t), border-color 0.18s var(--t), transform 0.12s var(--t);
+  border: 1px solid transparent;
+}
+.btn:active { transform: translateY(0.5px); }
+.btn-primary {
+  background: var(--accent);
+  color: white;
+}
+.btn-primary:hover { background: var(--accent-press); }
+.btn-secondary {
+  background: transparent;
+  color: var(--text-1);
+  border-color: var(--border-strong);
+}
+.btn-secondary:hover { background: var(--surface); }
+.btn .arrow { width: 12px; height: 12px; }
+
+/* ============================================
+   PANEL: LOGIN
+   ============================================ */
+#panel-login { padding-top: 8px; }
+.login-wrap {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 48px;
+  align-items: center;
+  min-height: calc(100dvh - 56px - 80px);
+}
+.login-art {
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  aspect-ratio: 4 / 3;
+  background: var(--bg-elev);
+  position: relative;
+}
+.login-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.85);
+  transition: var(--t-color);
+}
+[data-theme="dark"] .login-art img { filter: saturate(0.7) brightness(0.7); }
+.login-art .meta {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  color: white;
+  font-size: 12px;
+  letter-spacing: -0.005em;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+.login-art .meta .k {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  opacity: 0.8;
+  margin-bottom: 4px;
+}
+
+.login-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px;
+  background: var(--bg-elev);
+  box-shadow: var(--shadow);
+  max-width: 440px;
+}
+.login-card h2 {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+}
+.login-card .lede {
+  font-size: 14px;
+  color: var(--text-3);
+  margin: 0 0 24px;
+}
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.field label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  letter-spacing: -0.005em;
+}
+.field input {
+  height: 40px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--bg);
+  padding: 0 12px;
+  font-size: 14px;
+  color: var(--text-1);
+  outline: none;
+  transition: border-color 0.18s var(--t), box-shadow 0.18s var(--t);
+}
+.field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.field .hint {
+  font-size: 12px;
+  color: var(--text-4);
+}
+.row { display: flex; align-items: center; justify-content: space-between; margin: 8px 0 20px; }
+.check {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--text-2); cursor: pointer;
+}
+.check input { accent-color: var(--accent); width: 14px; height: 14px; }
+.link {
+  font-size: 13px; color: var(--accent);
+}
+.link:hover { color: var(--accent-press); text-decoration: underline; }
+
+.divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 20px 0;
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em;
+  color: var(--text-4);
+}
+.divider::before, .divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+.sso {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+}
+.sso button {
+  height: 40px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--bg);
+  font-size: 12px;
+  color: var(--text-2);
+  font-weight: 500;
+  transition: var(--t-color);
+}
+.sso button:hover { background: var(--surface); color: var(--text-1); }
+
+/* ============================================
+   PANEL: DASHBOARD
+   ============================================ */
+.dash-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 32px;
+  align-items: start;
+  margin-top: 8px;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 28px;
+}
+.kpi {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  background: var(--bg-elev);
+  transition: border-color 0.18s var(--t);
+}
+.kpi:hover { border-color: var(--border-strong); }
+.kpi-label {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.kpi-label .pip {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text-4);
+}
+.kpi-label .pip.up { background: var(--ok); }
+.kpi-label .pip.warn { background: var(--warn); }
+.kpi-label .pip.err { background: var(--err); }
+.kpi-value {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text-1);
+  line-height: 1.1;
+}
+.kpi-value .unit {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-3);
+  margin-left: 4px;
+  letter-spacing: 0;
+}
+.kpi-delta {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-3);
+  display: flex; align-items: center; gap: 6px;
+}
+.kpi-delta.up { color: var(--ok); }
+.kpi-delta.down { color: var(--err); }
+
+.spark {
+  margin-top: 12px;
+  display: block;
+  width: 100%;
+  height: 36px;
+}
+
+.list-card {
+  margin-top: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elev);
+  overflow: hidden;
+}
+.list-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.list-head h3 {
+  font-size: 14px; font-weight: 600; margin: 0;
+  letter-spacing: -0.005em;
+}
+.list-head .meta { font-size: 12px; color: var(--text-3); }
+.list-row {
+  display: grid;
+  grid-template-columns: 24px 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.list-row:last-child { border-bottom: 0; }
+.list-row .ic {
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600;
+}
+.list-row .who { color: var(--text-1); }
+.list-row .who small { display: block; color: var(--text-3); font-size: 11px; margin-top: 2px; }
+.list-row .when { color: var(--text-3); font-size: 12px; }
+.list-row .pill {
+  font-size: 11px; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  color: var(--text-2);
+}
+
+/* ============================================
+   EARTH (2.5D SVG, no three.js)
+   ============================================ */
+.earth-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elev);
+  padding: 20px;
+  position: sticky;
+  top: 80px;
+}
+.earth-card .head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.earth-card h3 {
+  font-size: 14px; font-weight: 600; margin: 0;
+  letter-spacing: -0.005em;
+}
+.earth-card .live {
+  font-size: 11px;
+  color: var(--text-3);
+  display: inline-flex; align-items: center; gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.earth-card .live .ping {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--ok);
+  display: inline-block;
+}
+
+.earth-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 40%, #0a1828 0%, #050b14 70%, #020509 100%);
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+[data-theme="dark"] .earth-wrap {
+  background:
+    radial-gradient(circle at 50% 40%, #0e1f30 0%, #07111c 70%, #03070d 100%);
+}
+.earth-wrap.dragging { cursor: grabbing; }
+.earth-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* lat/lng grid lines on the sphere (very subtle) */
+.earth-grid line {
+  stroke: rgba(255,255,255,0.06);
+  stroke-width: 0.5;
+  fill: none;
+}
+[data-theme="dark"] .earth-grid line {
+  stroke: rgba(255,255,255,0.05);
+}
+
+/* city dots */
+.city {
+  fill: var(--accent);
+  stroke: white;
+  stroke-width: 1;
+  filter: none; /* no glow per Pre-Flight */
+}
+.city-ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1;
+  opacity: 0.6;
+}
+
+/* sphere shading overlay (no glow, just darker edges) */
+.earth-shade {
+  pointer-events: none;
+}
+
+/* control hint under earth */
+.earth-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--text-3);
+  letter-spacing: 0.04em;
+}
+.earth-foot .hint {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.earth-foot .pill {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.city-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 14px;
+}
+.city-stat {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+}
+.city-stat .city-name {
+  font-size: 11px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 4px;
+}
+.city-stat .city-val {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* ============================================
+   PANEL: SETTINGS (3 glass variants)
+   ============================================ */
+.glass-compare {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 28px;
+  margin-bottom: 36px;
+}
+
+.glass-stage {
+  position: relative;
+  height: 280px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background:
+    linear-gradient(135deg, #ff8a3d 0%, #ff5b8b 35%, #7a5cff 70%, #00b3a4 100%);
+  background-size: 200% 200%;
+  isolation: isolate;
+}
+[data-theme="dark"] .glass-stage {
+  background:
+    linear-gradient(135deg, #b3401f 0%, #8a2a55 35%, #3a2880 70%, #0a4a48 100%);
+}
+
+/* decorative orbs behind the glass, so blur has something to bite into */
+.glass-stage::before,
+.glass-stage::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  z-index: 0;
+}
+.glass-stage::before {
+  width: 180px; height: 180px;
+  left: -40px; top: -30px;
+  background: rgba(255,255,255,0.55);
+  filter: blur(20px);
+}
+.glass-stage::after {
+  width: 220px; height: 220px;
+  right: -60px; bottom: -50px;
+  background: rgba(0,0,0,0.30);
+  filter: blur(20px);
+}
+
+.glass-card {
+  position: absolute;
+  left: 24px; right: 24px; top: 24px; bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  z-index: 1;
+}
+
+/* VARIANT 1: Frosted glass */
+.glass-frosted {
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.65);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+}
+
+/* VARIANT 2: Apple liquid glass (web approximation) */
+.glass-apple {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.30), rgba(255,255,255,0.06)),
+    rgba(255,255,255,0.12);
+  backdrop-filter: blur(20px) saturate(200%) contrast(1.05);
+  -webkit-backdrop-filter: blur(20px) saturate(200%) contrast(1.05);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.65),
+    inset 0 -1px 0 rgba(255,255,255,0.15),
+    0 8px 32px rgba(0,0,0,0.10);
+  position: relative;
+}
+.glass-apple::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255,255,255,0.55), transparent 35%),
+    linear-gradient(90deg, rgba(255,255,255,0.18), transparent 45%, rgba(255,255,255,0.12));
+}
+
+/* VARIANT 3: Mist glass (no blur, layered opacity) */
+.glass-mist {
+  background: rgba(255,255,255,0.82);
+  border: 1px solid rgba(255,255,255,0.95);
+  border-radius: var(--radius);
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.04),
+    0 8px 24px rgba(0,0,0,0.10);
+  position: relative;
+}
+.glass-mist::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: rgba(255,255,255,0.30);
+}
+
+.glass-card .tag {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--text-3);
+  font-weight: 600;
+}
+.glass-card h4 {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  margin: 0;
+  color: var(--text-1);
+}
+.glass-card p {
+  font-size: 12px;
+  color: var(--text-2);
+  margin: 0;
+  line-height: 1.5;
+}
+.glass-card .row-foot {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.glass-card .v {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--text-1);
+}
+.glass-card .v small {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-3);
+  margin-left: 4px;
+}
+
+/* settings controls */
+.controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 8px;
+}
+.control {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  background: var(--bg-elev);
+}
+.control h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 4px;
+  letter-spacing: -0.005em;
+}
+.control .desc {
+  font-size: 12px;
+  color: var(--text-3);
+  margin: 0 0 16px;
+}
+.ctl-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.ctl-row:last-child { margin-bottom: 0; }
+.ctl-row label {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.ctl-row .val {
+  font-size: 12px;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+/* slider */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+  outline: none;
+  margin: 6px 0;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--bg-elev);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform 0.12s var(--t), border-color 0.18s var(--t);
+}
+input[type="range"]::-webkit-slider-thumb:hover { border-color: var(--accent); }
+input[type="range"]::-moz-range-thumb {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--bg-elev);
+  border: 1px solid var(--border-strong);
+  cursor: pointer;
+}
+
+/* segmented */
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 0;
+  background: var(--bg);
+}
+.seg button {
+  height: 24px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 6px;
+  color: var(--text-3);
+  letter-spacing: -0.005em;
+}
+.seg button[aria-pressed="true"] {
+  background: var(--bg-elev);
+  color: var(--text-1);
+  box-shadow: var(--shadow-press);
+}
+
+/* swatches */
+.swatches { display: inline-flex; gap: 6px; }
+.swatch {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+  background: var(--c);
+  cursor: pointer;
+  position: relative;
+}
+.swatch[aria-pressed="true"] {
+  border-color: var(--text-1);
+}
+.swatch[aria-pressed="true"]::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid var(--text-1);
+}
+
+/* tone row */
+.toggle {
+  width: 32px; height: 20px;
+  border-radius: 999px;
+  background: var(--border);
+  position: relative;
+  transition: background-color 0.18s var(--t);
+  flex-shrink: 0;
+}
+.toggle::after {
+  content: '';
+  position: absolute;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--bg-elev);
+  top: 2px;
+  left: 2px;
+  box-shadow: var(--shadow-press);
+  transition: left 0.18s var(--t);
+}
+.toggle[aria-checked="true"] { background: var(--accent); }
+.toggle[aria-checked="true"]::after { left: 14px; }
+
+/* ============================================
+   SECTION HEADERS (no split-header, no eyebrow-strip)
+   ============================================ */
+.section-h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 48px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.section-h h2 {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+.section-h .meta { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+
+/* footer */
+footer {
+  margin-top: 56px;
+  padding: 20px 0;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-4);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+footer .links { display: inline-flex; gap: 16px; }
+footer .links a:hover { color: var(--text-1); }
+
+/* responsive */
+@media (max-width: 1024px) {
+  .login-wrap, .dash-grid { grid-template-columns: 1fr; gap: 24px; }
+  .login-art { aspect-ratio: 16 / 9; }
+  .earth-card { position: relative; top: auto; }
+  .glass-compare { grid-template-columns: 1fr; }
+  .controls { grid-template-columns: 1fr; }
+  .hero h1 { font-size: 36px; }
+}
+@media (max-width: 640px) {
+  .topnav { padding: 0 16px; gap: 12px; }
+  .tabs { display: none; }
+  main { padding: 0 16px 48px; }
+  .kpi-grid { grid-template-columns: 1fr; }
+  .hero { padding-top: 32px; }
+  .hero h1 { font-size: 32px; }
+  .nav-actions { gap: 8px; }
+}
+</style>
+</head>
+<body>
+
+<div class="page-bg"></div>
+
+<header class="topnav">
+  <div class="brand"><span class="dot"></span>HabitOS</div>
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="login" aria-selected="true">Sign in</button>
+    <button class="tab" role="tab" data-tab="dashboard" aria-selected="false">Dashboard <span class="badge">live</span></button>
+    <button class="tab" role="tab" data-tab="settings" aria-selected="false">Settings</button>
+  </nav>
+  <div class="spacer"></div>
+  <div class="nav-actions">
+    <div class="theme-toggle" role="group" aria-label="Theme">
+      <button data-theme-value="light" aria-pressed="true" title="Light">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      </button>
+      <button data-theme-value="auto" aria-pressed="false" title="Auto">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg>
+      </button>
+      <button data-theme-value="dark" aria-pressed="false" title="Dark">
+        <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </div>
+    <div class="avatar" aria-label="Admin avatar">AD</div>
+  </div>
+</header>
+
+<main>
+
+  <!-- PANEL: LOGIN -->
+  <section id="panel-login" class="panel active" role="tabpanel">
+    <div class="login-wrap">
+      <div class="login-art" aria-hidden="true">
+        <img src="https://picsum.photos/seed/habitos-clay-studio/900/700" alt="">
+        <div class="meta">
+          <span class="k">Field 14, Studio 3</span>
+          Ceramic practice, Tuesday 9:14.
+        </div>
+      </div>
+
+      <div class="login-card">
+        <h2>Sign in to HabitOS</h2>
+        <p class="lede">Use your operator credentials. New here? Ask the on-call admin to add you.</p>
+
+        <form onsubmit="event.preventDefault();">
+          <div class="field">
+            <label for="email">Operator email</label>
+            <input id="email" type="email" autocomplete="username" placeholder="name@habitos.app" value="mei.tan@habitos.app">
+          </div>
+          <div class="field">
+            <label for="pw">Password</label>
+            <input id="pw" type="password" autocomplete="current-password" value="hunter2-but-real">
+            <span class="hint">8 characters minimum. Rotate every 90 days.</span>
+          </div>
+          <div class="row">
+            <label class="check"><input type="checkbox" checked> Keep me signed in</label>
+            <a href="#" class="link">Forgot password</a>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Sign in
+            <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+          </button>
+          <div class="divider">or use SSO</div>
+          <div class="sso">
+            <button type="button">Google</button>
+            <button type="button">Okta</button>
+            <button type="button">Feishu</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL: DASHBOARD -->
+  <section id="panel-dashboard" class="panel" role="tabpanel">
+    <div class="hero">
+      <span class="eyebrow">Admin console</span>
+      <h1>Operations, at a glance.</h1>
+      <p class="sub">Track habits, todos, and AI agent activity across 2,847 active operators in one quiet console. Updated 14 seconds ago.</p>
+      <div class="cta-row">
+        <button class="btn btn-primary">Open overview
+          <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </button>
+        <button class="btn btn-secondary">View changelog</button>
+      </div>
+    </div>
+
+    <div class="dash-grid">
+      <div>
+        <div class="kpi-grid">
+          <div class="kpi">
+            <div class="kpi-label"><span class="pip up"></span>Active operators</div>
+            <div class="kpi-value">2,847 <span class="unit">users</span></div>
+            <div class="kpi-delta up">+182 this week</div>
+            <svg class="spark" viewBox="0 0 200 40" preserveAspectRatio="none">
+              <polyline points="0,30 20,28 40,26 60,22 80,24 100,18 120,16 140,12 160,10 180,8 200,6"
+                fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label"><span class="pip up"></span>Habits checked in</div>
+            <div class="kpi-value">12,394 <span class="unit">today</span></div>
+            <div class="kpi-delta up">+8.4% vs yesterday</div>
+            <svg class="spark" viewBox="0 0 200 40" preserveAspectRatio="none">
+              <polyline points="0,32 20,30 40,28 60,28 80,22 100,24 120,18 140,14 160,12 180,10 200,8"
+                fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label"><span class="pip warn"></span>AI agent calls (24h)</div>
+            <div class="kpi-value">8,721</div>
+            <div class="kpi-delta">3.2M tokens consumed</div>
+            <svg class="spark" viewBox="0 0 200 40" preserveAspectRatio="none">
+              <polyline points="0,28 20,22 40,26 60,18 80,20 100,14 120,16 140,10 160,12 180,8 200,10"
+                fill="none" stroke="var(--text-3)" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label"><span class="pip up"></span>Service uptime</div>
+            <div class="kpi-value">99.94<span class="unit">% / 30d</span></div>
+            <div class="kpi-delta up">2 incidents, both resolved</div>
+            <svg class="spark" viewBox="0 0 200 40" preserveAspectRatio="none">
+              <polyline points="0,12 20,10 40,14 60,12 80,8 100,10 120,8 140,12 160,8 180,10 200,8"
+                fill="none" stroke="var(--ok)" stroke-width="1.5"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="section-h">
+          <h2>Recent activity</h2>
+          <span class="meta">Last 6 events</span>
+        </div>
+        <div class="list-card">
+          <div class="list-row">
+            <span class="ic">M</span>
+            <span class="who">Mei Tan<small>Promoted Lin Yao to editor</small></span>
+            <span class="when">2 min ago</span>
+            <span class="pill">admin</span>
+          </div>
+          <div class="list-row">
+            <span class="ic">A</span>
+            <span class="who">AI Agent<small>Created 14 todos from voice note</small></span>
+            <span class="when">14 min ago</span>
+            <span class="pill">agent</span>
+          </div>
+          <div class="list-row">
+            <span class="ic">K</span>
+            <span class="who">Kenji Sato<small>Exported 30-day report (PDF)</small></span>
+            <span class="when">38 min ago</span>
+            <span class="pill">user</span>
+          </div>
+          <div class="list-row">
+            <span class="ic">S</span>
+            <span class="who">System<small>Cache miss spike on /api/feed resolved</small></span>
+            <span class="when">1 hr ago</span>
+            <span class="pill">system</span>
+          </div>
+          <div class="list-row">
+            <span class="ic">P</span>
+            <span class="who">Priya Iyer<small>Connected Notion integration</small></span>
+            <span class="when">2 hr ago</span>
+            <span class="pill">user</span>
+          </div>
+          <div class="list-row">
+            <span class="ic">M</span>
+            <span class="who">Mei Tan<small>Updated AI model: gpt-5-mini default</small></span>
+            <span class="when">3 hr ago</span>
+            <span class="pill">admin</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- EARTH (2.5D pure SVG) -->
+      <aside class="earth-card">
+        <div class="head">
+          <h3>Operator map</h3>
+          <span class="live"><span class="ping"></span>2,847 online</span>
+        </div>
+
+        <div class="earth-wrap" id="earthWrap" aria-label="Rotating globe of operator locations">
+          <svg class="earth-svg" viewBox="0 0 600 600" id="earthSvg" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <!-- sphere mask: clip everything to the circle -->
+              <clipPath id="sphereClip">
+                <circle cx="300" cy="300" r="270"/>
+              </clipPath>
+              <!-- radial gradient for sphere shading: highlight top-left, darker edges -->
+              <radialGradient id="sphereShade" cx="35%" cy="30%" r="80%">
+                <stop offset="0%" stop-color="rgba(255,255,255,0.18)"/>
+                <stop offset="55%" stop-color="rgba(0,0,0,0)"/>
+                <stop offset="85%" stop-color="rgba(0,0,0,0.45)"/>
+                <stop offset="100%" stop-color="rgba(0,0,0,0.70)"/>
+              </radialGradient>
+              <!-- soft inner highlight ring -->
+              <radialGradient id="rimLight" cx="50%" cy="50%" r="50%">
+                <stop offset="92%" stop-color="rgba(255,255,255,0)"/>
+                <stop offset="99%" stop-color="rgba(255,255,255,0.25)"/>
+                <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+              </radialGradient>
+            </defs>
+
+            <!-- BASE sphere (deep ocean color) -->
+            <circle cx="300" cy="300" r="270" fill="#0d2034"/>
+
+            <!-- ROTATING GROUP: contains the world map image + cities -->
+            <g id="earthRot" clip-path="url(#sphereClip)">
+              <!-- map image, sized wider than sphere for rotation bleed -->
+              <image href="https://picsum.photos/seed/worldmap-equirect/1200/600"
+                     x="-300" y="0" width="1200" height="600"
+                     preserveAspectRatio="xMidYMid slice"
+                     opacity="0.55"/>
+              <!-- thin lat/lng grid lines -->
+              <g class="earth-grid">
+                <line x1="-300" y1="100" x2="900" y2="100"/>
+                <line x1="-300" y1="200" x2="900" y2="200"/>
+                <line x1="-300" y1="300" x2="900" y2="300"/>
+                <line x1="-300" y1="400" x2="900" y2="400"/>
+                <line x1="-300" y1="500" x2="900" y2="500"/>
+                <line x1="0"    y1="0"   x2="0"   y2="600"/>
+                <line x1="200"  y1="0"   x2="200" y2="600"/>
+                <line x1="400"  y1="0"   x2="400" y2="600"/>
+                <line x1="600"  y1="0"   x2="600" y2="600"/>
+              </g>
+
+              <!-- city dots, positioned via equirectangular projection
+                   formula: x = (lng + 180) * 3.333 - 300   (map is 1200 wide)
+                            y = (90 - lat) * 3.333           (map is 600 tall) -->
+              <!-- Tokyo   35.68, 139.65  -> 765.5, 181.1 -->
+              <g class="city-group">
+                <circle class="city-ring" cx="765.5" cy="181.1" r="9"/>
+                <circle class="city"      cx="765.5" cy="181.1" r="3.5"/>
+              </g>
+              <!-- New York 40.71, -74.01 -> 53.3, 164.3 -->
+              <g class="city-group">
+                <circle class="city-ring" cx="53.3" cy="164.3" r="9"/>
+                <circle class="city"      cx="53.3" cy="164.3" r="3.5"/>
+              </g>
+              <!-- London  51.51, -0.13  -> 299.6, 128.3 -->
+              <g class="city-group">
+                <circle class="city-ring" cx="299.6" cy="128.3" r="9"/>
+                <circle class="city"      cx="299.6" cy="128.3" r="3.5"/>
+              </g>
+              <!-- Sydney  -33.87, 151.21 -> 803.8, 412.9 -->
+              <g class="city-group">
+                <circle class="city-ring" cx="803.8" cy="412.9" r="9"/>
+                <circle class="city"      cx="803.8" cy="412.9" r="3.5"/>
+              </g>
+              <!-- Sao Paulo -23.55, -46.63 -> 144.5, 378.5 -->
+              <g class="city-group">
+                <circle class="city-ring" cx="144.5" cy="378.5" r="9"/>
+                <circle class="city"      cx="144.5" cy="378.5" r="3.5"/>
+              </g>
+              <!-- Cairo  30.04, 31.24 -> 404.1, 199.9 -->
+              <g class="city-group">
+                <circle class="city-ring" cx="404.1" cy="199.9" r="9"/>
+                <circle class="city"      cx="404.1" cy="199.9" r="3.5"/>
+              </g>
+              <!-- Mumbai 19.08, 72.88 -> 542.9, 236.4 -->
+              <g class="city-group">
+                <circle class="city-ring" cx="542.9" cy="236.4" r="9"/>
+                <circle class="city"      cx="542.9" cy="236.4" r="3.5"/>
+              </g>
+              <!-- Cape Town -33.92, 18.42 -> 361.4, 413.0 -->
+              <g class="city-group">
+                <circle class="city-ring" cx="361.4" cy="413.0" r="9"/>
+                <circle class="city"      cx="361.4" cy="413.0" r="3.5"/>
+              </g>
+
+              <!-- sphere shading overlay (gives the 2.5D illusion) -->
+              <rect class="earth-shade" x="-300" y="0" width="1200" height="600"
+                    fill="url(#sphereShade)"/>
+            </g>
+
+            <!-- rim light, fixed (does not rotate) -->
+            <circle cx="300" cy="300" r="270" fill="url(#rimLight)"/>
+            <!-- outer stroke -->
+            <circle cx="300" cy="300" r="270" fill="none"
+                    stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+          </svg>
+        </div>
+
+        <div class="earth-foot">
+          <span class="hint">Drag to rotate. Auto-spin resumes after 2s.</span>
+          <span class="pill" id="earthAngle">0deg</span>
+        </div>
+
+        <div class="city-stats">
+          <div class="city-stat">
+            <div class="city-name">Tokyo</div>
+            <div class="city-val">412</div>
+          </div>
+          <div class="city-stat">
+            <div class="city-name">London</div>
+            <div class="city-val">298</div>
+          </div>
+          <div class="city-stat">
+            <div class="city-name">NYC</div>
+            <div class="city-val">631</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- PANEL: SETTINGS -->
+  <section id="panel-settings" class="panel" role="tabpanel">
+    <div class="hero">
+      <span class="eyebrow">Settings</span>
+      <h1>Tune the console.</h1>
+      <p class="sub">Adjust the surface density, motion strength, and accent. Live preview shows how glass cards render against the page.</p>
+      <div class="cta-row">
+        <button class="btn btn-primary">Save changes</button>
+        <button class="btn btn-secondary">Reset to defaults</button>
+      </div>
+    </div>
+
+    <!-- 3 glass variants side by side -->
+    <div class="section-h">
+      <h2>Glass surface comparison</h2>
+      <span class="meta">Drag the density slider to feel the difference</span>
+    </div>
+
+    <div class="glass-compare">
+      <div class="glass-stage">
+        <div class="glass-card glass-frosted" id="cardFrosted">
+          <span class="tag">01. Frosted</span>
+          <h4>Heavy blur</h4>
+          <p>40px blur with saturate 180 percent. Hides the gradient almost entirely. Cleanest for noisy backgrounds.</p>
+          <div class="row-foot">
+            <span class="v">98<small>% readable</small></span>
+            <span class="pill">blur 40</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-stage">
+        <div class="glass-card glass-apple" id="cardApple">
+          <span class="tag">02. Apple liquid</span>
+          <h4>Refractive edge</h4>
+          <p>20px blur with a 1px gradient border and an inset top highlight. Light reads as passing through the edge.</p>
+          <div class="row-foot">
+            <span class="v">94<small>% readable</small></span>
+            <span class="pill">blur 20</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-stage">
+        <div class="glass-card glass-mist" id="cardMist">
+          <span class="tag">03. Mist</span>
+          <h4>Layered opacity</h4>
+          <p>No blur at all. Pure white over a soft scrim. Works on every browser, including legacy Android WebView.</p>
+          <div class="row-foot">
+            <span class="v">100<small>% readable</small></span>
+            <span class="pill">blur 0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="section-h">
+      <h2>Live controls</h2>
+      <span class="meta">All changes preview instantly above</span>
+    </div>
+
+    <div class="controls">
+      <div class="control">
+        <h4>Theme</h4>
+        <p class="desc">Choose the surface tone. Auto follows your system.</p>
+        <div class="ctl-row">
+          <label>Mode</label>
+          <div class="seg" id="segTheme">
+            <button data-v="light" aria-pressed="true">Light</button>
+            <button data-v="auto" aria-pressed="false">Auto</button>
+            <button data-v="dark" aria-pressed="false">Dark</button>
+          </div>
+        </div>
+        <div class="ctl-row">
+          <label>Contrast</label>
+          <span class="val">Standard</span>
+        </div>
+      </div>
+
+      <div class="control">
+        <h4>Accent</h4>
+        <p class="desc">Used on CTAs, active tabs, and city markers.</p>
+        <div class="ctl-row">
+          <label>Color</label>
+          <div class="swatches" id="swatches">
+            <button class="swatch" aria-pressed="true" style="--c:#0071e3" data-c="#0071e3" data-c-dark="#2997ff" title="Apple blue"></button>
+            <button class="swatch" aria-pressed="false" style="--c:#1a6f4a" data-c="#1a6f4a" data-c-dark="#34c27a" title="Forest"></button>
+            <button class="swatch" aria-pressed="false" style="--c:#6b3aa8" data-c="#6b3aa8" data-c-dark="#a78bd9" title="Iris"></button>
+            <button class="swatch" aria-pressed="false" style="--c:#c43e74" data-c="#c43e74" data-c-dark="#ff7aa8" title="Rose"></button>
+            <button class="swatch" aria-pressed="false" style="--c:#1d1d1f" data-c="#1d1d1f" data-c-dark="#f5f5f7" title="Mono"></button>
+          </div>
+        </div>
+        <div class="ctl-row">
+          <label>Surface radius</label>
+          <span class="val">12 px</span>
+        </div>
+      </div>
+
+      <div class="control">
+        <h4>Motion strength</h4>
+        <p class="desc">Smooth transitions, hover states, and the auto-rotating globe.</p>
+        <div class="ctl-row">
+          <label>Globe rotation</label>
+          <div class="toggle" id="togGlobe" role="switch" aria-checked="true" tabindex="0"></div>
+        </div>
+        <div class="ctl-row">
+          <label>Page transitions</label>
+          <input type="range" id="rangeMotion" min="0" max="100" value="60">
+        </div>
+        <div class="ctl-row">
+          <label>Stagger delay</label>
+          <span class="val">120 ms</span>
+        </div>
+      </div>
+
+      <div class="control">
+        <h4>Glass density</h4>
+        <p class="desc">Higher density increases blur radius and surface opacity.</p>
+        <div class="ctl-row">
+          <label>Blur radius</label>
+          <input type="range" id="rangeBlur" min="0" max="60" value="20">
+        </div>
+        <div class="ctl-row">
+          <label>Surface opacity</label>
+          <input type="range" id="rangeOpacity" min="40" max="95" value="72">
+        </div>
+        <div class="ctl-row">
+          <label>Saturate</label>
+          <input type="range" id="rangeSaturate" min="100" max="220" value="180">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>HabitOS Admin Console. Build 0.9.2, internal preview.</span>
+    <span class="links">
+      <a href="#">Docs</a>
+      <a href="#">Status</a>
+      <a href="#">Contact on-call</a>
+    </span>
+  </footer>
+</main>
+
+<script>
+/* =====================================================
+   THEME  (light / dark / auto)
+   - CSS variables for color tokens (the heavy lifting).
+   - JS only for: reading localStorage, applying data-theme,
+     watching prefers-color-scheme for "auto".
+   - Color transitions handled entirely in CSS (0.4s).
+   ===================================================== */
+const root = document.documentElement;
+const themeBtns = document.querySelectorAll('[data-theme-value]');
+const STORAGE_KEY = 'habitos-theme';
+
+function applyTheme(value) {
+  root.setAttribute('data-theme', value);
+  themeBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.themeValue === value)));
+  document.querySelectorAll('#segTheme button').forEach(b =>
+    b.setAttribute('aria-pressed', String(b.dataset.v === value))
+  );
+  localStorage.setItem(STORAGE_KEY, value);
+}
+
+function effectiveTheme(value) {
+  if (value !== 'auto') return value;
+  return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function resolveTokens() {
+  // CSS handles tokens via data-theme attribute. For "auto" we still
+  // toggle the attribute based on the system preference.
+  const stored = localStorage.getItem(STORAGE_KEY) || 'light';
+  if (stored === 'auto') {
+    root.setAttribute('data-theme', effectiveTheme('auto'));
+  } else {
+    root.setAttribute('data-theme', stored);
+  }
+}
+
+themeBtns.forEach(b => b.addEventListener('click', () => applyTheme(b.dataset.themeValue)));
+document.querySelectorAll('#segTheme button').forEach(b =>
+  b.addEventListener('click', () => applyTheme(b.dataset.v))
+);
+
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  if ((localStorage.getItem(STORAGE_KEY) || 'light') === 'auto') resolveTokens();
+});
+resolveTokens();
+
+/* =====================================================
+   TABS
+   ===================================================== */
+const tabs = document.querySelectorAll('.tab');
+const panels = document.querySelectorAll('.panel');
+tabs.forEach(t => t.addEventListener('click', () => {
+  tabs.forEach(x => x.setAttribute('aria-selected', String(x === t)));
+  panels.forEach(p => p.classList.toggle('active', p.id === 'panel-' + t.dataset.tab));
+}));
+
+/* =====================================================
+   EARTH  (2.5D pure SVG, no three.js)
+   - All rotation handled by CSS transform on <g id="earthRot">.
+   - Drag: mousedown -> mousemove updates angle, mouseup releases.
+   - Auto spin: rAF loop adds 0.04 deg/frame when not dragging.
+   - 2 seconds after release, auto spin resumes from current angle.
+   - Equirectangular projection places 8 city dots.
+   ===================================================== */
+const earthSvg = document.getElementById('earthSvg');
+const earthRot = document.getElementById('earthRot');
+const earthWrap = document.getElementById('earthWrap');
+const angleLabel = document.getElementById('earthAngle');
+
+let angle = 0;
+let autoSpin = true;
+let dragging = false;
+let lastX = 0;
+let lastMoveTime = 0;
+let resumeAt = 0;
+
+function setAngle(a) {
+  angle = a;
+  // rotation in degrees, around the center of the SVG (300, 300 in viewBox units).
+  // Use transform-box: fill-box; transform-origin: center; on the group.
+  earthRot.setAttribute('transform', `rotate(${a} 300 300)`);
+  angleLabel.textContent = `${Math.round(((a % 360) + 360) % 360)}deg`;
+}
+
+function tick(now) {
+  if (autoSpin && !dragging && now > resumeAt) {
+    setAngle(angle + 0.06);
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+function startDrag(x) {
+  dragging = true;
+  lastX = x;
+  earthWrap.classList.add('dragging');
+}
+function moveDrag(x) {
+  if (!dragging) return;
+  const dx = x - lastX;
+  lastX = x;
+  // pixels -> degrees (map width 1200 spans ~360deg visible at any time)
+  setAngle(angle + dx * 0.18);
+}
+function endDrag() {
+  if (!dragging) return;
+  dragging = false;
+  earthWrap.classList.remove('dragging');
+  resumeAt = performance.now() + 2000;
+}
+
+earthWrap.addEventListener('mousedown', e => { e.preventDefault(); startDrag(e.clientX); });
+window.addEventListener('mousemove', e => moveDrag(e.clientX));
+window.addEventListener('mouseup', endDrag);
+earthWrap.addEventListener('touchstart', e => startDrag(e.touches[0].clientX), {passive:true});
+earthWrap.addEventListener('touchmove',  e => moveDrag(e.touches[0].clientX),  {passive:true});
+earthWrap.addEventListener('touchend',   endDrag);
+
+/* =====================================================
+   GLASS LIVE PREVIEW
+   - Density sliders update CSS variables consumed by .glass-card variants.
+   ===================================================== */
+const blurRange = document.getElementById('rangeBlur');
+const opRange = document.getElementById('rangeOpacity');
+const satRange = document.getElementById('rangeSaturate');
+
+function refreshGlass() {
+  const b = blurRange.value;
+  const o = opRange.value / 100;
+  const s = satRange.value;
+
+  const cardF = document.getElementById('cardFrosted');
+  cardF.style.backdropFilter = `blur(${b * 2}px) saturate(${s}%)`;
+  cardF.style.webkitBackdropFilter = `blur(${b * 2}px) saturate(${s}%)`;
+  cardF.style.background = `rgba(255,255,255,${0.30 + o * 0.4})`;
+
+  const cardA = document.getElementById('cardApple');
+  cardA.style.backdropFilter = `blur(${b}px) saturate(${s}%) contrast(1.05)`;
+  cardA.style.webkitBackdropFilter = `blur(${b}px) saturate(${s}%) contrast(1.05)`;
+  cardA.style.background = `linear-gradient(135deg, rgba(255,255,255,${0.20 + o * 0.20}), rgba(255,255,255,${0.04 + o * 0.04})), rgba(255,255,255,${o * 0.18})`;
+
+  const cardM = document.getElementById('cardMist');
+  cardM.style.background = `rgba(255,255,255,${o * 0.95})`;
+}
+[blurRange, opRange, satRange].forEach(r => r.addEventListener('input', refreshGlass));
+refreshGlass();
+
+/* =====================================================
+   ACCENT SWATCHES  (only changes --accent token)
+   ===================================================== */
+const swatches = document.querySelectorAll('.swatch');
+swatches.forEach(sw => sw.addEventListener('click', () => {
+  swatches.forEach(x => x.setAttribute('aria-pressed', String(x === sw)));
+  const light = sw.dataset.c;
+  const dark  = sw.dataset.cDark;
+  // override the CSS variables on :root for both modes
+  const style = document.getElementById('accentStyle') || (() => {
+    const el = document.createElement('style');
+    el.id = 'accentStyle';
+    document.head.appendChild(el);
+    return el;
+  })();
+  style.textContent = `:root { --accent: ${light}; } [data-theme="dark"] { --accent: ${dark}; }`;
+}));
+
+/* =====================================================
+   GLOBE TOGGLE
+   ===================================================== */
+const togGlobe = document.getElementById('togGlobe');
+togGlobe.addEventListener('click', () => {
+  const on = togGlobe.getAttribute('aria-checked') === 'true';
+  togGlobe.setAttribute('aria-checked', String(!on));
+  autoSpin = !on;
+  if (!autoSpin) {
+    // freeze immediately
+    resumeAt = Infinity;
+  } else {
+    resumeAt = performance.now();
+  }
+});
+togGlobe.addEventListener('keydown', e => {
+  if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); togGlobe.click(); }
+});
+</script>
+</body>
+</html>

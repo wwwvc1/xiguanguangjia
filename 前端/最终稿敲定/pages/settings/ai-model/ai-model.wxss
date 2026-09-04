@@ -1,0 +1,296 @@
+/* ============================================================
+ * AI 模型设置 ai-model 页面(I 方案)
+ * ============================================================ */
+
+.container{
+  min-height: 100vh;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+}
+
+.custom-nav{
+  background: transparent;
+  color: var(--ink);
+  width: 100%;
+  position: relative;
+  z-index: 10;
+}
+.nav-content{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24rpx;
+  height: 88rpx;
+}
+.nav-title{
+  font-size: 36rpx;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.nav-back{
+  font-size: 56rpx;
+  width: 36px;
+  line-height: 1;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.page-content{ flex: 1; padding: 24rpx 24rpx; }
+
+.section{ margin-bottom: 32rpx; }
+.section-title{
+  display: block;
+  font-size: 26rpx;
+  color: var(--ink-3);
+  margin-bottom: 16rpx;
+  padding-left: 8rpx;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.active-card{
+  background: var(--surface);
+  border: 1rpx solid var(--line);
+  border-left: 6rpx solid var(--agar);
+  border-radius: var(--r-md);
+  padding: 28rpx 24rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 6rpx 16rpx rgba(20, 42, 32, 0.06), inset 0 1rpx 0 rgba(255, 255, 255, 0.60);
+}
+.active-info{ display: flex; flex-direction: column; }
+.active-name{
+  font-size: 32rpx;
+  color: var(--ink);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.active-sub{
+  font-size: 24rpx;
+  color: var(--ink-3);
+  margin-top: 4rpx;
+  font-weight: 500;
+}
+.active-tag{
+  background: var(--agar);
+  color: var(--paper);
+  font-size: 22rpx;
+  padding: 6rpx 16rpx;
+  border-radius: var(--r-pill);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.model-card{
+  background: var(--surface);
+  border-radius: var(--r-md);
+  border: 1rpx solid var(--line);
+  padding: 24rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 12rpx;
+}
+.model-card.active{
+  border-left: 6rpx solid var(--agar);
+}
+.model-info{ display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.model-name{
+  font-size: 30rpx;
+  color: var(--ink);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.model-sub{
+  font-size: 22rpx;
+  color: var(--ink-3);
+  margin-top: 4rpx;
+  font-weight: 500;
+}
+.model-sub.url{
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 360rpx;
+}
+.model-actions{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  justify-content: flex-end;
+}
+.action-pill{
+  font-size: 22rpx;
+  padding: 8rpx 16rpx;
+  border-radius: var(--r-pill);
+  background: var(--paper-2);
+  color: var(--ink-2);
+  border: 1rpx solid var(--line-2);
+  white-space: nowrap;
+  font-weight: 600;
+}
+.action-pill.primary{
+  background: var(--agar);
+  color: var(--paper);
+  border-color: var(--agar);
+}
+.action-pill.warn{
+  background: var(--bone);
+  color: var(--brick);
+  border-color: rgba(168, 130, 58, 0.30);
+}
+.action-pill.danger{
+  background: var(--brick-soft);
+  color: var(--brick);
+  border-color: rgba(142, 61, 42, 0.30);
+}
+.action-pill.active-tag{
+  background: var(--agar-soft);
+  color: var(--agar);
+  border-color: rgba(20, 42, 32, 0.20);
+}
+
+.divider{
+  height: 2rpx;
+  background: var(--line-2);
+  margin: 12rpx 0;
+}
+
+.empty-tip{
+  background: var(--surface);
+  border-radius: var(--r-md);
+  border: 1rpx solid var(--line);
+  padding: 48rpx 24rpx;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: 26rpx;
+  white-space: pre-line;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+.add-btn{
+  margin-top: 24rpx;
+  background: var(--surface);
+  border: 2rpx dashed var(--agar);
+  color: var(--agar);
+  text-align: center;
+  padding: 28rpx;
+  border-radius: var(--r-md);
+  font-size: 28rpx;
+  font-weight: 700;
+}
+.add-btn.disabled{
+  background: var(--paper-2);
+  border-color: var(--line);
+  color: var(--ink-3);
+}
+
+.tip{
+  background: var(--bone);
+  border-radius: var(--r-sm);
+  padding: 20rpx 24rpx;
+  font-size: 24rpx;
+  color: var(--brick);
+  line-height: 1.7;
+  white-space: pre-line;
+  font-weight: 500;
+  border: 1rpx solid rgba(168, 130, 58, 0.30);
+}
+.tip-text{ display: block; font-size: 22rpx; }
+
+.safe-bottom{ height: 60rpx; }
+
+/* ===== Modal ===== */
+.modal-mask{
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 26, 20, 0.40);
+  backdrop-filter: blur(4rpx);
+  -webkit-backdrop-filter: blur(4rpx);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48rpx;
+}
+.modal-content{
+  background: var(--surface);
+  border: 1rpx solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 32rpx;
+  width: 100%;
+  max-width: 640rpx;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 12rpx 32rpx rgba(20, 42, 32, 0.20), inset 0 1rpx 0 rgba(255, 255, 255, 0.60);
+}
+.modal-title{
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: center;
+  margin-bottom: 24rpx;
+  letter-spacing: -0.01em;
+}
+.form-label{
+  display: block;
+  font-size: 26rpx;
+  color: var(--ink-2);
+  margin-top: 20rpx;
+  margin-bottom: 8rpx;
+  font-weight: 700;
+}
+.form-input{
+  background: rgba(248, 245, 238, 0.62);
+  backdrop-filter: blur(20rpx) saturate(160%);
+  -webkit-backdrop-filter: blur(20rpx) saturate(160%);
+  border: 1rpx solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 28rpx 28rpx;
+  font-size: 28rpx;
+  color: var(--ink);
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 88rpx;
+  line-height: 1.4;
+  box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.60);
+  font-weight: 500;
+}
+.form-input::placeholder{
+  color: var(--ink-2);
+  font-weight: 500;
+}
+.form-tip{
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: var(--agar);
+  font-weight: 600;
+}
+
+.modal-actions{ display: flex; gap: 16rpx; margin-top: 32rpx; }
+.modal-btn{
+  flex: 1;
+  text-align: center;
+  padding: 20rpx 0;
+  border-radius: var(--r-md);
+  font-size: 28rpx;
+  font-weight: 700;
+}
+.cancel-btn{
+  background: var(--paper-2);
+  color: var(--ink-2);
+  border: 1rpx solid var(--line-2);
+}
+.confirm-btn{
+  background: var(--agar);
+  color: var(--paper);
+  box-shadow: 0 6rpx 16rpx rgba(20, 42, 32, 0.20);
+}

@@ -1,0 +1,45 @@
+{
+  "pages": [
+    "pages/login/login",
+    "pages/index/index",
+    "pages/checkin/checkin",
+    "pages/todo/todo",
+    "pages/settings/settings",
+    "pages/settings/ai-model/ai-model",
+    "pages/ai/ai",
+    "pages/finance/finance",
+    "pages/diet/diet",
+    "pages/tasks/tasks",
+    "pages/ai-create/ai-create",
+    "pages/achievements/achievements",
+    "pages/stats/stats",
+    "pages/reports/reports"
+  ],
+  "window": {
+    "navigationStyle": "custom",
+    "backgroundColor": "#E8E4E0",
+    "backgroundTextStyle": "light"
+  },
+  "tabBar": {
+    "custom": true,
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/todo/todo",
+        "text": "待办"
+      },
+      {
+        "pagePath": "pages/ai/ai",
+        "text": "AI"
+      },
+      {
+        "pagePath": "pages/settings/settings",
+        "text": "设置"
+      }
+    ]
+  },
+  "sitemapLocation": "sitemap.json"
+}

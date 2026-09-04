@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仪表盘</title>
+    <style id="theme-vars">
+:root {
+  --brand-background: #ffffff;
+  --brand-foreground: #1f2937;
+  --brand-card: #ffffff;
+  --brand-card-foreground: #1f2937;
+  --brand-popover: #ffffff;
+  --brand-popover-foreground: #1f2937;
+  --brand-primary: #2563eb;
+  --brand-primary-foreground: #ffffff;
+  --brand-muted: #f3f4f6;
+  --brand-muted-foreground: #6b7280;
+  --brand-border: #e5e7eb;
+  --brand-input: #e5e7eb;
+  --brand-ring: #2563eb;
+
+  --brand-radius-sm: 4px;
+  --brand-radius-md: 8px;
+  --brand-radius-lg: 12px;
+
+  --brand-surface: #f9fafb;
+  --brand-surface-2: #f3f4f6;
+  --brand-ink: #1f2937;
+  --brand-ink-2: #6b7280;
+  --brand-ink-3: #9ca3af;
+  --brand-line: #e5e7eb;
+
+  --brand-state-success: #10b981;
+  --brand-state-warning: #f59e0b;
+  --brand-state-error: #ef4444;
+  --brand-state-info: #3b82f6;
+
+  --brand-shadow-1: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 1px rgba(15, 23, 42, 0.03);
+  --brand-shadow-2: 0 8px 24px -8px rgba(15, 23, 42, 0.14);
+
+  --brand-font-sans: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --brand-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.light, :root {
+  color-scheme: light;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--brand-background);
+    --color-foreground: var(--brand-foreground);
+    --color-card: var(--brand-card);
+    --color-card-foreground: var(--brand-card-foreground);
+    --color-popover: var(--brand-popover);
+    --color-popover-foreground: var(--brand-popover-foreground);
+    --color-primary: var(--brand-primary);
+    --color-primary-foreground: var(--brand-primary-foreground);
+    --color-muted: var(--brand-muted);
+    --color-muted-foreground: var(--brand-muted-foreground);
+    --color-border: var(--brand-border);
+    --color-input: var(--brand-input);
+    --color-ring: var(--brand-ring);
+    --radius-sm: var(--brand-radius-sm);
+    --radius-md: var(--brand-radius-md);
+    --radius-lg: var(--brand-radius-lg);
+  }
+  @layer base {
+    body { background: var(--brand-background); color: var(--brand-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--brand-background); }
+      .text-background { color: var(--brand-background); }
+      .border-background { border-color: var(--brand-background); }
+      .ring-background { --tw-ring-color: var(--brand-background); }
+      .bg-foreground { background-color: var(--brand-foreground); }
+      .text-foreground { color: var(--brand-foreground); }
+      .border-foreground { border-color: var(--brand-foreground); }
+      .ring-foreground { --tw-ring-color: var(--brand-foreground); }
+      .bg-card { background-color: var(--brand-card); }
+      .text-card { color: var(--brand-card); }
+      .border-card { border-color: var(--brand-card); }
+      .ring-card { --tw-ring-color: var(--brand-card); }
+      .bg-card-foreground { background-color: var(--brand-card-foreground); }
+      .text-card-foreground { color: var(--brand-card-foreground); }
+      .border-card-foreground { border-color: var(--brand-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--brand-card-foreground); }
+      .bg-popover { background-color: var(--brand-popover); }
+      .text-popover { color: var(--brand-popover); }
+      .border-popover { border-color: var(--brand-popover); }
+      .ring-popover { --tw-ring-color: var(--brand-popover); }
+      .bg-popover-foreground { background-color: var(--brand-popover-foreground); }
+      .text-popover-foreground { color: var(--brand-popover-foreground); }
+      .border-popover-foreground { border-color: var(--brand-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--brand-popover-foreground); }
+      .bg-primary { background-color: var(--brand-primary); }
+      .text-primary { color: var(--brand-primary); }
+      .border-primary { border-color: var(--brand-primary); }
+      .ring-primary { --tw-ring-color: var(--brand-primary); }
+      .bg-primary-foreground { background-color: var(--brand-primary-foreground); }
+      .text-primary-foreground { color: var(--brand-primary-foreground); }
+      .border-primary-foreground { border-color: var(--brand-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--brand-primary-foreground); }
+      .bg-muted { background-color: var(--brand-muted); }
+      .text-muted { color: var(--brand-muted); }
+      .border-muted { border-color: var(--brand-muted); }
+      .ring-muted { --tw-ring-color: var(--brand-muted); }
+      .bg-muted-foreground { background-color: var(--brand-muted-foreground); }
+      .text-muted-foreground { color: var(--brand-muted-foreground); }
+      .border-muted-foreground { border-color: var(--brand-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--brand-muted-foreground); }
+      .bg-border { background-color: var(--brand-border); }
+      .text-border { color: var(--brand-border); }
+      .border-border { border-color: var(--brand-border); }
+      .ring-border { --tw-ring-color: var(--brand-border); }
+      .bg-input { background-color: var(--brand-input); }
+      .text-input { color: var(--brand-input); }
+      .border-input { border-color: var(--brand-input); }
+      .ring-input { --tw-ring-color: var(--brand-input); }
+      .bg-ring { background-color: var(--brand-ring); }
+      .text-ring { color: var(--brand-ring); }
+      .border-ring { border-color: var(--brand-ring); }
+      .ring-ring { --tw-ring-color: var(--brand-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+    <style id="layout-helpers">
+      body { font-family: var(--brand-font-sans); }
+      @media (max-width: 767px) {
+        .app-sidebar { display: none; }
+        .app-main { margin-left: 0; }
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main>
+        <aside class="app-sidebar fixed inset-y-0 left-0 z-50 hidden md:flex w-[220px] flex-col bg-card border-r border-border">
+            <div class="flex h-16 items-center gap-2 px-5 border-b border-border">
+                <i data-lucide="layout-dashboard" class="h-6 w-6 text-primary"></i>
+                <span class="text-lg font-semibold text-foreground">习惯管家</span>
+            </div>
+            <nav class="flex-1 px-3 py-4 space-y-1">
+                <a href="#" class="flex items-center gap-3 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground">
+                    <i data-lucide="layout-dashboard" class="h-4 w-4"></i>
+                    仪表盘
+                </a>
+                <a href="#" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
+                    <i data-lucide="users" class="h-4 w-4"></i>
+                    用户管理
+                </a>
+                <a href="#" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
+                    <i data-lucide="bot" class="h-4 w-4"></i>
+                    AI 模型
+                </a>
+                <a href="#" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
+                    <i data-lucide="book-open" class="h-4 w-4"></i>
+                    知识库
+                </a>
+                <a href="#" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
+                    <i data-lucide="file-text" class="h-4 w-4"></i>
+                    系统日志
+                </a>
+            </nav>
+        </aside>
+
+        <div class="app-main flex flex-1 flex-col md:ml-[220px] min-h-screen min-w-0">
+            <header class="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-card px-6">
+                <div class="flex items-center gap-3">
+                    <h1 class="text-lg font-semibold text-foreground">仪表盘</h1>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium">张</div>
+                    <div class="hidden sm:flex flex-col text-sm">
+                        <span class="font-medium text-foreground">张经理</span>
+                        <span class="text-xs text-muted-foreground">管理员</span>
+                    </div>
+                    <i data-lucide="chevron-down" class="h-4 w-4 text-muted-foreground"></i>
+                </div>
+            </header>
+
+            <section class="flex-1 bg-[var(--brand-surface)] p-6">
+                <h2 class="text-2xl font-semibold text-foreground mb-6">仪表盘</h2>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <article class="rounded-md border border-border bg-card p-5 shadow-[var(--brand-shadow-1)]">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-sm text-muted-foreground">总用户数</p>
+                                <p class="mt-1 text-2xl font-semibold text-foreground">1,248</p>
+                                <p class="mt-1 text-xs text-muted-foreground">+12 本周新增</p>
+                            </div>
+                            <div class="rounded-md bg-primary/10 p-2 text-primary">
+                                <i data-lucide="users" class="h-5 w-5"></i>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="rounded-md border border-border bg-card p-5 shadow-[var(--brand-shadow-1)]">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-sm text-muted-foreground">7 日活跃</p>
+                                <p class="mt-1 text-2xl font-semibold text-foreground">342</p>
+                                <p class="mt-1 text-xs text-muted-foreground">27%</p>
+                            </div>
+                            <div class="rounded-md bg-primary/10 p-2 text-primary">
+                                <i data-lucide="flame" class="h-5 w-5"></i>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="rounded-md border border-border bg-card p-5 shadow-[var(--brand-shadow-1)]">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-sm text-muted-foreground">AI 调用(7d)</p>
+                                <p class="mt-1 text-2xl font-semibold text-foreground">5,821</p>
+                                <p class="mt-1 text-xs text-muted-foreground">近 7 天总量</p>
+                            </div>
+                            <div class="rounded-md bg-primary/10 p-2 text-primary">
+                                <i data-lucide="bot" class="h-5 w-5"></i>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="rounded-md border border-border bg-card p-5 shadow-[var(--brand-shadow-1)]">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-sm text-muted-foreground">知识库文档</p>
+                                <p class="mt-1 text-2xl font-semibold text-foreground">86</p>
+                                <p class="mt-1 text-xs text-muted-foreground">已归档文档</p>
+                            </div>
+                            <div class="rounded-md bg-primary/10 p-2 text-primary">
+                                <i data-lucide="database" class="h-5 w-5"></i>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                    <article class="rounded-md border border-border bg-card p-5 shadow-[var(--brand-shadow-1)]">
+                        <h3 class="text-base font-semibold text-foreground mb-4">系统数据</h3>
+                        <ul class="space-y-3">
+                            <li class="flex items-center justify-between text-sm border-b border-border pb-2">
+                                <span class="flex items-center gap-2 text-muted-foreground">
+                                    <i data-lucide="check-circle-2" class="h-4 w-4 text-primary"></i> 待办任务
+                                </span>
+                                <span class="font-medium text-foreground">128</span>
+                            </li>
+                            <li class="flex items-center justify-between text-sm border-b border-border pb-2">
+                                <span class="flex items-center gap-2 text-muted-foreground">
+                                    <i data-lucide="target" class="h-4 w-4 text-primary"></i> 目标追踪
+                                </span>
+                                <span class="font-medium text-foreground">36</span>
+                            </li>
+                            <li class="flex items-center justify-between text-sm border-b border-border pb-2">
+                                <span class="flex items-center gap-2 text-muted-foreground">
+                                    <i data-lucide="wallet" class="h-4 w-4 text-primary"></i> 收支记录
+                                </span>
+                                <span class="font-medium text-foreground">512</span>
+                            </li>
+                            <li class="flex items-center justify-between text-sm border-b border-border pb-2">
+                                <span class="flex items-center gap-2 text-muted-foreground">
+                                    <i data-lucide="utensils" class="h-4 w-4 text-primary"></i> 饮食记录
+                                </span>
+                                <span class="font-medium text-foreground">89</span>
+                            </li>
+                            <li class="flex items-center justify-between text-sm border-b border-border pb-2">
+                                <span class="flex items-center gap-2 text-muted-foreground">
+                                    <i data-lucide="bell" class="h-4 w-4 text-primary"></i> 提醒事项
+                                </span>
+                                <span class="font-medium text-foreground">24</span>
+                            </li>
+                            <li class="flex items-center justify-between text-sm border-b border-border pb-2">
+                                <span class="flex items-center gap-2 text-muted-foreground">
+                                    <i data-lucide="trophy" class="h-4 w-4 text-primary"></i> 成就勋章
+                                </span>
+                                <span class="font-medium text-foreground">15</span>
+                            </li>
+                            <li class="flex items-center justify-between text-sm">
+                                <span class="flex items-center gap-2 text-muted-foreground">
+                                    <i data-lucide="bar-chart-2" class="h-4 w-4 text-primary"></i> 周月报告
+                                </span>
+                                <span class="font-medium text-foreground">7</span>
+                            </li>
+                        </ul>
+                    </article>
+
+                    <article class="rounded-md border border-border bg-card p-5 shadow-[var(--brand-shadow-1)]">
+                        <h3 class="text-base font-semibold text-foreground mb-4">LLM 配置</h3>
+                        <div class="mb-4 flex flex-wrap gap-2">
+                            <span class="rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">GPT-4o</span>
+                            <span class="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">Claude 3.5</span>
+                            <span class="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">DeepSeek-V3</span>
+                            <span class="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">Qwen-Max</span>
+                        </div>
+                        <div class="space-y-2 text-sm text-muted-foreground">
+                            <p>默认模型: <span class="font-medium text-foreground">GPT-4o</span></p>
+                            <p>温度: <span class="font-medium text-foreground">0.7</span></p>
+                            <p>Max tokens: <span class="font-medium text-foreground">2048</span></p>
+                            <p>知识库检索: <span class="font-medium text-foreground">Top 5 / 阈值 0.75</span></p>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <article class="rounded-md border border-border bg-card p-5 shadow-[var(--brand-shadow-1)]">
+                        <h3 class="text-base font-semibold text-foreground mb-4">7 日操作日志趋势</h3>
+                        <div class="flex h-40 items-end justify-around gap-2">
+                            <div class="flex w-full flex-col items-center gap-2">
+                                <div class="w-full rounded-t bg-primary/80" style="height: 45%"></div>
+                                <span class="text-xs text-muted-foreground">08-22</span>
+                            </div>
+                            <div class="flex w-full flex-col items-center gap-2">
+                                <div class="w-full rounded-t bg-primary/80" style="height: 62%"></div>
+                                <span class="text-xs text-muted-foreground">08-23</span>
+                            </div>
+                            <div class="flex w-full flex-col items-center gap-2">
+                                <div class="w-full rounded-t bg-primary/80" style="height: 54%"></div>
+                                <span class="text-xs text-muted-foreground">08-24</span>
+                            </div>
+                            <div class="flex w-full flex-col items-center gap-2">
+                                <div class="w-full rounded-t bg-primary/80" style="height: 78%"></div>
+                                <span class="text-xs text-muted-foreground">08-25</span>
+                            </div>
+                            <div class="flex w-full flex-col items-center gap-2">
+                                <div class="w-full rounded-t bg-primary/80" style="height: 66%"></div>
+                                <span class="text-xs text-muted-foreground">08-26</span>
+                            </div>
+                            <div class="flex w-full flex-col items-center gap-2">
+                                <div class="w-full rounded-t bg-primary/80" style="height: 85%"></div>
+                                <span class="text-xs text-muted-foreground">08-27</span>
+                            </div>
+                            <div class="flex w-full flex-col items-center gap-2">
+                                <div class="w-full rounded-t bg-primary/80" style="height: 72%"></div>
+                                <span class="text-xs text-muted-foreground">08-28</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="rounded-md border border-border bg-card p-5 shadow-[var(--brand-shadow-1)]">
+                        <h3 class="text-base font-semibold text-foreground mb-4">操作类型分布</h3>
+                        <ul class="space-y-3">
+                            <li class="flex items-center justify-between text-sm">
+                                <span class="flex items-center gap-2 text-muted-foreground">
+                                    <i data-lucide="message-square" class="h-4 w-4 text-primary"></i> AI 对话
+                                </span>
+                                <span class="font-medium text-foreground">2,341</span>
+                            </li>
+                            <li class="flex items-center justify-between text-sm">
+                                <span class="flex items-center gap-2 text-muted-foreground">
+                                    <i data-lucide="search" class="h-4 w-4 text-primary"></i> 知识库检索
+                                </span>
+                                <span class="font-medium text-foreground">1,892</span>
+                            </li>
+                            <li class="flex items-center justify-between text-sm">
+                                <span class="flex items-center gap-2 text-muted-foreground">
+                                    <i data-lucide="plus-circle" class="h-4 w-4 text-primary"></i> 数据录入
+                                </span>
+                                <span class="font-medium text-foreground">876</span>
+                            </li>
+                            <li class="flex items-center justify-between text-sm">
+                                <span class="flex items-center gap-2 text-muted-foreground">
+                                    <i data-lucide="settings" class="h-4 w-4 text-primary"></i> 配置变更
+                                </span>
+                                <span class="font-medium text-foreground">432</span>
+                            </li>
+                            <li class="flex items-center justify-between text-sm">
+                                <span class="flex items-center gap-2 text-muted-foreground">
+                                    <i data-lucide="user-plus" class="h-4 w-4 text-primary"></i> 用户注册
+                                </span>
+                                <span class="font-medium text-foreground">280</span>
+                            </li>
+                        </ul>
+                    </article>
+                </div>
+            </section>
+        </div>
+    </main>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

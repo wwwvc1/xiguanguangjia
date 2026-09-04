@@ -1,0 +1,204 @@
+/* ============================================================
+ * 收支明细 finance 页面(I 方案)
+ * ============================================================ */
+
+/* ===== I 方案风格:Georgia 斜体大数字 + 上下结构 ===== */
+.finance-card{
+  padding: 56rpx 32rpx 44rpx;
+  margin: 0 0 32rpx;
+  background: rgba(251, 250, 246, 0.55);
+  backdrop-filter: blur(28rpx) saturate(180%);
+  -webkit-backdrop-filter: blur(28rpx) saturate(180%);
+  border: 1rpx solid rgba(255, 255, 255, 0.65);
+  border-radius: var(--r-lg);
+  box-shadow: 0 8rpx 24rpx rgba(20, 42, 32, 0.08), inset 0 1rpx 0 rgba(255, 255, 255, 0.85);
+  position: relative;
+  overflow: hidden;
+}
+.finance-card::before{
+  content: "";
+  position: absolute;
+  top: 0; left: 16rpx; right: 16rpx;
+  height: 1rpx;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.95), transparent);
+  pointer-events: none;
+}
+.finance-stats{
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+}
+.finance-item{
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 4rpx;
+  border-left: 1px solid var(--line-2);
+}
+.finance-item:first-child{ border-left: none; }
+.finance-symbol{
+  position: absolute;
+  top: 6rpx;
+  left: 38%;
+  font-size: 16rpx;
+  font-weight: 700;
+  color: var(--ink-3);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+}
+.finance-num{
+  font-family: Georgia, 'Times New Roman', 'Noto Serif CJK SC', serif;
+  font-size: 50rpx;
+  font-weight: 500;
+  font-style: italic;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  margin-top: 22rpx;
+  font-variant-numeric: tabular-nums;
+}
+.finance-num.income-italic{ color: var(--agar); }
+.finance-num.expense-italic{ color: var(--brick); }
+.finance-num.net-italic{ color: var(--agar); }
+.finance-label{
+  font-size: 11px;
+  color: var(--ink-3);
+  font-weight: 700;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  margin-top: 12rpx;
+}
+/* 兼容旧类名(防止 wxml 历史用法报错) */
+.finance-stats .item .num{
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 50rpx;
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.finance-stats .item .label{
+  font-size: 24rpx;
+  color: var(--ink-3);
+  margin-top: 12rpx;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.date-bar{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 56rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+}
+.date-bar .arrow{
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: var(--r-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
+  color: var(--ink-2);
+  background: var(--surface-glass);
+  backdrop-filter: blur(12rpx);
+  -webkit-backdrop-filter: blur(12rpx);
+  border: 1rpx solid var(--line);
+  font-weight: 700;
+}
+.date-bar .current{
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+/* 兼容 .income / .expense 类名 */
+.income{ color: var(--agar) !important; }
+.expense{ color: var(--brick) !important; }
+
+/* ===== 弹窗 ===== */
+.modal-mask{
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 26, 20, 0.40);
+  backdrop-filter: blur(4rpx);
+  -webkit-backdrop-filter: blur(4rpx);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-content{
+  width: 600rpx;
+  padding: 40rpx 32rpx;
+  margin: 0 32rpx;
+}
+.modal-title{
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--ink);
+  display: block;
+  text-align: center;
+  margin-bottom: 32rpx;
+  letter-spacing: -0.01em;
+}
+.form-input{ padding: 4rpx; }
+.form-input .modal-input{
+  padding: 28rpx 28rpx;
+  font-size: 28rpx;
+  color: var(--ink);
+  background: rgba(248, 245, 238, 0.62);
+  backdrop-filter: blur(20rpx) saturate(160%);
+  -webkit-backdrop-filter: blur(20rpx) saturate(160%);
+  border-radius: var(--r-md);
+  border: 1rpx solid var(--line);
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 88rpx;
+  line-height: 1.4;
+  box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.60);
+}
+.form-input .modal-input::placeholder{
+  color: var(--ink-2);
+  font-weight: 500;
+}
+.form-input .modal-input::placeholder{ color: var(--ink-3); }
+.form-row{ display: flex; gap: 16rpx; margin-top: 16rpx; }
+.form-half{ flex: 1; }
+.type-toggle{ display: flex; gap: 12rpx; }
+.type-btn{
+  padding: 16rpx 28rpx;
+  border-radius: var(--r-md);
+  font-size: 26rpx;
+  color: var(--ink-3);
+  background: var(--paper-2);
+  border: 1rpx solid var(--line-2);
+  font-weight: 600;
+}
+.type-btn.active{
+  color: var(--paper);
+  background: var(--agar);
+  border-color: var(--agar);
+}
+.modal-actions{ display: flex; gap: 24rpx; margin-top: 32rpx; }
+.modal-btn{
+  flex: 1;
+  padding: 24rpx;
+  border-radius: var(--r-lg);
+  font-size: 30rpx;
+  font-weight: 700;
+  text-align: center;
+}
+.cancel-btn{
+  background: var(--paper-2);
+  color: var(--ink-2);
+  border: 1rpx solid var(--line-2);
+}
+.confirm-btn{
+  color: var(--paper);
+  background: var(--agar);
+  box-shadow: 0 6rpx 16rpx rgba(20, 42, 32, 0.20), inset 0 1rpx 0 rgba(255, 255, 255, 0.18);
+}

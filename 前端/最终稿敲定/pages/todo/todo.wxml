@@ -1,0 +1,195 @@
+<view class="container">
+  <view class="custom-nav" style="height: {{navHeight}}px; padding-top: {{statusBarHeight}}px;">
+    <view class="nav-content">
+      <view class="nav-titles">
+        <text class="nav-meta">TODOS + GOALS</text>
+        <text class="nav-title serif">Things <text class="serif-italic">To Do.</text></text>
+      </view>
+      <view style="width: 72rpx;"></view>
+    </view>
+  </view>
+
+  <!-- 批量管理按钮(顶部:退出 / 全选 / 删除) -->
+  <view class="batch-toolbar" wx:if="{{activeTab === 'todo' && !batchMode}}">
+    <view class="batch-btn bump-sm" bindtap="onToggleBatchTodo">☑ 批量管理</view>
+  </view>
+  <view class="batch-toolbar" wx:if="{{activeTab === 'todo' && batchMode}}">
+    <view class="batch-btn bump-sm" bindtap="onToggleBatchTodo">✓ 退出</view>
+    <view class="batch-btn bump-sm" bindtap="onSelectAllTodos">全选</view>
+    <view class="batch-btn delete-btn bump-sm" bindtap="onBatchDeleteTodos">🗑 删除 ({{selectedTodos.length}})</view>
+  </view>
+
+  <view class="batch-toolbar" wx:if="{{activeTab === 'goal' && !batchMode}}">
+    <view class="batch-btn bump-sm" bindtap="onToggleBatchGoal">☑ 批量管理</view>
+  </view>
+  <view class="batch-toolbar" wx:if="{{activeTab === 'goal' && batchMode}}">
+    <view class="batch-btn bump-sm" bindtap="onToggleBatchGoal">✓ 退出</view>
+    <view class="batch-btn bump-sm" bindtap="onSelectAllGoals">全选</view>
+    <view class="batch-btn delete-btn bump-sm" bindtap="onBatchDeleteGoals">🗑 删除 ({{selectedGoals.length}})</view>
+  </view>
+
+  <scroll-view class="page-content" scroll-y>
+    <view class="tab-bar-top pit">
+      <view class="tab {{activeTab === 'todo' ? 'active' : ''}}" data-tab="todo" bindtap="switchTab">待办</view>
+      <view class="tab {{activeTab === 'goal' ? 'active' : ''}}" data-tab="goal" bindtap="switchTab">目标</view>
+    </view>
+
+    <!-- 待办列表 -->
+    <view wx:if="{{activeTab === 'todo'}}">
+      <view class="todo-summary">
+        今日待办 <text class="highlight italic">{{todos.length}}</text><text class="italic"> 项进行中</text>
+      </view>
+
+      <view class="section-title" style="margin-left:12rpx;">进行中</view>
+      <view class="todo-card bump">
+        <view wx:if="{{todos.length === 0}}" class="empty-tip">暂无待办</view>
+        <view wx:for="{{todos}}" wx:key="id">
+          <view class="todo-item" data-id="{{item.id}}" bindtap="{{batchMode ? 'onToggleSelectTodo' : 'toggleTodo'}}">
+            <view wx:if="{{batchMode}}" class="checkbox-batch {{selectedTodos.indexOf(item.id) >= 0 ? 'checked' : ''}}">
+              {{selectedTodos.indexOf(item.id) >= 0 ? '✓' : ''}}
+            </view>
+            <view wx:else class="checkbox unchecked"></view>
+            <text class="text">{{item.text}}</text>
+          </view>
+          <view class="divider"></view>
+        </view>
+      </view>
+
+      <view class="section-title" style="margin-left:12rpx;">已完成</view>
+      <view class="todo-card bump">
+        <view wx:if="{{completedTodos.length === 0}}" class="empty-tip">暂无已完成任务</view>
+        <view wx:for="{{completedTodos}}" wx:key="id">
+          <view class="todo-item" data-id="{{item.id}}">
+            <view wx:if="{{batchMode}}" class="checkbox-batch {{selectedTodos.indexOf(item.id) >= 0 ? 'checked' : ''}}"
+                  bindtap="onToggleSelectTodo">
+              {{selectedTodos.indexOf(item.id) >= 0 ? '✓' : ''}}
+            </view>
+            <view wx:else class="checkbox checked">✓</view>
+            <text class="text done" bindtap="{{batchMode ? 'onToggleSelectTodo' : 'uncompleteTodo'}}" data-id="{{item.id}}">{{item.text}}</text>
+            <view wx:if="{{!batchMode}}" class="action-btn pit-sm" bindtap="deleteTodo" data-id="{{item.id}}" catchtap="deleteTodo">✕</view>
+          </view>
+          <view class="divider"></view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 目标列表 -->
+    <view wx:if="{{activeTab === 'goal'}}">
+      <view class="section-title" style="margin-left:12rpx;">目标 <text class="italic">进度</text></view>
+      <view wx:for="{{goals}}" wx:key="id">
+        <view class="goal-card bump {{batchMode && selectedGoals.indexOf(item.id) >= 0 ? 'selected' : ''}}"
+              data-id="{{item.id}}"
+              bindtap="{{batchMode ? 'onToggleSelectGoal' : 'onEditGoal'}}">
+          <!-- 批量模式下的大对勾 -->
+          <view wx:if="{{batchMode}}" class="goal-check {{selectedGoals.indexOf(item.id) >= 0 ? 'checked' : ''}}">
+            {{selectedGoals.indexOf(item.id) >= 0 ? '✓' : ''}}
+          </view>
+          <view class="goal-content" style="{{batchMode ? 'padding-left: 80rpx;' : ''}}">
+            <text class="goal-name">{{item.name}}</text>
+            <view class="goal-period" wx:if="{{item.start_date || item.end_date}}">
+              <text wx:if="{{item.start_date}}">{{item.start_date}}</text>
+              <text wx:if="{{item.start_date && item.end_date}}"> ~ </text>
+              <text wx:if="{{item.end_date}}">{{item.end_date}}</text>
+            </view>
+            <view class="progress-wrap">
+              <view class="progress-track">
+                <view class="fill {{item.done ? 'done' : ''}}" style="width: {{item.progress}}%"></view>
+              </view>
+              <text class="progress-text {{item.done ? 'done' : ''}}">{{item.progress}}%</text>
+            </view>
+            <view class="goal-actions">
+              <text class="update-time">上次更新：{{item.updateTime}}</text>
+              <view wx:if="{{!batchMode}}" class="action-btn pit-sm"
+                   data-id="{{item.id}}" catchtap="deleteGoal">✕</view>
+            </view>
+          </view>
+        </view>
+        <view class="divider" wx:if="{{index < goals.length - 1}}"></view>
+      </view>
+      <view wx:if="{{goals.length === 0}}" class="empty-tip" style="padding:60rpx 0;">暂无目标</view>
+    </view>
+
+    <view class="safe-bottom"></view>
+  </scroll-view>
+
+  <view wx:if="{{!batchMode}}" class="fab" bindtap="onFabTap">+</view>
+
+  <!-- 新增待办弹窗 -->
+  <view class="modal-mask" wx:if="{{showAdd && !isEditGoal}}" bindtap="onCancel">
+    <view class="modal-content bump" catchtap="stopPropagation">
+      <text class="modal-title">添加待办</text>
+      <view class="form-input">
+        <input class="modal-input" placeholder="输入待办内容..." value="{{formData.text}}" bindinput="onFormInput" data-field="text" />
+      </view>
+      <view class="form-input" style="margin-top: 16rpx;">
+        <picker mode="date" value="{{formData.startDate}}" bindchange="onFormInput" data-field="startDate">
+          <view class="date-picker">开始日期：{{formData.startDate}}</view>
+        </picker>
+      </view>
+      <view class="form-input" style="margin-top: 16rpx;">
+        <picker mode="date" value="{{formData.endDate}}" bindchange="onFormInput" data-field="endDate">
+          <view class="date-picker">结束日期：{{formData.endDate}}</view>
+        </picker>
+      </view>
+      <view class="modal-actions">
+        <view class="modal-btn cancel-btn bump-sm" bindtap="onCancel">取消</view>
+        <view class="modal-btn confirm-btn" bindtap="onSave">保存</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 编辑/新建目标弹窗 -->
+  <view class="modal-mask" wx:if="{{showAdd && isEditGoal}}" bindtap="onCancel">
+    <view class="modal-content bump" catchtap="stopPropagation">
+      <text class="modal-title">编辑目标</text>
+      <view class="form-input">
+        <input class="modal-input" placeholder="目标名称,如'今年读完50本书'" value="{{goalForm.name}}" bindinput="onGoalFormInput" data-field="name" />
+      </view>
+      <view class="form-input" style="margin-top: 16rpx;">
+        <input class="modal-input" placeholder="进度 (0-100)" type="number" value="{{goalForm.progress}}" bindinput="onGoalFormInput" data-field="progress" />
+      </view>
+      <view class="form-input" style="margin-top: 16rpx;">
+        <text class="date-label">长期目标 / 时间段(可选)</text>
+        <view class="date-row">
+          <picker mode="date" value="{{goalForm.start_date}}" bindchange="onGoalFormInput" data-field="start_date">
+            <view class="date-picker">开始:{{goalForm.start_date || '不限'}}</view>
+          </picker>
+          <text class="date-sep">~</text>
+          <picker mode="date" value="{{goalForm.end_date}}" bindchange="onGoalFormInput" data-field="end_date">
+            <view class="date-picker">结束:{{goalForm.end_date || '不限'}}</view>
+          </picker>
+        </view>
+      </view>
+      <view class="modal-actions">
+        <view class="modal-btn cancel-btn bump-sm" bindtap="onCancel">取消</view>
+        <view class="modal-btn confirm-btn" bindtap="onSave">保存</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 新建目标(无 isEditGoal)弹窗 -->
+  <view class="modal-mask" wx:if="{{showAdd && !isEditGoal && goalMode}}" bindtap="onCancel">
+    <view class="modal-content bump" catchtap="stopPropagation">
+      <text class="modal-title">新建目标</text>
+      <view class="form-input">
+        <input class="modal-input" placeholder="目标名称,如'今年读完50本书'" value="{{goalForm.name}}" bindinput="onGoalFormInput" data-field="name" />
+      </view>
+      <view class="form-input" style="margin-top: 16rpx;">
+        <text class="date-label">长期目标 / 时间段(可选)</text>
+        <view class="date-row">
+          <picker mode="date" value="{{goalForm.start_date}}" bindchange="onGoalFormInput" data-field="start_date">
+            <view class="date-picker">开始:{{goalForm.start_date || '不限'}}</view>
+          </picker>
+          <text class="date-sep">~</text>
+          <picker mode="date" value="{{goalForm.end_date}}" bindchange="onGoalFormInput" data-field="end_date">
+            <view class="date-picker">结束:{{goalForm.end_date || '不限'}}</view>
+          </picker>
+        </view>
+      </view>
+      <view class="modal-actions">
+        <view class="modal-btn cancel-btn bump-sm" bindtap="onCancel">取消</view>
+        <view class="modal-btn confirm-btn" bindtap="onSave">保存</view>
+      </view>
+    </view>
+  </view>
+</view>

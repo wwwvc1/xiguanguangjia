@@ -1,0 +1,43 @@
+<view class="container">
+  <!-- 自定义导航栏 -->
+  <view class="custom-nav" style="height: {{navHeight}}px; padding-top: {{statusBarHeight}}px;">
+    <view class="nav-content">
+      <view class="nav-back bump-sm" bindtap="goBack">
+        <text style="font-size: 20px; color: var(--ink-2);">‹</text>
+      </view>
+      <text class="nav-title">我的成就</text>
+      <view style="width: 36px;"></view>
+    </view>
+  </view>
+
+  <scroll-view class="page-content" scroll-y>
+    <view style="height: 20rpx;"></view>
+
+    <!-- 进度概览 -->
+    <view class="progress-card bump">
+      <view class="progress-row">
+        <text class="progress-num">{{unlockedCount}}</text>
+        <text class="progress-total">/ {{totalCount}}</text>
+      </view>
+      <text class="progress-label">已解锁成就</text>
+      <view class="progress-bar">
+        <view class="progress-fill" style="width: {{progressPercent}}%;"></view>
+      </view>
+    </view>
+
+    <!-- 成就列表 -->
+    <view class="achievement-grid">
+      <view wx:for="{{achievements}}" wx:key="type" class="ach-card {{item.unlocked ? 'unlocked' : 'locked'}} bump">
+        <view class="ach-icon">{{item.unlocked ? item.icon : '🔒'}}</view>
+        <view class="ach-name">{{item.name}}</view>
+        <view class="ach-desc">{{item.description}}</view>
+        <view wx:if="{{item.unlocked}}" class="ach-time">
+          <text>{{item.unlocked_at}}</text>
+        </view>
+        <view wx:else class="ach-locked-hint">未解锁</view>
+      </view>
+    </view>
+
+    <view class="safe-bottom"></view>
+  </scroll-view>
+</view>

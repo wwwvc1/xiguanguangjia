@@ -1,0 +1,3 @@
+[RAG] 已有 5 个文档,跳过静态加载
+[RAG] 引擎就绪,持久化路径: ./chroma_db
+[Scheduler] 启动失败(非致命): No module named 'apscheduler'

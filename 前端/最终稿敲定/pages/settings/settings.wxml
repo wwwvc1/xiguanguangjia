@@ -1,0 +1,240 @@
+<view class="container">
+  <view class="custom-nav" style="height: {{navHeight}}px; padding-top: {{statusBarHeight}}px;">
+    <view class="nav-content">
+      <text class="nav-title">设置</text>
+    </view>
+  </view>
+
+  <scroll-view class="page-content" scroll-y>
+    <view style="height: 20rpx;"></view>
+
+    <view class="setting-group">
+      <text class="setting-group-title">健康目标</text>
+      <view class="setting-items bump">
+        <view class="setting-item">
+          <view class="left">
+            <view class="icon-pit pit-sm">🍱</view>
+            <view class="text-col">
+              <text class="text">每日饮食目标</text>
+              <text class="text-sub">单位:千卡(kcal)</text>
+            </view>
+          </view>
+          <view class="right" style="align-items: center;">
+            <input
+              type="number"
+              value="{{calorieGoal}}"
+              bindblur="onCalorieGoalChange"
+              class="number-input"
+              placeholder="1800"
+            />
+            <text class="text-sub" style="margin-left: 8rpx;">kcal</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="setting-group">
+      <text class="setting-group-title">提醒设置</text>
+      <view class="setting-items bump">
+        <view wx:if="{{reminders.length === 0}}" class="empty-tip" style="padding: 24rpx 0;">还没有提醒，点击下方添加</view>
+        <view wx:for="{{reminders}}" wx:key="id">
+          <view class="setting-item" bindtap="onTapReminder" data-id="{{item.id}}">
+            <view class="left">
+              <view class="icon-pit pit-sm">{{item.icon}}</view>
+              <view class="text-col">
+                <text class="text">{{item.label}}</text>
+                <text class="text-sub">{{item.weekdayLabel || '每天'}} {{item.time}}</text>
+              </view>
+            </view>
+            <view class="right" catchtap="stopPropagation">
+              <switch checked="{{item.enabled}}" bindchange="onToggle" data-id="{{item.id}}" data-enabled="{{item.enabled}}" color="#8DA9C4" />
+              <view class="action-btn pit-sm" bindtap="onDelete" data-id="{{item.id}}">✕</view>
+            </view>
+          </view>
+          <view class="divider" wx:if="{{index < reminders.length - 1}}"></view>
+        </view>
+
+        <!-- 添加入口 -->
+        <view class="setting-item add-item" bindtap="onAddReminder">
+          <view class="left">
+            <view class="icon-pit pit-sm" style="color: var(--primary-dark);">+</view>
+            <text class="text" style="color: var(--primary-dark);">添加提醒</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="setting-group">
+      <text class="setting-group-title">AI 助手</text>
+      <view class="setting-items bump">
+        <view class="setting-item" bindtap="onShowAvatarActions">
+          <view class="left">
+            <view class="icon-pit pit-sm avatar-mini">
+              <image wx:if="{{aiAvatar}}" src="{{aiAvatar}}" class="avatar-thumb" />
+              <text wx:else>🤖</text>
+            </view>
+            <text class="text">AI 头像</text>
+          </view>
+          <view class="right">
+            <text class="text-sub" wx:if="{{aiAvatar}}">已自定义</text>
+            <text class="arrow">›</text>
+          </view>
+        </view>
+        <view class="divider"></view>
+        <view class="setting-item" bindtap="onGoAiModel">
+          <view class="left">
+            <view class="icon-pit pit-sm">🧠</view>
+            <view class="text-col">
+              <text class="text">AI 模型</text>
+              <text class="text-sub">{{activeModelName}} · 已添加 {{customModelCount}}/3</text>
+            </view>
+          </view>
+          <view class="right">
+            <text class="arrow">›</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="setting-group">
+      <text class="setting-group-title">数据</text>
+      <view class="setting-items bump">
+        <view class="setting-item" bindtap="onExportData">
+          <view class="left">
+            <view class="icon-pit pit-sm">📤</view>
+            <view class="text-col">
+              <text class="text">导出全部数据</text>
+              <text class="text-sub">下载 JSON 文件,含待办/目标/收支/饮食/提醒</text>
+            </view>
+          </view>
+          <view class="right">
+            <text class="arrow">›</text>
+          </view>
+        </view>
+        <view class="divider"></view>
+        <view class="setting-item" bindtap="onExportTransactions">
+          <view class="left">
+            <view class="icon-pit pit-sm">🧾</view>
+            <view class="text-col">
+              <text class="text">导出账单 (CSV)</text>
+              <text class="text-sub">Excel 可直接打开</text>
+            </view>
+          </view>
+          <view class="right">
+            <text class="arrow">›</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="setting-group">
+      <text class="setting-group-title">我的成就</text>
+      <view class="setting-items bump">
+        <view class="setting-item" bindtap="onGoAchievements">
+          <view class="left">
+            <view class="icon-pit pit-sm">🏆</view>
+            <view class="text-col">
+              <text class="text">查看成就</text>
+              <text class="text-sub">{{achSummary}}</text>
+            </view>
+          </view>
+          <view class="right">
+            <text class="arrow">›</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="setting-group">
+      <text class="setting-group-title">数据洞察</text>
+      <view class="setting-items bump">
+        <view class="setting-item" bindtap="onGoStats">
+          <view class="left">
+            <view class="icon-pit pit-sm">📈</view>
+            <view class="text-col">
+              <text class="text">数据洞察</text>
+              <text class="text-sub">习惯模式、关联分析、图表</text>
+            </view>
+          </view>
+          <view class="right">
+            <text class="arrow">›</text>
+          </view>
+        </view>
+        <view class="divider"></view>
+        <view class="setting-item" bindtap="onGoReports">
+          <view class="left">
+            <view class="icon-pit pit-sm">📅</view>
+            <view class="text-col">
+              <text class="text">周报月报</text>
+              <text class="text-sub">每周日 20:00 自动生成周报</text>
+            </view>
+          </view>
+          <view class="right">
+            <text class="arrow">›</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 退出登录 -->
+    <view class="setting-group">
+      <view class="setting-items bump" style="padding: 8rpx 32rpx;">
+        <view class="setting-item logout-item" bindtap="onLogout">
+          <view class="left">
+            <view class="icon-pit pit-sm">🚪</view>
+            <text class="text" style="color: #B08070;">退出登录</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="safe-bottom"></view>
+  </scroll-view>
+
+  <!-- 添加/编辑提醒弹窗 -->
+  <view class="modal-mask" wx:if="{{showAdd || showEdit}}" bindtap="onCancel">
+    <view class="modal-content bump" catchtap="stopPropagation">
+      <text class="modal-title">{{showEdit ? '编辑提醒' : '添加提醒'}}</text>
+
+      <!-- 提醒类型 -->
+      <text class="form-label">提醒类型</text>
+      <view class="type-row">
+        <view class="type-chip {{formData.type === 'finance' ? 'active' : ''}}" bindtap="onTypeSelect" data-value="finance">💰 收支</view>
+        <view class="type-chip {{formData.type === 'diet' ? 'active' : ''}}" bindtap="onTypeSelect" data-value="diet">🍎 饮食</view>
+        <view class="type-chip {{formData.type === 'todo' ? 'active' : ''}}" bindtap="onTypeSelect" data-value="todo">✓ 待办</view>
+        <view class="type-chip {{formData.type === 'goal' ? 'active' : ''}}" bindtap="onTypeSelect" data-value="goal">🎯 目标</view>
+        <view class="type-chip {{formData.type === 'other' ? 'active' : ''}}" bindtap="onTypeSelect" data-value="other">🔔 其他</view>
+      </view>
+
+      <!-- 提醒时间 -->
+      <text class="form-label" style="margin-top: 24rpx;">提醒时间</text>
+      <view class="form-input">
+        <picker mode="time" value="{{formData.time}}" bindchange="onTimeChange">
+          <view class="modal-input">{{formData.time}}</view>
+        </picker>
+      </view>
+
+      <view class="weekday-section">
+        <text class="form-label">重复(默认每天)</text>
+        <view class="weekday-row">
+          <view
+            wx:for="{{weekdays}}"
+            wx:key="idx"
+            wx:for-index="wd"
+            class="weekday-chip {{wdActive[wd] ? 'active' : ''}}"
+            data-value="{{wd}}"
+            catchtap="onToggleWeekday"
+          >
+            <text class="weekday-text">{{item}}</text>
+            <text wx:if="{{wdActive[wd]}}" class="weekday-tick">✓</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="modal-actions">
+        <view class="modal-btn cancel-btn bump-sm" bindtap="onCancel">取消</view>
+        <view class="modal-btn confirm-btn" bindtap="onSave">保存</view>
+      </view>
+    </view>
+  </view>
+</view>

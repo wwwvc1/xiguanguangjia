@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b1120" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>习惯管家 · 管理后台</title>
+    <style>
+      /* 启动屏:在 Vue 挂载前先铺一层深空背景,避免白闪 */
+      html, body { height: 100%; margin: 0; background: #0b1120; color: #f3f4f6;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+      #app-loading {
+        position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+        font-size: 13px; letter-spacing: 0.08em; color: #9ca3af;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div id="app-loading">LOADING…</div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

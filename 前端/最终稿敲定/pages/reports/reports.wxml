@@ -1,0 +1,149 @@
+<view class="container">
+  <view class="custom-nav" style="height: {{navHeight}}px; padding-top: {{statusBarHeight}}px;">
+    <view class="nav-content">
+      <view class="nav-back bump-sm" bindtap="goBack">
+        <text style="font-size: 20px; color: var(--ink-2);">‹</text>
+      </view>
+      <text class="nav-title">{{detail ? '报告详情' : '报告'}}</text>
+      <view style="width: 36px;"></view>
+    </view>
+  </view>
+
+  <scroll-view class="page-content" scroll-y>
+    <view style="height: 20rpx;"></view>
+
+    <!-- 列表视图 -->
+    <block wx:if="{{!detail}}">
+      <view class="tab-row">
+        <view class="tab-chip {{filter === 'all' ? 'active' : ''}}" bindtap="onChangeFilter" data-value="all">全部</view>
+        <view class="tab-chip {{filter === 'weekly' ? 'active' : ''}}" bindtap="onChangeFilter" data-value="weekly">周报</view>
+        <view class="tab-chip {{filter === 'monthly' ? 'active' : ''}}" bindtap="onChangeFilter" data-value="monthly">月报</view>
+      </view>
+
+      <view class="gen-row">
+        <view class="gen-btn bump-sm" bindtap="onGenerate" data-type="weekly">📅 生成本周报</view>
+        <view class="gen-btn bump-sm" bindtap="onGenerate" data-type="monthly">📊 生成本月报</view>
+      </view>
+
+      <view wx:if="{{reports.length === 0}}" class="empty-tip" style="padding: 80rpx 0;">还没有报告,点上面按钮生成一份吧</view>
+
+      <view wx:for="{{reports}}" wx:key="id" class="report-card bump" bindtap="onOpenReport" data-id="{{item.id}}">
+        <view class="report-type-icon">{{item.type === 'weekly' ? '📅' : '📊'}}</view>
+        <view class="report-info">
+          <text class="report-title">{{item.title}}</text>
+          <text class="report-time">生成于 {{item.generated_at}}</text>
+        </view>
+        <text class="arrow">›</text>
+      </view>
+    </block>
+
+    <!-- 详情视图 -->
+    <view wx:else>
+      <!-- 标题区 -->
+      <view class="detail-block bump">
+        <text class="detail-period">{{reportTitle}}</text>
+        <text class="detail-time">生成于 {{detail.generated_at}}</text>
+        <view class="data-source-badge">
+          <text>📊 基于您的真实数据</text>
+        </view>
+      </view>
+
+      <!-- 真实数据快照 -->
+      <view class="section-title">📈 真实数据快照</view>
+      <view class="stats-block bump">
+        <!-- 时间范围 -->
+        <view class="stats-period">
+          <text class="period-icon">📅</text>
+          <text class="period-text">{{detail.stats.start_date}} 至 {{detail.stats.end_date}}</text>
+        </view>
+
+        <view class="stats-divider"></view>
+
+        <!-- 待办 -->
+        <view class="stats-group">
+          <text class="group-label">✅ 待办完成</text>
+          <view class="group-row">
+            <view class="kv">
+              <text class="kv-label">完成数</text>
+              <text class="kv-value primary-dark">{{detail.stats.todos_done || 0}}</text>
+            </view>
+            <view class="kv">
+              <text class="kv-label">总数</text>
+              <text class="kv-value">{{detail.stats.todos_total || 0}}</text>
+            </view>
+            <view class="kv">
+              <text class="kv-label">完成率</text>
+              <text class="kv-value primary-dark">{{detail.stats.completion_rate || 0}}%</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="stats-divider"></view>
+
+        <!-- 收支 -->
+        <view class="stats-group">
+          <text class="group-label">💰 收支</text>
+          <view class="group-row">
+            <view class="kv">
+              <text class="kv-label">收入</text>
+              <text class="kv-value success-dark">¥{{detail.stats.tx_income || 0}}</text>
+            </view>
+            <view class="kv">
+              <text class="kv-label">支出</text>
+              <text class="kv-value" style="color:#B08070;">¥{{detail.stats.tx_expense || 0}}</text>
+            </view>
+            <view class="kv">
+              <text class="kv-label">结余</text>
+              <text class="kv-value primary-dark">¥{{detail.stats.tx_net || 0}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="stats-divider"></view>
+
+        <!-- 饮食 -->
+        <view class="stats-group">
+          <text class="group-label">🍱 饮食</text>
+          <view class="group-row">
+            <view class="kv">
+              <text class="kv-label">餐数</text>
+              <text class="kv-value">{{detail.stats.meals_count || 0}}</text>
+            </view>
+            <view class="kv">
+              <text class="kv-label">总热量</text>
+              <text class="kv-value primary-dark">{{detail.stats.meals_calories || 0}}</text>
+              <text class="kv-unit">kcal</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 目标 -->
+        <block wx:if="{{detail.stats.goals_progress && detail.stats.goals_progress.length > 0}}">
+          <view class="stats-divider"></view>
+          <view class="stats-group">
+            <text class="group-label">🎯 目标进度</text>
+            <view class="goal-item" wx:for="{{detail.stats.goals_progress}}" wx:key="name">
+              <text class="goal-name {{item.done ? 'done' : ''}}">{{item.name}}</text>
+              <text class="goal-progress {{item.done ? 'done' : ''}}">{{item.progress}}%</text>
+            </view>
+          </view>
+        </block>
+      </view>
+
+      <!-- AI 解读 -->
+      <view class="section-title">🤖 AI 解读</view>
+      <view class="md-block bump">
+        <text class="md-content">{{detail.content}}</text>
+      </view>
+
+      <view class="action-bar">
+        <view class="action-btn bump-sm" bindtap="onExportReport">📤 导出</view>
+        <view class="action-btn bump-sm" bindtap="onShareReport">🔗 分享</view>
+      </view>
+
+      <view class="back-btn bump" bindtap="onCloseDetail">返回列表</view>
+    </view>
+
+    <view class="safe-bottom"></view>
+  </scroll-view>
+</view>

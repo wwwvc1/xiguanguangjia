@@ -1,0 +1,48 @@
+{
+  "name": "方案 A · 现代极简",
+  "version": 1,
+  "description": "以干净留白、清晰层级、柔和蓝灰为主的管理后台视觉方案",
+  "data": [
+    {
+      "id": "page-login",
+      "title": "登录页",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1724784000000,
+      "devMetadata": {
+        "htmlSrc": "pages/login.html",
+        "interactions": []
+      },
+      "canvasData": { "x": 0, "y": 0, "group": 0 }
+    },
+    {
+      "id": "page-dashboard",
+      "title": "仪表盘",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1724784000001,
+      "devMetadata": {
+        "htmlSrc": "pages/dashboard.html",
+        "interactions": []
+      },
+      "canvasData": { "x": 0, "y": 0, "group": 0 }
+    },
+    {
+      "id": "page-users",
+      "title": "用户管理",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1724784000002,
+      "devMetadata": {
+        "htmlSrc": "pages/users.html",
+        "interactions": []
+      },
+      "canvasData": { "x": 0, "y": 0, "group": 0 }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "desktop",
+    "projectName": "方案 A · 现代极简"
+  }
+}

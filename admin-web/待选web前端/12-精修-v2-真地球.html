@@ -1,0 +1,1686 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440, initial-scale=1">
+<title>习惯管家 · 运营后台 · 真地球</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<style>
+/* ============================================================
+   Design Tokens · 蓝紫 #6366f1 精修款
+   ============================================================ */
+:root {
+  /* Surfaces - light */
+  --bg: #fafafa;
+  --bg-elevated: #ffffff;
+  --surface-1: rgba(255, 255, 255, 0.6);
+  --surface-2: rgba(255, 255, 255, 0.35);
+  --surface-3: rgba(255, 255, 255, 0.88);
+  --border-soft: rgba(10, 10, 10, 0.06);
+  --border: rgba(10, 10, 10, 0.08);
+  --border-strong: rgba(10, 10, 10, 0.12);
+
+  /* Text */
+  --text-1: #0a0a0a;
+  --text-2: #525252;
+  --text-3: #a3a3a3;
+  --text-4: #d4d4d4;
+
+  /* Accent - 蓝紫 #6366f1 (套 A 精修主色) */
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --accent-soft: #eef2ff;
+  --accent-line: rgba(99, 102, 241, 0.22);
+
+  /* Geometry */
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-pill: 999px;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgba(10, 10, 10, 0.04);
+  --shadow: 0 1px 3px rgba(10, 10, 10, 0.05), 0 1px 2px rgba(10, 10, 10, 0.04);
+  --shadow-lg: 0 4px 16px rgba(10, 10, 10, 0.06);
+
+  /* Motion */
+  --t-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  --t-base: 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  --t-theme: 400ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Glass */
+  --blur-frosted: 40px;
+  --blur-crystal: 12px;
+  --blur-mist: 20px;
+  --glass-saturation: 180%;
+
+  /* Layout */
+  --top-h: 64px;
+  --side-w: 240px;
+
+  /* Earth stage */
+  --earth-size: 280px;
+}
+
+[data-theme="dark"] {
+  --bg: #0a0a0a;
+  --bg-elevated: #131316;
+  --surface-1: rgba(255, 255, 255, 0.04);
+  --surface-2: rgba(255, 255, 255, 0.06);
+  --surface-3: rgba(255, 255, 255, 0.08);
+  --border-soft: rgba(255, 255, 255, 0.05);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+
+  --text-1: #fafafa;
+  --text-2: #a3a3a3;
+  --text-3: #525252;
+  --text-4: #262626;
+
+  --accent: #818cf8;
+  --accent-hover: #a5b4fc;
+  --accent-soft: #1e1b4b;
+  --accent-line: rgba(129, 140, 248, 0.25);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================================
+   Reset + Base
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; font-feature-settings: "ss01", "cv11"; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text-1);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background var(--t-theme), color var(--t-theme);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Two subtle halos - radial gradients */
+body::before {
+  content: '';
+  position: fixed;
+  top: -30%; right: -10%;
+  width: 800px; height: 800px;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 65%);
+  opacity: 0.06;
+  filter: blur(200px);
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity var(--t-theme);
+}
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -30%; left: -10%;
+  width: 700px; height: 700px;
+  background: radial-gradient(circle, #06b6d4 0%, transparent 65%);
+  opacity: 0.05;
+  filter: blur(200px);
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity var(--t-theme);
+}
+[data-theme="dark"] body::before { opacity: 0.10; }
+[data-theme="dark"] body::after  { opacity: 0.08; }
+
+button, input, select, textarea { font: inherit; color: inherit; }
+button { border: none; background: none; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+
+::selection { background: var(--accent-soft); color: var(--accent); }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--bg);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ============================================================
+   Glass Primitives - 3 types
+   ============================================================ */
+.glass-frosted {
+  background: var(--surface-1);
+  backdrop-filter: blur(var(--blur-frosted)) saturate(var(--glass-saturation));
+  -webkit-backdrop-filter: blur(var(--blur-frosted)) saturate(var(--glass-saturation));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.glass-crystal {
+  background: var(--surface-2);
+  backdrop-filter: blur(var(--blur-crystal));
+  -webkit-backdrop-filter: blur(var(--blur-crystal));
+  border-radius: var(--radius);
+  position: relative;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.08) 100%),
+    var(--surface-2);
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+.glass-crystal::before {
+  content: '';
+  position: absolute; inset: 0;
+  padding: 1px; border-radius: inherit;
+  background: linear-gradient(135deg,
+    rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.05) 40%,
+    rgba(255,255,255,0.05) 60%, rgba(255,255,255,0.3) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  pointer-events: none;
+}
+.glass-crystal::after {
+  content: '';
+  position: absolute; inset: 1px;
+  border-radius: inherit;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+}
+[data-theme="dark"] .glass-crystal {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.02) 100%),
+    var(--surface-2);
+}
+
+.glass-mist {
+  background: var(--surface-3);
+  backdrop-filter: blur(var(--blur-mist));
+  -webkit-backdrop-filter: blur(var(--blur-mist));
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+}
+
+/* ============================================================
+   App Shell
+   ============================================================ */
+.app {
+  display: grid;
+  grid-template-columns: var(--side-w) 1fr;
+  grid-template-rows: var(--top-h) 1fr;
+  grid-template-areas: "top top" "side main";
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+.top {
+  grid-area: top;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0;
+  z-index: 100;
+  transition: background var(--t-theme), border-color var(--t-theme);
+}
+
+.top-brand {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 600; font-size: 15px; letter-spacing: -0.01em;
+}
+.top-mark {
+  width: 28px; height: 28px; border-radius: var(--radius-sm);
+  background: var(--accent);
+  display: grid; place-items: center;
+  color: white; font-weight: 700; font-size: 13px;
+  position: relative; overflow: hidden;
+}
+.top-mark::after {
+  content: '';
+  position: absolute; inset: 1px;
+  border-radius: calc(var(--radius-sm) - 1px);
+  background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 50%);
+  pointer-events: none;
+}
+.top-product { color: var(--text-1); }
+.top-divider { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+.top-module { color: var(--text-2); font-size: 13px; font-weight: 500; }
+
+.top-nav { display: flex; align-items: center; gap: 4px; }
+.top-link {
+  padding: 6px 12px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 500; color: var(--text-2);
+  transition: color var(--t-fast), background var(--t-fast);
+}
+.top-link:hover { color: var(--text-1); background: var(--surface-1); }
+.top-link.active { color: var(--text-1); background: var(--surface-2); }
+
+.top-actions { display: flex; align-items: center; gap: 8px; }
+.icon-btn {
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  position: relative;
+  transition: color var(--t-fast), background var(--t-fast);
+}
+.icon-btn:hover { color: var(--text-1); background: var(--surface-1); }
+.icon-btn svg { width: 18px; height: 18px; }
+.icon-btn .dot {
+  position: absolute; top: 8px; right: 8px;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg-elevated);
+}
+
+/* Theme toggle */
+.theme-toggle {
+  width: 56px; height: 30px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  position: relative; cursor: pointer;
+  transition: background var(--t-theme), border-color var(--t-theme);
+}
+.theme-toggle-thumb {
+  position: absolute; top: 3px; left: 3px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow);
+  display: grid; place-items: center;
+  transition: transform var(--t-base), background var(--t-theme);
+}
+[data-theme="dark"] .theme-toggle-thumb { transform: translateX(26px); }
+.theme-toggle-thumb svg {
+  width: 12px; height: 12px; color: var(--text-2);
+  transition: transform var(--t-base);
+}
+[data-theme="dark"] .theme-toggle-thumb svg { transform: rotate(180deg); }
+
+.avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #ec4899);
+  display: grid; place-items: center;
+  color: white; font-weight: 600; font-size: 12px;
+}
+.user-chip {
+  display: flex; align-items: center; gap: 10px;
+  padding: 4px 12px 4px 4px;
+  border-radius: var(--radius-pill);
+  transition: background var(--t-fast);
+}
+.user-chip:hover { background: var(--surface-1); }
+.user-chip-name { font-size: 13px; font-weight: 500; color: var(--text-1); }
+.user-chip-role { font-size: 11px; color: var(--text-3); }
+
+/* Side nav */
+.side {
+  grid-area: side;
+  background: var(--bg-elevated);
+  border-right: 1px solid var(--border);
+  padding: 24px 16px;
+  display: flex; flex-direction: column; gap: 4px;
+  transition: background var(--t-theme), border-color var(--t-theme);
+}
+.side-section {
+  padding: 16px 12px 8px;
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-3);
+}
+.side-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-size: 13px; font-weight: 500;
+  cursor: pointer;
+  position: relative;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.side-item:hover { background: var(--surface-1); color: var(--text-1); }
+.side-item.active { background: var(--accent-soft); color: var(--accent); }
+.side-item.active::before {
+  content: '';
+  position: absolute; left: -16px; top: 50%;
+  transform: translateY(-50%);
+  width: 3px; height: 18px;
+  background: var(--accent);
+  border-radius: 0 3px 3px 0;
+}
+.side-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+.side-item .badge {
+  margin-left: auto;
+  font-size: 11px; padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2); color: var(--text-2);
+  font-weight: 500;
+}
+.side-item.active .badge { background: var(--accent); color: white; }
+
+.side-foot {
+  margin-top: auto; padding: 16px 12px;
+  border-top: 1px solid var(--border-soft);
+  display: flex; align-items: center; gap: 10px;
+}
+.side-foot-status {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #10b981; position: relative;
+}
+.side-foot-status::after {
+  content: ''; position: absolute; inset: -3px;
+  border-radius: 50%;
+  background: #10b981; opacity: 0.25;
+  animation: pulseDot 2.5s ease-out infinite;
+}
+@keyframes pulseDot {
+  0% { transform: scale(0.8); opacity: 0.4; }
+  100% { transform: scale(2); opacity: 0; }
+}
+.side-foot-info { font-size: 12px; color: var(--text-2); }
+.side-foot-info b { display: block; color: var(--text-1); font-weight: 500; font-size: 13px; }
+
+/* Main */
+.main {
+  grid-area: main;
+  padding: 32px 32px 64px;
+  overflow-y: auto;
+}
+
+.view-header {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: 32px;
+}
+.view-header-text h1 {
+  font-size: 22px; font-weight: 600;
+  letter-spacing: -0.02em; margin-bottom: 4px;
+}
+.view-header-text p { color: var(--text-2); font-size: 13px; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 500;
+  transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast);
+  white-space: nowrap;
+}
+.btn-primary { background: var(--text-1); color: var(--bg); }
+.btn-primary:hover { background: var(--accent); }
+.btn-secondary {
+  background: var(--surface-1); color: var(--text-1);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { background: var(--surface-2); border-color: var(--border-strong); }
+.btn-ghost { color: var(--text-2); }
+.btn-ghost:hover { color: var(--text-1); background: var(--surface-1); }
+.btn svg { width: 14px; height: 14px; }
+
+.row { display: flex; align-items: center; gap: 8px; }
+
+/* ============================================================
+   KPI Row
+   ============================================================ */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.kpi-card {
+  padding: 20px;
+  transition: transform var(--t-fast), box-shadow var(--t-fast);
+}
+.kpi-card:hover { transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+.kpi-label {
+  font-size: 12px; color: var(--text-2);
+  margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.kpi-label .tag {
+  margin-left: auto;
+  font-size: 11px; padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2); color: var(--text-3);
+}
+.kpi-value {
+  font-size: 28px; font-weight: 600;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 8px; color: var(--text-1);
+}
+.kpi-meta {
+  font-size: 11px; color: var(--text-3);
+  display: flex; align-items: center; gap: 4px;
+}
+.kpi-delta { color: #10b981; font-weight: 500; }
+.kpi-delta.neg { color: #ef4444; }
+.kpi-spark { margin-top: 12px; height: 32px; width: 100%; }
+
+.sparkline-path {
+  fill: none; stroke: var(--accent);
+  stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+}
+.sparkline-fill { fill: var(--accent); opacity: 0.08; }
+
+/* ============================================================
+   Earth Card · 三层嵌套玻璃
+   ============================================================ */
+.earth-grid {
+  display: grid;
+  grid-template-columns: 1.55fr 1fr;
+  gap: 16px;
+}
+
+/* Outer frosted wrapper */
+.earth-card {
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.earth-card-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.earth-card-head h3 {
+  font-size: 15px; font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.earth-card-head p {
+  font-size: 12px; color: var(--text-2);
+  margin-top: 2px;
+}
+.earth-tabs { display: flex; gap: 4px; }
+.earth-tab {
+  padding: 5px 10px;
+  font-size: 12px; font-weight: 500;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.earth-tab:hover { background: var(--surface-1); color: var(--text-1); }
+.earth-tab.active { background: var(--accent-soft); color: var(--accent); }
+
+/* Stage holds the 280px earth + nested glass info */
+.earth-stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--earth-size) 1fr;
+  gap: 20px;
+  align-items: stretch;
+  min-height: var(--earth-size);
+}
+
+/* Sphere mount - outer frosted halo */
+.earth-mount {
+  position: relative;
+  width: var(--earth-size);
+  height: var(--earth-size);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: grab;
+  background: radial-gradient(circle at 30% 30%,
+    rgba(99, 102, 241, 0.10) 0%,
+    rgba(255, 255, 255, 0.04) 50%,
+    rgba(0, 0, 0, 0.04) 100%);
+  border: 1px solid var(--border);
+  transition: transform var(--t-fast);
+  overflow: visible;
+}
+.earth-mount:active { cursor: grabbing; }
+.earth-mount::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(99, 102, 241, 0.18) 0%,
+    transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+#earth-canvas {
+  width: 100%; height: 100%;
+  display: block;
+  border-radius: 50%;
+}
+
+/* Nested info column (crystal + mist inside) */
+.earth-info-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* Inner crystal info card */
+.earth-info-card {
+  padding: 14px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.earth-info-card-label {
+  font-size: 10px; font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  display: flex; align-items: center; gap: 6px;
+}
+.earth-info-card-label .led {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+.earth-info-card-title {
+  font-size: 13px; font-weight: 600;
+  color: var(--text-1);
+}
+
+/* Hover city list - this is the live region tooltip list */
+.hover-region {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  transition: background var(--t-fast);
+  cursor: pointer;
+}
+.hover-region:hover { background: var(--surface-1); }
+.hover-region-name {
+  display: flex; align-items: center; gap: 8px;
+  color: var(--text-1);
+}
+.hover-region-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+.hover-region-num {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+/* Most nested (mist) - live numbers */
+.earth-live-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 12px;
+}
+.earth-live-cell {
+  text-align: center;
+}
+.earth-live-num {
+  font-size: 16px; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  color: var(--text-1);
+}
+.earth-live-lbl {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+
+/* Bottom status strip inside earth-card */
+.earth-stats {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.earth-pill {
+  padding: 7px 10px;
+  font-size: 11px;
+  display: flex; align-items: center; gap: 8px;
+  color: var(--text-1);
+}
+.earth-pill b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.earth-pill .led {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+}
+.earth-pill.muted { color: var(--text-2); }
+.earth-pill.muted b { color: var(--text-1); }
+
+/* Side column (Timezones + Activity) */
+.side-info {
+  display: flex; flex-direction: column; gap: 16px;
+}
+.info-card { padding: 20px; }
+.info-card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.info-card-head h3 { font-size: 13px; font-weight: 600; }
+.info-card-head .more {
+  font-size: 11px; color: var(--text-3);
+  cursor: pointer;
+  transition: color var(--t-fast);
+}
+.info-card-head .more:hover { color: var(--accent); }
+
+.timezones { display: flex; flex-direction: column; gap: 10px; }
+.tz-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+.tz-row:last-child { border-bottom: none; }
+.tz-city { font-size: 13px; font-weight: 500; }
+.tz-time {
+  font-size: 13px; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-1);
+}
+.tz-time .ampm {
+  font-size: 11px; color: var(--text-3);
+  margin-left: 4px; font-weight: 500;
+}
+
+.activity-list { display: flex; flex-direction: column; gap: 12px; }
+.act-row {
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.act-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  margin-top: 5px; flex-shrink: 0;
+}
+.act-text {
+  flex: 1;
+  font-size: 12px; line-height: 1.4;
+}
+.act-text b { font-weight: 600; color: var(--text-1); }
+.act-text .muted { color: var(--text-3); }
+.act-time {
+  font-size: 11px; color: var(--text-3);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .app { grid-template-columns: 1fr; grid-template-areas: "top" "main"; }
+  .side { display: none; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .earth-grid { grid-template-columns: 1fr; }
+  .earth-stage { grid-template-columns: 1fr; }
+  .earth-mount { margin: 0 auto; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Top bar -->
+  <header class="top">
+    <div class="row">
+      <div class="top-brand">
+        <div class="top-mark">习</div>
+        <span class="top-product">习惯管家</span>
+        <div class="top-divider"></div>
+        <span class="top-module">运营后台 · 真地球</span>
+      </div>
+    </div>
+
+    <nav class="top-nav">
+      <a class="top-link active">仪表盘</a>
+      <a class="top-link">用户</a>
+      <a class="top-link">主题</a>
+    </nav>
+
+    <div class="top-actions">
+      <button class="icon-btn" aria-label="通知">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+        <span class="dot"></span>
+      </button>
+      <button class="theme-toggle" id="theme-toggle" aria-label="切换主题">
+        <div class="theme-toggle-thumb">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        </div>
+      </button>
+      <div class="user-chip">
+        <div class="avatar">王</div>
+        <div>
+          <div class="user-chip-name">王长</div>
+          <div class="user-chip-role">超级管理员</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Side nav -->
+  <aside class="side">
+    <div class="side-section">工作区</div>
+    <div class="side-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+      <span>仪表盘</span>
+    </div>
+    <div class="side-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>用户管理</span>
+      <span class="badge">2.4k</span>
+    </div>
+    <div class="side-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>主题设置</span>
+    </div>
+    <div class="side-section">数据</div>
+    <div class="side-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
+      <span>数据洞察</span>
+    </div>
+    <div class="side-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <span>财务</span>
+    </div>
+    <div class="side-foot">
+      <div class="side-foot-status"></div>
+      <div class="side-foot-info">
+        <b>所有系统正常</b>
+        <span>v2.5.0 · 真地球 · 99.98%</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <section class="view">
+      <div class="view-header">
+        <div class="view-header-text">
+          <h1>仪表盘</h1>
+          <p>实时业务指标 · 三轴自转真地球 · 10 节点 · 7 弧线</p>
+        </div>
+        <div class="row">
+          <button class="btn btn-ghost">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            导出
+          </button>
+          <button class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            刷新数据
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Row -->
+      <div class="kpi-grid">
+        <div class="kpi-card glass-frosted">
+          <div class="kpi-label">
+            <span>活跃用户</span>
+            <span class="tag">实时</span>
+          </div>
+          <div class="kpi-value" data-count="24832">0</div>
+          <div class="kpi-meta">
+            <span class="kpi-delta">+12.4%</span>
+            <span class="muted">vs 上周</span>
+          </div>
+          <svg class="kpi-spark" viewBox="0 0 100 32" preserveAspectRatio="none">
+            <path class="sparkline-fill" d="M0,28 L10,22 L20,24 L30,18 L40,20 L50,12 L60,15 L70,8 L80,10 L90,4 L100,2 L100,32 L0,32 Z"/>
+            <path class="sparkline-path" d="M0,28 L10,22 L20,24 L30,18 L40,20 L50,12 L60,15 L70,8 L80,10 L90,4 L100,2"/>
+          </svg>
+        </div>
+
+        <div class="kpi-card glass-frosted">
+          <div class="kpi-label">
+            <span>今日打卡</span>
+            <span class="tag">今日</span>
+          </div>
+          <div class="kpi-value" data-count="18642">0</div>
+          <div class="kpi-meta">
+            <span class="kpi-delta">+8.2%</span>
+            <span class="muted">vs 昨日</span>
+          </div>
+          <svg class="kpi-spark" viewBox="0 0 100 32" preserveAspectRatio="none">
+            <path class="sparkline-fill" d="M0,24 L10,20 L20,18 L30,22 L40,15 L50,17 L60,10 L70,12 L80,8 L90,6 L100,8 L100,32 L0,32 Z"/>
+            <path class="sparkline-path" d="M0,24 L10,20 L20,18 L30,22 L40,15 L50,17 L60,10 L70,12 L80,8 L90,6 L100,8"/>
+          </svg>
+        </div>
+
+        <div class="kpi-card glass-frosted">
+          <div class="kpi-label">
+            <span>AI 调用</span>
+            <span class="tag">7 天</span>
+          </div>
+          <div class="kpi-value" data-count="86420">0</div>
+          <div class="kpi-meta">
+            <span class="kpi-delta">+24.6%</span>
+            <span class="muted">vs 上周</span>
+          </div>
+          <svg class="kpi-spark" viewBox="0 0 100 32" preserveAspectRatio="none">
+            <path class="sparkline-fill" d="M0,26 L10,22 L20,20 L30,16 L40,18 L50,10 L60,12 L70,6 L80,8 L90,4 L100,2 L100,32 L0,32 Z"/>
+            <path class="sparkline-path" d="M0,26 L10,22 L20,20 L30,16 L40,18 L50,10 L60,12 L70,6 L80,8 L90,4 L100,2"/>
+          </svg>
+        </div>
+
+        <div class="kpi-card glass-frosted">
+          <div class="kpi-label">
+            <span>留存率</span>
+            <span class="tag">30 天</span>
+          </div>
+          <div class="kpi-value" data-count="78.4" data-decimals="1">0</div>
+          <div class="kpi-meta">
+            <span class="kpi-delta neg">-1.2%</span>
+            <span class="muted">vs 上月</span>
+          </div>
+          <svg class="kpi-spark" viewBox="0 0 100 32" preserveAspectRatio="none">
+            <path class="sparkline-fill" d="M0,12 L10,10 L20,14 L30,11 L40,16 L50,13 L60,18 L70,15 L80,20 L90,17 L100,22 L100,32 L0,32 Z"/>
+            <path class="sparkline-path" d="M0,12 L10,10 L20,14 L30,11 L40,16 L50,13 L60,18 L70,15 L80,20 L90,17 L100,22"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Earth + side info -->
+      <div class="earth-grid">
+        <!-- Outer frosted: earth card -->
+        <div class="earth-card glass-frosted">
+          <div class="earth-card-head">
+            <div>
+              <h3>全球用户分布</h3>
+              <p>三轴自转真地球 · 10 节点 · 7 弧线 · 飞行粒子</p>
+            </div>
+            <div class="earth-tabs">
+              <div class="earth-tab active">24h</div>
+              <div class="earth-tab">7d</div>
+              <div class="earth-tab">30d</div>
+            </div>
+          </div>
+
+          <div class="earth-stage">
+            <!-- 280px earth mount -->
+            <div class="earth-mount">
+              <canvas id="earth-canvas"></canvas>
+            </div>
+
+            <!-- Nested glass info column -->
+            <div class="earth-info-stack">
+              <!-- Inner crystal: hover region list -->
+              <div class="earth-info-card glass-crystal">
+                <div class="earth-info-card-label">
+                  <span class="led"></span>
+                  实时节点
+                </div>
+                <div class="earth-info-card-title">活跃城市 TOP 5</div>
+                <div id="hover-list">
+                  <div class="hover-region">
+                    <div class="hover-region-name"><span class="hover-region-dot"></span>北京</div>
+                    <div class="hover-region-num">1,240</div>
+                  </div>
+                  <div class="hover-region">
+                    <div class="hover-region-name"><span class="hover-region-dot"></span>东京</div>
+                    <div class="hover-region-num">986</div>
+                  </div>
+                  <div class="hover-region">
+                    <div class="hover-region-name"><span class="hover-region-dot"></span>纽约</div>
+                    <div class="hover-region-num">742</div>
+                  </div>
+                  <div class="hover-region">
+                    <div class="hover-region-name"><span class="hover-region-dot"></span>伦敦</div>
+                    <div class="hover-region-num">628</div>
+                  </div>
+                  <div class="hover-region">
+                    <div class="hover-region-name"><span class="hover-region-dot"></span>新加坡</div>
+                    <div class="hover-region-num">512</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Most-nested mist: live numbers -->
+              <div class="earth-live-row glass-mist">
+                <div class="earth-live-cell">
+                  <div class="earth-live-num" id="live-online">8,234</div>
+                  <div class="earth-live-lbl">在线</div>
+                </div>
+                <div class="earth-live-cell">
+                  <div class="earth-live-num" id="live-fps">60</div>
+                  <div class="earth-live-lbl">FPS</div>
+                </div>
+                <div class="earth-live-cell">
+                  <div class="earth-live-num" id="live-utc">--:--</div>
+                  <div class="earth-live-lbl">UTC</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom status strip -->
+          <div class="earth-stats">
+            <div class="earth-pill glass-mist">
+              <span class="led"></span>
+              <span>在线 <b id="earth-online">8,234</b></span>
+            </div>
+            <div class="earth-pill glass-mist muted">
+              <span>FPS <b id="earth-fps">60</b></span>
+            </div>
+            <div class="earth-pill glass-mist muted">
+              <span>三轴 <b>Y·X·Z</b></span>
+            </div>
+            <div class="earth-pill glass-mist muted">
+              <span>云层 <b>1.25×</b></span>
+            </div>
+            <div class="earth-pill glass-mist" style="margin-left: auto;">
+              <span>UTC <b id="earth-utc">--:--:--</b></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: timezones + activity -->
+        <div class="side-info">
+          <div class="info-card glass-crystal">
+            <div class="info-card-head">
+              <h3>主要时区</h3>
+              <span class="more">查看全部</span>
+            </div>
+            <div class="timezones" id="tz-list"></div>
+          </div>
+
+          <div class="info-card glass-crystal">
+            <div class="info-card-head">
+              <h3>实时活动</h3>
+              <span class="more">查看全部</span>
+            </div>
+            <div class="activity-list">
+              <div class="act-row">
+                <div class="act-dot" style="background: #10b981;"></div>
+                <div class="act-text"><b>北京</b> 用户群组打卡峰值 <span class="muted">1,240 / 分钟</span></div>
+                <div class="act-time">刚刚</div>
+              </div>
+              <div class="act-row">
+                <div class="act-dot" style="background: var(--accent);"></div>
+                <div class="act-text">新模型 <b>GLM-4.6</b> 已部署 <span class="muted">响应时间 -18%</span></div>
+                <div class="act-time">2 分钟</div>
+              </div>
+              <div class="act-row">
+                <div class="act-dot" style="background: #f59e0b;"></div>
+                <div class="act-text"><b>旧金山</b> 节点延迟上升 <span class="muted">142ms</span></div>
+                <div class="act-time">5 分钟</div>
+              </div>
+              <div class="act-row">
+                <div class="act-dot" style="background: #3b82f6;"></div>
+                <div class="act-text"><b>东京</b> 新用户注册高峰 <span class="muted">+312 / 小时</span></div>
+                <div class="act-time">12 分钟</div>
+              </div>
+              <div class="act-row">
+                <div class="act-dot" style="background: #10b981;"></div>
+                <div class="act-text">数据库 <b>主从同步</b> 完成 <span class="muted">耗时 1.8s</span></div>
+                <div class="act-time">18 分钟</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+/* ============================================================
+   Theme toggle · localStorage
+   ============================================================ */
+const themeToggle = document.getElementById('theme-toggle');
+const savedTheme = localStorage.getItem('impeccable-v2-theme') || 'light';
+document.documentElement.dataset.theme = savedTheme;
+themeToggle.addEventListener('click', () => {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem('impeccable-v2-theme', next);
+});
+
+/* ============================================================
+   KPI count-up
+   ============================================================ */
+function countUp(el) {
+  const target = parseFloat(el.dataset.count);
+  const decimals = parseInt(el.dataset.decimals || 0);
+  const start = performance.now();
+  function tick(now) {
+    const t = Math.min(1, (now - start) / 1200);
+    const eased = 1 - Math.pow(2, -10 * t);
+    const val = eased * target;
+    el.textContent = decimals
+      ? val.toFixed(decimals)
+      : Math.floor(val).toLocaleString();
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+document.querySelectorAll('[data-count]').forEach(el => countUp(el));
+
+/* ============================================================
+   Timezones
+   ============================================================ */
+const tzList = document.getElementById('tz-list');
+const tzCities = [
+  { name: '北京',     offset: 8 },
+  { name: '纽约',     offset: -5 },
+  { name: '伦敦',     offset: 0 },
+  { name: '东京',     offset: 9 },
+  { name: '旧金山',   offset: -8 }
+];
+function renderTz() {
+  tzList.innerHTML = tzCities.map(c => {
+    const now = new Date();
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const local = new Date(utc + (3600000 * c.offset));
+    const hh = local.getHours();
+    const mm = local.getMinutes().toString().padStart(2, '0');
+    const ampm = hh >= 12 ? 'PM' : 'AM';
+    const h12 = (hh % 12) || 12;
+    return `
+      <div class="tz-row">
+        <span class="tz-city">${c.name}</span>
+        <span class="tz-time">${h12.toString().padStart(2,'0')}:${mm}<span class="ampm">${ampm}</span></span>
+      </div>`;
+  }).join('');
+}
+renderTz();
+setInterval(renderTz, 30000);
+
+/* ============================================================
+   UTC + online + FPS update
+   ============================================================ */
+function updateUtc() {
+  const now = new Date();
+  const h = now.getUTCHours().toString().padStart(2, '0');
+  const m = now.getUTCMinutes().toString().padStart(2, '0');
+  const s = now.getUTCSeconds().toString().padStart(2, '0');
+  const t = `${h}:${m}:${s}`;
+  document.getElementById('earth-utc').textContent = t;
+  document.getElementById('live-utc').textContent = `${h}:${m}`;
+}
+updateUtc();
+setInterval(updateUtc, 1000);
+
+setInterval(() => {
+  const base = 8234;
+  const drift = Math.floor(Math.random() * 200) - 100;
+  const v = (base + drift).toLocaleString();
+  document.getElementById('earth-online').textContent = v;
+  document.getElementById('live-online').textContent = v;
+}, 3000);
+
+/* ============================================================
+   Sparkline path drawing
+   ============================================================ */
+const sparkPaths = document.querySelectorAll('.sparkline-path');
+sparkPaths.forEach((p, i) => {
+  const len = p.getTotalLength();
+  p.style.strokeDasharray = len;
+  p.style.strokeDashoffset = len;
+  p.style.transition = 'stroke-dashoffset 1200ms cubic-bezier(0.16, 1, 0.3, 1)';
+  setTimeout(() => { p.style.strokeDashoffset = '0'; }, 200 + i * 80);
+});
+
+/* ============================================================
+   THREE.JS EARTH · 真 4 层球
+   ============================================================ */
+(function initEarth() {
+  const canvas = document.getElementById('earth-canvas');
+  const mount = document.querySelector('.earth-mount');
+  if (!canvas || !mount) return;
+
+  // 10 城市
+  const CITIES = [
+    { name: '北京',     code: 'BJS', lat: 39.9,  lng: 116.4,  weight: 8 },
+    { name: '东京',     code: 'TYO', lat: 35.7,  lng: 139.7,  weight: 7 },
+    { name: '新加坡',   code: 'SIN', lat: 1.35,  lng: 103.8,  weight: 6 },
+    { name: '悉尼',     code: 'SYD', lat: -33.9, lng: 151.2,  weight: 5 },
+    { name: '迪拜',     code: 'DXB', lat: 25.3,  lng: 55.3,   weight: 5 },
+    { name: '伦敦',     code: 'LON', lat: 51.5,  lng: -0.1,   weight: 7 },
+    { name: '巴黎',     code: 'PAR', lat: 48.9,  lng: 2.3,    weight: 5 },
+    { name: '纽约',     code: 'NYC', lat: 40.7,  lng: -74.0,  weight: 8 },
+    { name: '旧金山',   code: 'SFO', lat: 37.8,  lng: -122.4, weight: 6 },
+    { name: '圣保罗',   code: 'SAO', lat: -23.5, lng: -46.6,  weight: 5 }
+  ];
+
+  // 7 弧线 (按报告要求 7 段)
+  const ARCS = [
+    [0, 7], // 北京 - 纽约
+    [0, 1], // 北京 - 东京
+    [0, 2], // 北京 - 新加坡
+    [5, 7], // 伦敦 - 纽约
+    [1, 8], // 东京 - 旧金山
+    [5, 4], // 伦敦 - 迪拜
+    [7, 8]  // 纽约 - 旧金山
+  ];
+
+  // 经纬度 → 球面坐标
+  function latLngToVec3(lat, lng, r) {
+    const phi = (90 - lat) * Math.PI / 180;
+    const theta = (lng + 180) * Math.PI / 180;
+    return new THREE.Vector3(
+      -r * Math.sin(phi) * Math.cos(theta),
+       r * Math.cos(phi),
+       r * Math.sin(phi) * Math.sin(theta)
+    );
+  }
+
+  /* ============== L1 海洋 (深蓝) ============== */
+  const R = 1.4;
+  const scene = new THREE.Scene();
+  const w = 280, h = 280;
+  const camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 100);
+  camera.position.set(0, 0, 4.2);
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setSize(w, h, false);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
+
+  const ocean = new THREE.Mesh(
+    new THREE.SphereGeometry(R, 64, 48),
+    new THREE.MeshBasicMaterial({ color: 0x0a1f3d })
+  );
+  scene.add(ocean);
+
+  /* ============== L2 陆地 (Canvas 6 大洲,15-25 顶点) ============== */
+  function lngToX(lng) { return (lng + 180) * 1024 / 360; }
+  function latToY(lat) { return (90 - lat) * 512 / 180; }
+
+  // 6 大洲,各 15-25 顶点
+  const CONTINENTS = [
+    // 1. 北美洲 22 点
+    { name: '北美洲', color: '#2d5a2d', pts: [
+      [-168, 65], [-160, 70], [-140, 70], [-125, 72], [-110, 73], [-95, 75], [-82, 73], [-72, 67],
+      [-65, 60], [-60, 53], [-55, 50], [-65, 45], [-72, 42], [-80, 30], [-82, 25], [-90, 22],
+      [-95, 18], [-100, 18], [-105, 22], [-110, 28], [-118, 33], [-122, 38]
+    ]},
+    // 2. 中美洲 + 加勒比 16 点 (并入北美洲,这里作为过渡)
+    { name: '中美', color: '#1a4a1a', pts: [
+      [-100, 18], [-95, 16], [-90, 15], [-85, 14], [-80, 12], [-77, 8],
+      [-78, 10], [-83, 13], [-88, 15], [-93, 17], [-100, 18]
+    ]},
+    // 3. 南美洲 19 点
+    { name: '南美洲', color: '#3a6a3a', pts: [
+      [-80, 12], [-75, 5], [-70, -2], [-60, -8], [-50, -12], [-45, -22],
+      [-50, -28], [-58, -34], [-65, -40], [-68, -48], [-72, -54], [-70, -55],
+      [-65, -50], [-62, -42], [-58, -34], [-55, -22], [-60, -10], [-70, -2], [-78, 5]
+    ]},
+    // 4. 欧洲 17 点
+    { name: '欧洲', color: '#2d5a2d', pts: [
+      [-10, 36], [-5, 43], [2, 43], [8, 44], [12, 38], [18, 40], [25, 36], [30, 41],
+      [40, 45], [50, 50], [60, 55], [60, 65], [50, 70], [30, 70], [15, 65], [5, 60], [-8, 58]
+    ]},
+    // 5. 非洲 22 点
+    { name: '非洲', color: '#3a3a1a', pts: [
+      [-15, 32], [-10, 28], [0, 30], [10, 32], [15, 28], [20, 32], [30, 31], [35, 22],
+      [40, 15], [45, 12], [50, 11], [52, 0], [50, -10], [45, -20], [40, -25],
+      [30, -30], [20, -34], [18, -33], [15, -20], [12, -8], [5, 5], [-5, 5]
+    ]},
+    // 6. 亚洲 24 点
+    { name: '亚洲', color: '#1f4a1f', pts: [
+      [40, 45], [50, 45], [60, 50], [70, 55], [80, 60], [90, 65], [100, 70], [110, 73],
+      [120, 70], [130, 67], [140, 60], [150, 58], [160, 62], [170, 65], [175, 68], [170, 70],
+      [150, 72], [130, 72], [110, 70], [100, 60], [95, 55], [90, 50], [85, 45], [80, 35]
+    ]},
+    // 7. 东南亚/印度 15 点
+    { name: '印度', color: '#2d5a2d', pts: [
+      [80, 35], [85, 30], [90, 25], [100, 20], [108, 12], [110, 5], [105, 8], [100, 15],
+      [92, 22], [88, 25], [82, 28], [78, 30], [75, 28], [78, 22], [80, 18]
+    ]},
+    // 8. 澳洲 16 点
+    { name: '澳洲', color: '#8b5a2a', pts: [
+      [115, -10], [120, -15], [125, -14], [130, -12], [135, -14], [140, -17], [145, -15],
+      [150, -22], [152, -28], [148, -35], [145, -38], [140, -38], [135, -33], [130, -32],
+      [120, -33], [115, -25]
+    ]},
+    // 9. 北极/格陵兰 8 点
+    { name: '格陵兰', color: '#d8e8f0', pts: [
+      [-50, 80], [-30, 83], [-20, 80], [-22, 70], [-30, 65], [-40, 65], [-50, 70], [-55, 78]
+    ]},
+    // 10. 南极 6 点
+    { name: '南极', color: '#d8e8f0', pts: [
+      [-180, -65], [-90, -72], [0, -68], [90, -72], [180, -68], [180, -85]
+    ]}
+  ];
+
+  function makeLandTexture() {
+    const c = document.createElement('canvas');
+    c.width = 1024; c.height = 512;
+    const ctx = c.getContext('2d');
+
+    // 海底渐变
+    const og = ctx.createLinearGradient(0, 0, 0, 512);
+    og.addColorStop(0, '#0e2746');
+    og.addColorStop(0.5, '#0a1f3d');
+    og.addColorStop(1, '#0e2746');
+    ctx.fillStyle = og;
+    ctx.fillRect(0, 0, 1024, 512);
+
+    // 大洲多边形
+    CONTINENTS.forEach(cont => {
+      ctx.fillStyle = cont.color;
+      ctx.beginPath();
+      cont.pts.forEach((pt, i) => {
+        const x = lngToX(pt[0]);
+        const y = latToY(pt[1]);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.closePath();
+      ctx.fill();
+    });
+
+    // 海岛细节
+    const islands = [
+      // 英国
+      { x: lngToX(-3), y: latToY(54), r: 8 },
+      // 马达加斯加
+      { x: lngToX(47), y: latToY(-19), r: 6 },
+      // 日本
+      { x: lngToX(138), y: latToY(36), r: 6 },
+      // 新西兰
+      { x: lngToX(173), y: latToY(-41), r: 5 },
+      // 印尼主岛
+      { x: lngToX(115), y: latToY(-2), r: 8 },
+      { x: lngToX(120), y: latToY(-5), r: 7 },
+      // 菲律宾
+      { x: lngToX(122), y: latToY(13), r: 5 },
+      // 冰岛
+      { x: lngToX(-18), y: latToY(65), r: 5 }
+    ];
+    ctx.fillStyle = '#1f4a1f';
+    islands.forEach(isl => {
+      ctx.beginPath();
+      ctx.arc(isl.x, isl.y, isl.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // 极地冰盖 (额外覆盖)
+    ctx.fillStyle = 'rgba(216, 232, 240, 0.6)';
+    ctx.fillRect(0, 0, 1024, 30);
+    ctx.fillRect(0, 482, 1024, 30);
+
+    // 城市微标记 (小亮点)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    CITIES.forEach(c => {
+      ctx.beginPath();
+      ctx.arc(lngToX(c.lng), latToY(c.lat), 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // 微噪点
+    for (let i = 0; i < 6000; i++) {
+      ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.05})`;
+      ctx.fillRect(Math.random() * 1024, Math.random() * 512, 1, 1);
+    }
+
+    return new THREE.CanvasTexture(c);
+  }
+
+  const land = new THREE.Mesh(
+    new THREE.SphereGeometry(R * 1.001, 64, 48),
+    new THREE.MeshPhongMaterial({
+      map: makeLandTexture(),
+      specular: new THREE.Color(0x1a2a3a),
+      shininess: 6
+    })
+  );
+  scene.add(land);
+
+  /* ============== L3 云层 (1024x512 灰度图 + 不规则 opacity) ============== */
+  function makeCloudTexture() {
+    const c = document.createElement('canvas');
+    c.width = 1024; c.height = 512;
+    const ctx = c.getContext('2d');
+
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, 1024, 512);
+
+    // 不规则云团 (多个不规则椭圆形叠加)
+    function drawCloudBlob(cx, cy, rx, ry, alpha) {
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(rx, ry));
+      grad.addColorStop(0, `rgba(255,255,255,${alpha})`);
+      grad.addColorStop(0.5, `rgba(255,255,255,${alpha * 0.6})`);
+      grad.addColorStop(1, `rgba(255,255,255,0)`);
+      ctx.fillStyle = grad;
+      ctx.fillRect(cx - rx * 1.5, cy - ry * 1.5, rx * 3, ry * 3);
+    }
+
+    // 赤道辐合带(密集)
+    for (let i = 0; i < 50; i++) {
+      const cx = Math.random() * 1024;
+      const cy = 220 + Math.random() * 70;
+      drawCloudBlob(cx, cy, 30 + Math.random() * 50, 15 + Math.random() * 25, 0.4 + Math.random() * 0.4);
+    }
+    // 中纬度 (带状)
+    for (let i = 0; i < 80; i++) {
+      const cx = Math.random() * 1024;
+      const cy = Math.random() < 0.5 ? 100 + Math.random() * 60 : 380 + Math.random() * 60;
+      drawCloudBlob(cx, cy, 20 + Math.random() * 60, 10 + Math.random() * 20, 0.3 + Math.random() * 0.5);
+    }
+    // 极地少云
+    for (let i = 0; i < 20; i++) {
+      const cx = Math.random() * 1024;
+      const cy = Math.random() < 0.5 ? Math.random() * 50 : 460 + Math.random() * 50;
+      drawCloudBlob(cx, cy, 15 + Math.random() * 30, 8 + Math.random() * 15, 0.2 + Math.random() * 0.3);
+    }
+
+    return new THREE.CanvasTexture(c);
+  }
+
+  const clouds = new THREE.Mesh(
+    new THREE.SphereGeometry(R * 1.02, 64, 48),
+    new THREE.MeshBasicMaterial({
+      map: makeCloudTexture(),
+      transparent: true,
+      opacity: 0.42,
+      depthWrite: false
+    })
+  );
+  scene.add(clouds);
+
+  /* ============== L4 大气 Fresnel (强度 0.5 中等) ============== */
+  const atmo = new THREE.Mesh(
+    new THREE.SphereGeometry(R * 1.08, 64, 48),
+    new THREE.ShaderMaterial({
+      vertexShader: `
+        varying vec3 vN;
+        void main() {
+          vN = normalize(normalMatrix * normal);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vN;
+        uniform float uTime;
+        uniform vec3 uColor;
+        uniform float uIntensity;
+        void main() {
+          float f = pow(1.0 - abs(dot(vN, vec3(0.0, 0.0, 1.0))), 2.5);
+          float pulse = 0.85 + 0.15 * sin(uTime * 0.7);
+          gl_FragColor = vec4(uColor, f * uIntensity * pulse);
+        }
+      `,
+      uniforms: {
+        uTime:      { value: 0 },
+        uColor:     { value: new THREE.Color(0x6366f1) },
+        uIntensity: { value: 0.5 }
+      },
+      blending: THREE.AdditiveBlending,
+      side: THREE.BackSide,
+      transparent: true,
+      depthWrite: false
+    })
+  );
+  scene.add(atmo);
+
+  /* ============== 光照 ============== */
+  const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+  scene.add(ambient);
+  const sun = new THREE.DirectionalLight(0xffffff, 0.85);
+  sun.position.set(5, 3, 5);
+  scene.add(sun);
+
+  /* ============== 城市节点 (每城 3 层) ============== */
+  const earthGroup = new THREE.Group();
+  const cityData = [];   // 用于脉冲动画
+
+  CITIES.forEach(c => {
+    const pos = latLngToVec3(c.lat, c.lng, R * 1.005);
+
+    // L1 实心
+    const dot = new THREE.Mesh(
+      new THREE.SphereGeometry(0.014, 12, 12),
+      new THREE.MeshBasicMaterial({ color: 0xffffff })
+    );
+    dot.position.copy(pos);
+    earthGroup.add(dot);
+
+    // L2 静态光圈
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.020, 0.028, 24),
+      new THREE.MeshBasicMaterial({
+        color: 0x6366f1, transparent: true, opacity: 0.7,
+        side: THREE.DoubleSide, depthWrite: false
+      })
+    );
+    ring.position.copy(pos);
+    ring.lookAt(0, 0, 0);
+    earthGroup.add(ring);
+
+    // L3 脉冲环
+    const pulse = new THREE.Mesh(
+      new THREE.RingGeometry(0.014, 0.020, 24),
+      new THREE.MeshBasicMaterial({
+        color: 0x818cf8, transparent: true, opacity: 0.9,
+        side: THREE.DoubleSide, depthWrite: false
+      })
+    );
+    pulse.position.copy(pos);
+    pulse.lookAt(0, 0, 0);
+    earthGroup.add(pulse);
+
+    cityData.push({ pulse, basePhase: Math.random() * 2 });
+  });
+  scene.add(earthGroup);
+
+  /* ============== 7 弧线 (lerp + sin(t*PI)*lift) ============== */
+  function makeArc(a, b, lift) {
+    const va = latLngToVec3(a.lat, a.lng, R * 1.01);
+    const vb = latLngToVec3(b.lat, b.lng, R * 1.01);
+    const dist = va.distanceTo(vb);
+    const segs = Math.max(24, Math.floor(dist * 32));
+    const pts = [];
+    for (let i = 0; i <= segs; i++) {
+      const t = i / segs;
+      const v = new THREE.Vector3().lerpVectors(va, vb, t)
+        .normalize().multiplyScalar(R * (1.01 + Math.sin(t * Math.PI) * lift));
+      pts.push(v);
+    }
+    const geom = new THREE.BufferGeometry().setFromPoints(pts);
+    const mat = new THREE.LineBasicMaterial({
+      color: 0x6366f1, transparent: true, opacity: 0.38, depthWrite: false
+    });
+    return { line: new THREE.Line(geom, mat), pts };
+  }
+
+  const arcRecords = ARCS.map(([i, j]) => {
+    const rec = makeArc(CITIES[i], CITIES[j], 0.18);
+    scene.add(rec.line);
+    return rec;
+  });
+
+  /* ============== 飞行粒子 (沿弧线流动) ============== */
+  const particleGroups = [];
+  arcRecords.forEach((rec, idx) => {
+    const N = 6; // 每弧 6 个粒子
+    const positions = new Float32Array(N * 3);
+    const colors = new Float32Array(N * 3);
+    const sizes = new Float32Array(N);
+    const tValues = new Float32Array(N);
+
+    // 错开起点
+    for (let i = 0; i < N; i++) {
+      tValues[i] = (i / N + idx * 0.07) % 1;
+      sizes[i] = 2.5;
+      colors[i*3] = 0.39; colors[i*3+1] = 0.40; colors[i*3+2] = 0.95; // 蓝紫
+    }
+
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geom.setAttribute('color',    new THREE.BufferAttribute(colors, 3));
+    geom.setAttribute('size',     new THREE.BufferAttribute(sizes, 1));
+
+    const mat = new THREE.PointsMaterial({
+      size: 0.025,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.95,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+
+    const points = new THREE.Points(geom, mat);
+    scene.add(points);
+
+    particleGroups.push({ points, tValues, pts: rec.pts, N });
+  });
+
+  /* ============== 交互 (拖动 + 滚轮 + 惯性) ============== */
+  let isDragging = false;
+  let prevX = 0, prevY = 0;
+  let userRotY = 0.3, userRotX = 0.12;
+  let rotationVel = { x: 0.0001, y: 0.0008 };  // 初始带点动量
+
+  let camDist = 4.2, targetCamDist = 4.2;
+
+  function onDown(e) {
+    isDragging = true;
+    const p = e.touches ? e.touches[0] : e;
+    prevX = p.clientX; prevY = p.clientY;
+  }
+  function onMove(e) {
+    if (!isDragging) return;
+    const p = e.touches ? e.touches[0] : e;
+    const dx = p.clientX - prevX;
+    const dy = p.clientY - prevY;
+    userRotY += dx * 0.005;
+    userRotX += dy * 0.005;
+    userRotX = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, userRotX));
+    prevX = p.clientX; prevY = p.clientY;
+  }
+  function onUp() { isDragging = false; }
+
+  mount.addEventListener('mousedown', onDown);
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+
+  mount.addEventListener('touchstart', onDown, { passive: true });
+  mount.addEventListener('touchmove', onMove, { passive: true });
+  mount.addEventListener('touchend', onUp);
+
+  mount.addEventListener('wheel', e => {
+    e.preventDefault();
+    targetCamDist += e.deltaY * 0.003;
+    targetCamDist = Math.max(2.8, Math.min(6, targetCamDist));
+  }, { passive: false });
+
+  /* ============== 动画循环 (三轴自转 + 惯性 + 云层 + 粒子) ============== */
+  const fpsEl = document.getElementById('earth-fps');
+  const liveFpsEl = document.getElementById('live-fps');
+  let fpsFrames = 0, fpsLast = performance.now();
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const now = performance.now();
+
+    // 三轴叠加 (互质频率)
+    // Y 主自转: 0.0008 (惯性衰减)
+    // X 极慢漂: sin(now * 0.0001) * 0.1
+    // Z 更慢漂: cos(now * 0.00007) * 0.05
+    if (!isDragging) {
+      rotationVel.y *= 0.992;
+      rotationVel.x *= 0.992;
+      userRotY += rotationVel.y + 0.0008;
+      userRotX += rotationVel.x * 0.5;
+    }
+
+    const autoX = Math.sin(now * 0.0001) * 0.10;
+    const autoZ = Math.cos(now * 0.00007) * 0.05;
+
+    earthGroup.rotation.y = userRotY;
+    earthGroup.rotation.x = userRotX + autoX;
+    earthGroup.rotation.z = autoZ;
+
+    // 云层跟随,但比陆地快 1.25x
+    clouds.rotation.y = userRotY + (now * 0.001 * 0.001) * 1.25;
+    clouds.rotation.x = userRotX + autoX;
+    clouds.rotation.z = autoZ;
+
+    // 大气跟随 + 脉动
+    atmo.rotation.y = userRotY;
+    atmo.rotation.x = userRotX + autoX;
+    atmo.material.uniforms.uTime.value = now * 0.001;
+
+    // 相机平滑
+    camDist += (targetCamDist - camDist) * 0.08;
+    camera.position.z = camDist;
+
+    // 脉冲环动画
+    cityData.forEach((c, i) => {
+      const t = ((now * 0.001) + c.basePhase) % 2;
+      const s = 1 + t * 1.6;
+      c.pulse.scale.setScalar(s);
+      c.pulse.material.opacity = 0.9 - t * 0.45;
+    });
+
+    // 飞行粒子沿弧线
+    particleGroups.forEach((g, idx) => {
+      const pos = g.points.geometry.attributes.position.array;
+      for (let i = 0; i < g.N; i++) {
+        // 速度按弧线索引偏移,看起来像不同弧线流速不同
+        g.tValues[i] += 0.0035 + idx * 0.0002;
+        if (g.tValues[i] > 1) g.tValues[i] -= 1;
+        const t = g.tValues[i];
+        // 沿弧线查找最近点
+        const fi = t * (g.pts.length - 1);
+        const lo = Math.floor(fi);
+        const hi = Math.min(lo + 1, g.pts.length - 1);
+        const f = fi - lo;
+        const a = g.pts[lo], b = g.pts[hi];
+        pos[i*3]   = a.x + (b.x - a.x) * f;
+        pos[i*3+1] = a.y + (b.y - a.y) * f;
+        pos[i*3+2] = a.z + (b.z - a.z) * f;
+      }
+      g.points.geometry.attributes.position.needsUpdate = true;
+    });
+
+    renderer.render(scene, camera);
+
+    // FPS
+    fpsFrames++;
+    const tNow = performance.now();
+    if (tNow - fpsLast > 1000) {
+      const fps = Math.round(fpsFrames * 1000 / (tNow - fpsLast));
+      fpsEl.textContent = fps;
+      liveFpsEl.textContent = fps;
+      fpsFrames = 0;
+      fpsLast = tNow;
+    }
+  }
+  animate();
+
+  /* ============== Resize ============== */
+  function resize() {
+    const w2 = 280, h2 = 280;
+    camera.aspect = 1;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w2, h2, false);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+})();
+
+/* ============================================================
+   Hover list update (jiggle numbers)
+   ============================================================ */
+const liveNums = [1240, 986, 742, 628, 512];
+const numEls = document.querySelectorAll('.hover-region-num');
+setInterval(() => {
+  numEls.forEach((el, i) => {
+    const base = liveNums[i];
+    const drift = Math.floor(Math.random() * 20) - 10;
+    el.textContent = (base + drift).toLocaleString();
+  });
+}, 4000);
+</script>
+</body>
+</html>

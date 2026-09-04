@@ -1,0 +1,88 @@
+<view class="container">
+  <view class="custom-nav" style="height: {{navHeight}}px; padding-top: {{statusBarHeight}}px;">
+    <view class="nav-content">
+      <view class="nav-back bump-sm" bindtap="goBack">
+        <text style="font-size: 20px; color: var(--ink-2);">‹</text>
+      </view>
+      <view class="nav-titles">
+        <text class="nav-meta">DIET LOG</text>
+        <text class="nav-title serif">What You <text class="serif-italic">Ate.</text></text>
+      </view>
+      <view style="width: 36px;"></view>
+    </view>
+  </view>
+
+  <scroll-view class="page-content" scroll-y>
+    <view style="height: 20rpx;"></view>
+
+    <!-- 今日饮食 hero(I 方案:大数字 + Georgia 斜体) -->
+    <view class="diet-header bump">
+      <text class="diet-header-label">TODAY TOTAL</text>
+      <view class="diet-header-num-row">
+        <text class="diet-header-num">{{totalCalories}}</text>
+        <text class="diet-header-unit">kcal</text>
+      </view>
+      <view class="diet-header-sub">
+        <text>Goal {{calorieGoal}} kcal</text>
+        <text class="diet-header-sep">·</text>
+        <text>{{recordedMealCount}} meals recorded</text>
+      </view>
+    </view>
+
+    <view class="meal-group" wx:for="{{meals}}" wx:key="meal_type">
+      <view class="meal-title">
+        <text>{{item.title}}</text>
+        <text class="cal">{{item.total}} 千卡</text>
+      </view>
+      <view class="meal-items bump" bindtap="onFabTap">
+        <view wx:if="{{item.items.length === 0}}" class="empty-tip" style="padding: 32rpx 0;">
+          <text class="empty-icon">＋</text>
+          <text class="empty-text">还没有记录,点击添加</text>
+        </view>
+        <view wx:for="{{item.items}}" wx:for-item="food" wx:key="id">
+          <view class="meal-item">
+            <view style="flex:1; min-width:0;">
+              <text class="name">{{food.name}}</text>
+              <text class="portion" wx:if="{{food.portion}}">{{food.portion}}</text>
+            </view>
+            <text class="cal">{{food.calories}}</text>
+            <view class="action-btn pit-sm" catchtap="onDeleteItem" data-meal-type="{{item.meal_type}}" data-item-id="{{food.id}}" wx:if="{{food.id}}">✕</view>
+          </view>
+          <view class="divider" wx:if="{{index < item.items.length - 1}}"></view>
+        </view>
+      </view>
+    </view>
+
+    <view class="safe-bottom"></view>
+  </scroll-view>
+
+  <view class="fab" bindtap="onFabTap">+</view>
+
+  <!-- 新增弹窗 -->
+  <view class="modal-mask" wx:if="{{showAdd}}" bindtap="onCancel">
+    <view class="modal-content bump" catchtap="stopPropagation">
+      <text class="modal-title">记录饮食</text>
+
+      <!-- 餐别选择 -->
+      <view class="meal-type-row">
+        <view class="type-btn {{formData.meal_type === 'breakfast' ? 'active' : ''}}" bindtap="onMealTypeTap" data-value="breakfast">🌅 早餐</view>
+        <view class="type-btn {{formData.meal_type === 'lunch' ? 'active' : ''}}" bindtap="onMealTypeTap" data-value="lunch">☀️ 午餐</view>
+        <view class="type-btn {{formData.meal_type === 'dinner' ? 'active' : ''}}" bindtap="onMealTypeTap" data-value="dinner">🌙 晚餐</view>
+      </view>
+
+      <view class="form-input">
+        <input class="modal-input" placeholder="食物名称" value="{{formData.name}}" focus="{{showAdd}}" bindinput="onFormInput" data-field="name" />
+      </view>
+      <view class="form-input" style="margin-top: 16rpx;">
+        <input class="modal-input" placeholder="份量（如：1 碗）" value="{{formData.portion}}" bindinput="onFormInput" data-field="portion" />
+      </view>
+      <view class="form-input" style="margin-top: 16rpx;">
+        <input class="modal-input" placeholder="热量（千卡）" type="number" value="{{formData.calories}}" bindinput="onFormInput" data-field="calories" />
+      </view>
+      <view class="modal-actions">
+        <view class="modal-btn cancel-btn bump-sm" bindtap="onCancel">取消</view>
+        <view class="modal-btn confirm-btn" bindtap="onSave">保存</view>
+      </view>
+    </view>
+  </view>
+</view>

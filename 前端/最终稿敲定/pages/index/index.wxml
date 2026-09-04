@@ -1,0 +1,209 @@
+<view class="container">
+  <view class="custom-nav" style="height: {{navHeight}}px; padding-top: {{statusBarHeight}}px;">
+    <view class="nav-content" style="padding-right: {{capsuleRight || 0}}px;">
+      <view class="nav-titles">
+        <text class="nav-meta">周二 · 9月2日</text>
+        <text class="nav-title">习惯管家</text>
+      </view>
+      <view class="nav-icon-row">
+        <view class="nav-icon {{editMode ? 'active' : ''}}" bindtap="onToggleEdit">
+          <text class="nav-icon-text">{{editMode ? '✓' : '✎'}}</text>
+        </view>
+        <view class="nav-icon" bindtap="goSettings">
+          <text class="nav-icon-text">⚙</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <scroll-view class="page-content" scroll-y>
+    <view style="height: 20rpx;"></view>
+
+    <!-- 数据卡片(常驻,放大版) -->
+    <view class="data-cards">
+      <view class="data-card" bindtap="showTodayDetail">
+        <text class="data-card-label">今日结余</text>
+        <view class="data-card-value-row">
+          <text class="data-card-currency">¥</text>
+          <text class="data-card-value primary-dark">{{todayNet}}</text>
+        </view>
+        <text class="data-card-sub">收¥{{todayIncome}} 支¥{{todayExpense}}</text>
+      </view>
+      <view class="data-card">
+        <text class="data-card-label">总热量</text>
+        <view class="data-card-value-row">
+          <text class="data-card-value warn">{{todayCalories}}</text>
+          <text class="data-card-unit">千卡</text>
+        </view>
+        <text class="data-card-sub">目标 {{calorieGoal}}</text>
+      </view>
+      <view class="data-card">
+        <text class="data-card-label">完成率</text>
+        <view class="data-card-value-row">
+          <text class="data-card-value primary-dark">{{completionRate}}</text>
+          <text class="data-card-unit">%</text>
+        </view>
+        <text class="data-card-sub">今日待办</text>
+      </view>
+    </view>
+
+    <!-- 快捷按钮(常驻) -->
+    <view class="quick-actions">
+      <view class="quick-btn bump" bindtap="goPage" data-url="/pages/finance/finance">
+        <view class="icon-wrap pit-sm">🧾</view>
+        <text class="text">记一笔</text>
+      </view>
+      <view class="quick-btn bump" bindtap="goPage" data-url="/pages/diet/diet">
+        <view class="icon-wrap pit-sm">🍱</view>
+        <text class="text">记饮食</text>
+      </view>
+      <view class="quick-btn bump" bindtap="goPage" data-url="/pages/todo/todo">
+        <view class="icon-wrap pit-sm">🚀</view>
+        <text class="text">待办与目标</text>
+      </view>
+      <view class="quick-btn bump" bindtap="goPage" data-url="/pages/achievements/achievements">
+        <view class="icon-wrap pit-sm">🏆</view>
+        <text class="text">成就</text>
+      </view>
+      <view class="quick-btn bump" bindtap="goPage" data-url="/pages/stats/stats">
+        <view class="icon-wrap pit-sm">📊</view>
+        <text class="text">数据洞察</text>
+      </view>
+      <view class="quick-btn bump" bindtap="goPage" data-url="/pages/reports/reports">
+        <view class="icon-wrap pit-sm">📅</view>
+        <text class="text">AI报告</text>
+      </view>
+    </view>
+
+    <!-- AI 智能建议(放大版沉香绿卡) -->
+    <view class="insight-hero" bindtap="onShowAllInsights">
+      <view class="insight-hero-label">
+        <text class="insight-hero-emoji">💡</text>
+        <text class="insight-hero-title">AI 智能建议</text>
+        <text class="insight-hero-more">查看全部 ›</text>
+      </view>
+      <view wx:if="{{topInsight}}" class="insight-hero-body">
+        <text>{{topInsight}}</text>
+      </view>
+      <view wx:else class="insight-hero-body muted">
+        <text>点击获取你的个性化建议</text>
+      </view>
+    </view>
+
+    <!-- 可自定义的 sections -->
+    <block wx:for="{{visibleSections}}" wx:key="key" wx:for-item="sec">
+      <!-- 编辑模式下的拖动条 -->
+      <view wx:if="{{editMode}}" class="edit-bar">
+        <view class="edit-handle">⋮⋮</view>
+        <text class="edit-name">{{sec.name}}</text>
+        <view class="edit-controls">
+          <view class="edit-btn bump-sm" bindtap="onMoveUp" data-index="{{index}}">▲</view>
+          <view class="edit-btn bump-sm" bindtap="onMoveDown" data-index="{{index}}">▼</view>
+          <view class="edit-btn hide-btn bump-sm" bindtap="onHideSection" data-key="{{sec.key}}">✕ 隐藏</view>
+        </view>
+      </view>
+
+      <!-- 今日结余 -->
+      <view wx:if="{{sec.key === 'finance'}}">
+        <view class="section-title">
+          <text>今日结余</text>
+          <text class="more" bindtap="showTodayDetail">详情 ></text>
+        </view>
+        <view class="finance-card bump" bindtap="showTodayDetail">
+          <view class="finance-stats">
+            <view class="item">
+              <text class="num success-dark">¥{{todayIncome}}</text>
+              <text class="label">今日收入</text>
+            </view>
+            <view class="item">
+              <text class="num" style="color:#B08070;">¥{{todayExpense}}</text>
+              <text class="label">今日支出</text>
+            </view>
+            <view class="item">
+              <text class="num primary-dark">¥{{todayNet}}</text>
+              <text class="label">今日结余</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 今日饮食 -->
+      <view wx:if="{{sec.key === 'diet'}}">
+        <view class="section-title">
+          <text>今日饮食</text>
+          <text class="more" bindtap="goPage" data-url="/pages/diet/diet">详情 ></text>
+        </view>
+        <view class="diet-summary bump">
+          <text class="deco"></text>
+          <text class="cal-big">{{todayCalories}}</text>
+          <text class="cal-label">千卡 / 目标 {{calorieGoal}}</text>
+        </view>
+      </view>
+
+      <!-- 今日待办 -->
+      <view wx:if="{{sec.key === 'todo'}}">
+        <view class="section-title">
+          <text>今日待办</text>
+          <text class="more" bindtap="goPage" data-url="/pages/todo/todo">查看全部 ></text>
+        </view>
+        <view class="todo-card bump">
+          <view wx:if="{{todos.length === 0}}" class="empty-tip">暂无待办</view>
+          <view class="todo-item" wx:for="{{todos}}" wx:key="id" data-id="{{item.id}}" bindtap="toggleTodo">
+            <view class="checkbox {{item.done ? 'checked' : 'unchecked'}}">{{item.done ? '✓' : ''}}</view>
+            <text class="text {{item.done ? 'done' : ''}}">{{item.text}}</text>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <!-- 编辑模式:显示已隐藏的可恢复 -->
+    <view wx:if="{{editMode && hiddenSections.length > 0}}" class="hidden-section-block">
+      <text class="hidden-title">已隐藏的卡片</text>
+      <view class="hidden-list">
+        <view wx:for="{{hiddenSections}}" wx:key="key" class="hidden-item bump-sm" bindtap="onRestoreSection" data-key="{{item.key}}">
+          <text class="hidden-name">+ {{item.name}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 连续打卡 hero(移到最下方) -->
+    <view class="streak-hero" bindtap="goCheckin">
+      <view class="streak-hero-flame">🔥</view>
+      <view class="streak-hero-info">
+        <view class="streak-hero-num-row">
+          <text class="streak-hero-num">{{streak}}</text>
+          <text class="streak-hero-unit">天</text>
+        </view>
+        <view class="streak-hero-label">连续打卡 · {{todayChecked ? '今日已打卡' : '今日未打卡'}}</view>
+      </view>
+      <view class="streak-hero-status {{todayChecked ? 'done' : 'pending'}}">
+        <text>{{todayChecked ? '✓' : '·'}}</text>
+      </view>
+    </view>
+
+    <view class="safe-bottom"></view>
+  </scroll-view>
+
+  <view wx:if="{{!editMode}}" class="fab" bindtap="onFabTap">+</view>
+
+  <!-- 今日交易详情弹窗 -->
+  <view class="modal-mask" wx:if="{{showTodayDetail}}" bindtap="hideTodayDetail">
+    <view class="modal-content bump" catchtap="stopPropagation">
+      <text class="modal-title">今日收支明细</text>
+      <view wx:if="{{todayTransactions.length === 0}}" class="empty-tip" style="padding:40rpx 0;">今日暂无记录</view>
+      <view class="today-tx-list" wx:else>
+        <view class="today-tx-item" wx:for="{{todayTransactions}}" wx:key="id">
+          <view class="icon-pit pit-sm">{{item.icon}}</view>
+          <view class="today-tx-info">
+            <text class="title">{{item.title}}</text>
+            <text class="desc">{{item.desc}}</text>
+          </view>
+          <text class="amount {{item.type}}">{{item.type === 'income' ? '+' : ''}}¥{{item.amount < 0 ? -item.amount : item.amount}}</text>
+        </view>
+      </view>
+      <view class="modal-actions" style="margin-top: 24rpx;">
+        <view class="modal-btn confirm-btn" bindtap="hideTodayDetail">关闭</view>
+      </view>
+    </view>
+  </view>
+</view>

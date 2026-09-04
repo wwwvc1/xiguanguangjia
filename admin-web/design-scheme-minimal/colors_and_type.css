@@ -1,0 +1,41 @@
+:root {
+  --brand-background: #ffffff;
+  --brand-foreground: #1f2937;
+  --brand-card: #ffffff;
+  --brand-card-foreground: #1f2937;
+  --brand-popover: #ffffff;
+  --brand-popover-foreground: #1f2937;
+  --brand-primary: #2563eb;
+  --brand-primary-foreground: #ffffff;
+  --brand-muted: #f3f4f6;
+  --brand-muted-foreground: #6b7280;
+  --brand-border: #e5e7eb;
+  --brand-input: #e5e7eb;
+  --brand-ring: #2563eb;
+
+  --brand-radius-sm: 4px;
+  --brand-radius-md: 8px;
+  --brand-radius-lg: 12px;
+
+  --brand-surface: #f9fafb;
+  --brand-surface-2: #f3f4f6;
+  --brand-ink: #1f2937;
+  --brand-ink-2: #6b7280;
+  --brand-ink-3: #9ca3af;
+  --brand-line: #e5e7eb;
+
+  --brand-state-success: #10b981;
+  --brand-state-warning: #f59e0b;
+  --brand-state-error: #ef4444;
+  --brand-state-info: #3b82f6;
+
+  --brand-shadow-1: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 1px rgba(15, 23, 42, 0.03);
+  --brand-shadow-2: 0 8px 24px -8px rgba(15, 23, 42, 0.14);
+
+  --brand-font-sans: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --brand-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.light, :root {
+  color-scheme: light;
+}

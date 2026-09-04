@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 模型管理</title>
+    <style id="theme-vars">
+:root {
+  --brand-background: #0b1120;
+  --brand-foreground: #f3f4f6;
+  --brand-card: #111827;
+  --brand-card-foreground: #f3f4f6;
+  --brand-popover: #111827;
+  --brand-popover-foreground: #f3f4f6;
+  --brand-primary: #06b6d4;
+  --brand-primary-foreground: #020617;
+  --brand-muted: #1f2937;
+  --brand-muted-foreground: #9ca3af;
+  --brand-border: #1f2937;
+  --brand-input: #1f2937;
+  --brand-ring: #06b6d4;
+
+  --brand-radius-sm: 4px;
+  --brand-radius-md: 8px;
+  --brand-radius-lg: 12px;
+
+  --brand-surface: #111827;
+  --brand-surface-2: #1f2937;
+  --brand-ink: #f3f4f6;
+  --brand-ink-2: #9ca3af;
+  --brand-ink-3: #6b7280;
+  --brand-line: #1f2937;
+
+  --brand-state-success: #22c55e;
+  --brand-state-warning: #eab308;
+  --brand-state-error: #f87171;
+  --brand-state-info: #38bdf8;
+
+  --brand-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 1px rgba(0, 0, 0, 0.15);
+  --brand-shadow-2: 0 8px 30px -8px rgba(6, 182, 212, 0.18);
+
+  --brand-font-sans: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --brand-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.dark, :root {
+  color-scheme: dark;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--brand-background);
+    --color-foreground: var(--brand-foreground);
+    --color-card: var(--brand-card);
+    --color-card-foreground: var(--brand-card-foreground);
+    --color-popover: var(--brand-popover);
+    --color-popover-foreground: var(--brand-popover-foreground);
+    --color-primary: var(--brand-primary);
+    --color-primary-foreground: var(--brand-primary-foreground);
+    --color-muted: var(--brand-muted);
+    --color-muted-foreground: var(--brand-muted-foreground);
+    --color-border: var(--brand-border);
+    --color-input: var(--brand-input);
+    --color-ring: var(--brand-ring);
+    --radius-sm: var(--brand-radius-sm);
+    --radius-md: var(--brand-radius-md);
+    --radius-lg: var(--brand-radius-lg);
+  }
+  @layer base {
+    body { background: var(--brand-background); color: var(--brand-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--brand-background); }
+      .text-background { color: var(--brand-background); }
+      .border-background { border-color: var(--brand-background); }
+      .ring-background { --tw-ring-color: var(--brand-background); }
+      .bg-foreground { background-color: var(--brand-foreground); }
+      .text-foreground { color: var(--brand-foreground); }
+      .border-foreground { border-color: var(--brand-foreground); }
+      .ring-foreground { --tw-ring-color: var(--brand-foreground); }
+      .bg-card { background-color: var(--brand-card); }
+      .text-card { color: var(--brand-card); }
+      .border-card { border-color: var(--brand-card); }
+      .ring-card { --tw-ring-color: var(--brand-card); }
+      .bg-card-foreground { background-color: var(--brand-card-foreground); }
+      .text-card-foreground { color: var(--brand-card-foreground); }
+      .border-card-foreground { border-color: var(--brand-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--brand-card-foreground); }
+      .bg-popover { background-color: var(--brand-popover); }
+      .text-popover { color: var(--brand-popover); }
+      .border-popover { border-color: var(--brand-popover); }
+      .ring-popover { --tw-ring-color: var(--brand-popover); }
+      .bg-popover-foreground { background-color: var(--brand-popover-foreground); }
+      .text-popover-foreground { color: var(--brand-popover-foreground); }
+      .border-popover-foreground { border-color: var(--brand-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--brand-popover-foreground); }
+      .bg-primary { background-color: var(--brand-primary); }
+      .text-primary { color: var(--brand-primary); }
+      .border-primary { border-color: var(--brand-primary); }
+      .ring-primary { --tw-ring-color: var(--brand-primary); }
+      .bg-primary-foreground { background-color: var(--brand-primary-foreground); }
+      .text-primary-foreground { color: var(--brand-primary-foreground); }
+      .border-primary-foreground { border-color: var(--brand-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--brand-primary-foreground); }
+      .bg-muted { background-color: var(--brand-muted); }
+      .text-muted { color: var(--brand-muted); }
+      .border-muted { border-color: var(--brand-muted); }
+      .ring-muted { --tw-ring-color: var(--brand-muted); }
+      .bg-muted-foreground { background-color: var(--brand-muted-foreground); }
+      .text-muted-foreground { color: var(--brand-muted-foreground); }
+      .border-muted-foreground { border-color: var(--brand-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--brand-muted-foreground); }
+      .bg-border { background-color: var(--brand-border); }
+      .text-border { color: var(--brand-border); }
+      .border-border { border-color: var(--brand-border); }
+      .ring-border { --tw-ring-color: var(--brand-border); }
+      .bg-input { background-color: var(--brand-input); }
+      .text-input { color: var(--brand-input); }
+      .border-input { border-color: var(--brand-input); }
+      .ring-input { --tw-ring-color: var(--brand-input); }
+      .bg-ring { background-color: var(--brand-ring); }
+      .text-ring { color: var(--brand-ring); }
+      .border-ring { border-color: var(--brand-ring); }
+      .ring-ring { --tw-ring-color: var(--brand-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+    <style id="critical-layout">
+      .app-sidebar { position: fixed; top: 0; left: 0; width: 220px; height: 100vh; z-index: 50; }
+      .app-header { position: fixed; top: 0; left: 220px; right: 0; height: 64px; z-index: 40; }
+      .app-main { margin-left: 220px; padding-top: 64px; min-height: 100vh; }
+      .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { white-space: nowrap; }
+      .font-mono-data { font-family: var(--brand-font-mono); }
+      @media (max-width: 768px) {
+        .app-sidebar { transform: translateX(-100%); }
+        .app-header { left: 0; }
+        .app-main { margin-left: 0; padding-top: 64px; }
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <!-- Sidebar -->
+    <aside id="app-sidebar" class="app-sidebar bg-card border-r border-border flex flex-col">
+      <div class="h-[64px] flex items-center px-5 border-b border-border">
+        <div class="flex items-center gap-2 text-primary">
+          <i data-lucide="cpu" class="w-6 h-6"></i>
+          <span class="font-semibold text-lg tracking-tight">NeuroAdmin</span>
+        </div>
+      </div>
+      <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+        <a href="dashboard.html" class="flex items-center gap-3 px-3 py-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors">
+          <i data-lucide="layout-dashboard" class="w-[18px] h-[18px]"></i>
+          <span class="text-sm">仪表盘</span>
+        </a>
+        <a href="llm-models.html" class="flex items-center gap-3 px-3 py-2 rounded-md bg-primary/10 text-primary border border-primary/20">
+          <i data-lucide="brain-circuit" class="w-[18px] h-[18px]"></i>
+          <span class="text-sm">AI 模型</span>
+        </a>
+        <a href="analytics.html" class="flex items-center gap-3 px-3 py-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors">
+          <i data-lucide="bar-chart-3" class="w-[18px] h-[18px]"></i>
+          <span class="text-sm">数据看板</span>
+        </a>
+        <a href="system.html" class="flex items-center gap-3 px-3 py-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors">
+          <i data-lucide="settings" class="w-[18px] h-[18px]"></i>
+          <span class="text-sm">系统设置</span>
+        </a>
+        <a href="help.html" class="flex items-center gap-3 px-3 py-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors">
+          <i data-lucide="help-circle" class="w-[18px] h-[18px]"></i>
+          <span class="text-sm">帮助中心</span>
+        </a>
+      </nav>
+      <div class="p-4 border-t border-border">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+            <i data-lucide="user" class="w-4 h-4"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium truncate">管理员</p>
+            <p class="text-xs text-muted-foreground truncate">admin@neuro.dev</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Header -->
+    <header id="app-header" class="app-header bg-background/90 backdrop-blur border-b border-border flex items-center justify-between px-6">
+      <div class="flex items-center gap-3 text-sm text-muted-foreground">
+        <span>AI 模型</span>
+        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        <span class="text-foreground">模型管理</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <button class="relative p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors">
+          <i data-lucide="bell" class="w-5 h-5"></i>
+          <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary"></span>
+        </button>
+        <button class="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors">
+          <i data-lucide="log-out" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main id="app-main" class="app-main bg-background">
+      <div class="p-6 max-w-[1600px] mx-auto space-y-6">
+        <!-- Page Title + Action -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-semibold text-foreground">AI 模型管理</h1>
+            <p class="text-sm text-muted-foreground mt-1">管理大语言模型供应商、版本、配额与调用状态</p>
+          </div>
+          <button class="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>新建模型</span>
+          </button>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="bg-card border border-border rounded-lg p-4 flex flex-col lg:flex-row lg:items-center gap-4">
+          <div id="model-search" class="relative flex-1 max-w-md">
+            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
+            <input type="text" placeholder="搜索模型名称、提供商或版本..." class="w-full h-10 pl-10 pr-4 rounded-md bg-input border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50" />
+          </div>
+          <div id="status-filter" class="flex flex-wrap items-center gap-2">
+            <button class="px-3 py-1.5 rounded-full text-xs font-medium bg-primary text-primary-foreground">全部</button>
+            <button class="px-3 py-1.5 rounded-full text-xs font-medium bg-muted text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors">在线</button>
+            <button class="px-3 py-1.5 rounded-full text-xs font-medium bg-muted text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors">离线</button>
+            <button class="px-3 py-1.5 rounded-full text-xs font-medium bg-muted text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors">维护中</button>
+          </div>
+        </div>
+
+        <!-- Data Table -->
+        <div id="model-table" class="bg-card border border-border rounded-lg overflow-hidden">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr class="border-b border-border bg-muted/50">
+                  <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">模型名称</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">提供商</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">版本</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">状态</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Token 限额</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">最近调用</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">更新时间</th>
+                  <th class="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">操作</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border">
+                <tr class="hover:bg-surface-2 transition-colors">
+                  <td class="px-4 py-3.5">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center text-primary">
+                        <i data-lucide="bot" class="w-4 h-4"></i>
+                      </div>
+                      <div>
+                        <p class="text-sm font-medium text-foreground">GPT-4o</p>
+                        <p class="text-xs text-muted-foreground">gpt-4o-2024-08-06</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3.5 text-sm text-foreground">OpenAI</td>
+                  <td class="px-4 py-3.5 text-sm text-muted-foreground font-mono-data">2024-08</td>
+                  <td class="px-4 py-3.5"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" style="background-color: color-mix(in oklab, var(--brand-state-success) 15%, transparent); color: var(--brand-state-success); border: 1px solid color-mix(in oklab, var(--brand-state-success) 20%, transparent);">在线</span></td>
+                  <td class="px-4 py-3.5 text-sm text-right text-foreground font-mono-data">2,000,000</td>
+                  <td class="px-4 py-3.5 text-sm text-right text-foreground font-mono-data">12,845</td>
+                  <td class="px-4 py-3.5 text-sm text-muted-foreground font-mono-data">2026-08-27 14:32</td>
+                  <td class="px-4 py-3.5">
+                    <div class="flex items-center justify-center gap-1">
+                      <button class="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="编辑"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                      <button class="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="日志"><i data-lucide="file-text" class="w-4 h-4"></i></button>
+                      <button class="p-1.5 rounded-md text-muted-foreground hover:text-[var(--brand-state-error)] hover:bg-[var(--brand-state-error)]/10 transition-colors" title="删除"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="hover:bg-surface-2 transition-colors">
+                  <td class="px-4 py-3.5">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center text-primary">
+                        <i data-lucide="bot" class="w-4 h-4"></i>
+                      </div>
+                      <div>
+                        <p class="text-sm font-medium text-foreground">Claude 3.5 Sonnet</p>
+                        <p class="text-xs text-muted-foreground">claude-3-5-sonnet-20241022</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3.5 text-sm text-foreground">Anthropic</td>
+                  <td class="px-4 py-3.5 text-sm text-muted-foreground font-mono-data">2024-10</td>
+                  <td class="px-4 py-3.5"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" style="background-color: color-mix(in oklab, var(--brand-state-success) 15%, transparent); color: var(--brand-state-success); border: 1px solid color-mix(in oklab, var(--brand-state-success) 20%, transparent);">在线</span></td>
+                  <td class="px-4 py-3.5 text-sm text-right text-foreground font-mono-data">1,500,000</td>
+                  <td class="px-4 py-3.5 text-sm text-right text-foreground font-mono-data">8,291</td>
+                  <td class="px-4 py-3.5 text-sm text-muted-foreground font-mono-data">2026-08-27 13:10</td>
+                  <td class="px-4 py-3.5">
+                    <div class="flex items-center justify-center gap-1">
+                      <button class="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="编辑"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                      <button class="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="日志"><i data-lucide="file-text" class="w-4 h-4"></i></button>
+                      <button class="p-1.5 rounded-md text-muted-foreground hover:text-[var(--brand-state-error)] hover:bg-[var(--brand-state-error)]/10 transition-colors" title="删除"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="hover:bg-surface-2 transition-colors">
+                  <td class="px-4 py-3.5">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center text-primary">
+                        <i data-lucide="bot" class="w-4 h-4"></i>
+                      </div>
+                      <div>
+                        <p class="text-sm font-medium text-foreground">DeepSeek-V3</p>
+                        <p class="text-xs text-muted-foreground">deepseek-chat-v3</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3.5 text-sm text-foreground">DeepSeek</td>
+                  <td class="px-4 py-3.5 text-sm text-muted-foreground font-mono-data">0324</td>
+                  <td class="px-4 py-3.5"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" style="background-color: color-mix(in oklab, var(--brand-state-warning) 15%, transparent); color: var(--brand-state-warning); border: 1px solid color-mix(in oklab, var(--brand-state-warning) 20%, transparent);">维护中</span></td>
+                  <td class="px-4 py-3.5 text-sm text-right text-foreground font-mono-data">3,000,000</td>
+                  <td class="px-4 py-3.5 text-sm text-right text-foreground font-mono-data">5,642</td>
+                  <td class="px-4 py-3.5 text-sm text-muted-foreground font-mono-data">2026-08-26 22:05</td>
+                  <td class="px-4 py-3.5">
+                    <div class="flex items-center justify-center gap-1">
+                      <button class="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="编辑"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                      <button class="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="日志"><i data-lucide="file-text" class="w-4 h-4"></i></button>
+                      <button class="p-1.5 rounded-md text-muted-foreground hover:text-[var(--brand-state-error)] hover:bg-[var(--brand-state-error)]/10 transition-colors" title="删除"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="hover:bg-surface-2 transition-colors">
+                  <td class="px-4 py-3.5">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center text-primary">
+                        <i data-lucide="bot" class="w-4 h-4"></i>
+                      </div>
+                      <div>
+                        <p class="text-sm font-medium text-foreground">Qwen2.5-72B</p>
+                        <p class="text-xs text-muted-foreground">qwen2.5-72b-instruct</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3.5 text-sm text-foreground">Alibaba Cloud</td>
+                  <td class="px-4 py-3.5 text-sm text-muted-foreground font-mono-data">0919</td>
+                  <td class="px-4 py-3.5"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" style="background-color: color-mix(in oklab, var(--brand-state-success) 15%, transparent); color: var(--brand-state-success); border: 1px solid color-mix(in oklab, var(--brand-state-success) 20%, transparent);">在线</span></td>
+                  <td class="px-4 py-3.5 text-sm text-right text-foreground font-mono-data">2,500,000</td>
+                  <td class="px-4 py-3.5 text-sm text-right text-foreground font-mono-data">3,018</td>
+                  <td class="px-4 py-3.5 text-sm text-muted-foreground font-mono-data">2026-08-27 09:47</td>
+                  <td class="px-4 py-3.5">
+                    <div class="flex items-center justify-center gap-1">
+                      <button class="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="编辑"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                      <button class="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="日志"><i data-lucide="file-text" class="w-4 h-4"></i></button>
+                      <button class="p-1.5 rounded-md text-muted-foreground hover:text-[var(--brand-state-error)] hover:bg-[var(--brand-state-error)]/10 transition-colors" title="删除"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="hover:bg-surface-2 transition-colors">
+                  <td class="px-4 py-3.5">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center text-primary">
+                        <i data-lucide="bot" class="w-4 h-4"></i>
+                      </div>
+                      <div>
+                        <p class="text-sm font-medium text-foreground">Llama 3.1 405B</p>
+                        <p class="text-xs text-muted-foreground">llama-3.1-405b-instruct</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3.5 text-sm text-foreground">Meta</td>
+                  <td class="px-4 py-3.5 text-sm text-muted-foreground font-mono-data">0701</td>
+                  <td class="px-4 py-3.5"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" style="background-color: color-mix(in oklab, var(--brand-state-error) 15%, transparent); color: var(--brand-state-error); border: 1px solid color-mix(in oklab, var(--brand-state-error) 20%, transparent);">离线</span></td>
+                  <td class="px-4 py-3.5 text-sm text-right text-foreground font-mono-data">1,000,000</td>
+                  <td class="px-4 py-3.5 text-sm text-right text-muted-foreground font-mono-data">0</td>
+                  <td class="px-4 py-3.5 text-sm text-muted-foreground font-mono-data">2026-08-25 18:22</td>
+                  <td class="px-4 py-3.5">
+                    <div class="flex items-center justify-center gap-1">
+                      <button class="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="编辑"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                      <button class="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="日志"><i data-lucide="file-text" class="w-4 h-4"></i></button>
+                      <button class="p-1.5 rounded-md text-muted-foreground hover:text-[var(--brand-state-error)] hover:bg-[var(--brand-state-error)]/10 transition-colors" title="删除"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div id="pagination" class="flex items-center justify-between">
+          <p class="text-sm text-muted-foreground">共 <span class="text-foreground font-mono-data">5</span> 条记录</p>
+          <div class="flex items-center gap-2">
+            <button class="inline-flex items-center px-3 py-2 rounded-md border border-border bg-card text-sm text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors disabled:opacity-50" disabled>
+              <i data-lucide="chevron-left" class="w-4 h-4 mr-1"></i> 上一页
+            </button>
+            <button class="inline-flex items-center justify-center w-9 h-9 rounded-md bg-primary text-primary-foreground text-sm font-medium">1</button>
+            <button class="inline-flex items-center px-3 py-2 rounded-md border border-border bg-card text-sm text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors disabled:opacity-50" disabled>
+              下一页 <i data-lucide="chevron-right" class="w-4 h-4 ml-1"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+    <script>if(window.lucide) lucide.createIcons();</script>
+</body>
+</html>

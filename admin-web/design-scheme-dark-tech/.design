@@ -1,0 +1,48 @@
+{
+  "name": "方案 B · 深色科技",
+  "version": 1,
+  "description": "深色沉浸式界面，青蓝数据光效，突出 AI 与系统日志的科技氛围",
+  "data": [
+    {
+      "id": "page-login",
+      "title": "登录页",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1724784000000,
+      "devMetadata": {
+        "htmlSrc": "pages/login.html",
+        "interactions": []
+      },
+      "canvasData": { "x": 0, "y": 0, "group": 0 }
+    },
+    {
+      "id": "page-dashboard",
+      "title": "仪表盘",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1724784000001,
+      "devMetadata": {
+        "htmlSrc": "pages/dashboard.html",
+        "interactions": []
+      },
+      "canvasData": { "x": 0, "y": 0, "group": 0 }
+    },
+    {
+      "id": "page-llm-models",
+      "title": "AI 模型管理",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1724784000002,
+      "devMetadata": {
+        "htmlSrc": "pages/llm-models.html",
+        "interactions": []
+      },
+      "canvasData": { "x": 0, "y": 0, "group": 0 }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "desktop",
+    "projectName": "方案 B · 深色科技"
+  }
+}

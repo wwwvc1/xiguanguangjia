@@ -1,0 +1,1122 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HabitOS · 全球节点 · 克制 v2</title>
+<style>
+/* =========================================================
+   13-克制-v2-真地球
+   Anti-slop Apple language. Three-axis earth. 6 cities.
+   4 lines. No cloud. No glow. No ring. No pulse.
+   One accent. Four grays. Zero decoration.
+   ========================================================= */
+
+:root {
+  /* light */
+  --bg: #fbfbfd;
+  --bg-elev: #ffffff;
+  --surface: rgba(255,255,255,0.78);
+  --surface-solid: #ffffff;
+  --border: rgba(0,0,0,0.08);
+  --border-strong: rgba(0,0,0,0.14);
+  --g1: #1d1d1f;
+  --g2: #424245;
+  --g3: #6e6e73;
+  --g4: #86868b;
+  --g5: #d2d2d7;
+  --g6: #e8e8ed;
+  --accent: #0071e3;
+  --accent-soft: rgba(0,113,227,0.08);
+  --accent-press: #0062bf;
+  --ok: #2c8a4a;
+  --warn: #b88500;
+  --err: #c8392e;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-pill: 999px;
+  --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.04);
+  --t: cubic-bezier(0.16, 1, 0.3, 1);
+  --t-color: color 0.4s var(--t), background-color 0.4s var(--t), border-color 0.4s var(--t), fill 0.4s var(--t), stroke 0.4s var(--t);
+}
+
+[data-theme="dark"] {
+  --bg: #000000;
+  --bg-elev: #1c1c1e;
+  --surface: rgba(28,28,30,0.78);
+  --surface-solid: #1c1c1e;
+  --border: rgba(255,255,255,0.10);
+  --border-strong: rgba(255,255,255,0.18);
+  --g1: #f5f5f7;
+  --g2: #d2d2d7;
+  --g3: #a1a1a6;
+  --g4: #86868b;
+  --g5: #424245;
+  --g6: #2c2c2e;
+  --accent: #2997ff;
+  --accent-soft: rgba(41,151,255,0.14);
+  --accent-press: #6cb6ff;
+  --shadow: 0 1px 2px rgba(0,0,0,0.30), 0 8px 24px rgba(0,0,0,0.40);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
+  background: var(--bg);
+  color: var(--g1);
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: var(--t-color);
+  min-height: 100dvh;
+}
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+input { font: inherit; color: inherit; }
+a { color: inherit; text-decoration: none; }
+::selection { background: var(--accent-soft); color: var(--g1); }
+img, svg, canvas { display: block; max-width: 100%; }
+
+.num, .kpi-value, .stat, .mono {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* layout */
+.shell {
+  display: grid;
+  grid-template-columns: 232px 1fr;
+  min-height: 100dvh;
+}
+
+/* sidebar */
+.sidebar {
+  background: var(--bg-elev);
+  border-right: 1px solid var(--border);
+  padding: 20px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: var(--t-color);
+}
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 8px 20px;
+}
+.brand-mark {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--accent);
+  color: white;
+  display: grid; place-items: center;
+  font-weight: 600; font-size: 14px;
+  font-family: 'Georgia', serif;
+  font-style: italic;
+}
+.brand-name {
+  font-weight: 600; font-size: 15px; color: var(--g1);
+  letter-spacing: -0.01em;
+}
+.brand-tag {
+  font-size: 11px; color: var(--g4);
+  margin-top: 1px; letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.nav-section {
+  padding: 16px 8px 6px;
+  font-size: 11px; color: var(--g4);
+  letter-spacing: 0.06em; text-transform: uppercase;
+  font-weight: 500;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px; color: var(--g2);
+  font-weight: 400;
+  transition: background-color 0.2s var(--t), color 0.2s var(--t);
+}
+.nav-item:hover { background: var(--accent-soft); color: var(--g1); }
+.nav-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+.nav-item .ico { width: 16px; height: 16px; opacity: 0.7; flex-shrink: 0; }
+.nav-item.active .ico { opacity: 1; }
+
+/* main */
+.main {
+  padding: 20px 32px 40px;
+  max-width: 1280px;
+}
+
+/* topbar */
+.topbar {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+.crumbs {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--g3);
+}
+.crumb-home { color: var(--g2); }
+.crumb-sep { color: var(--g5); }
+.crumb-cur { color: var(--g1); font-weight: 500; }
+.topbar-right {
+  display: flex; align-items: center; gap: 8px;
+}
+.icon-btn {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: grid; place-items: center;
+  color: var(--g2);
+  transition: background-color 0.2s var(--t), color 0.2s var(--t);
+}
+.icon-btn:hover { background: var(--accent-soft); color: var(--g1); }
+.icon-btn svg { width: 16px; height: 16px; }
+.divider-v { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+.avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: linear-gradient(135deg, #6cb6ff, #0071e3);
+  color: white;
+  font-size: 12px; font-weight: 600;
+  display: grid; place-items: center;
+  letter-spacing: 0.02em;
+}
+
+/* page header */
+.page-h {
+  display: flex; align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 16px; flex-wrap: wrap;
+}
+.page-title {
+  font-size: 28px; font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--g1);
+  margin: 0 0 4px;
+  font-family: 'Georgia', serif;
+}
+.page-sub {
+  font-size: 14px; color: var(--g3);
+  letter-spacing: -0.005em;
+}
+.page-actions { display: flex; gap: 8px; }
+.btn {
+  height: 32px; padding: 0 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 500;
+  border: 1px solid var(--border);
+  background: var(--surface-solid);
+  color: var(--g1);
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: background-color 0.2s var(--t), border-color 0.2s var(--t);
+}
+.btn:hover { background: var(--accent-soft); border-color: var(--accent); }
+.btn.primary {
+  background: var(--accent); color: white; border-color: var(--accent);
+}
+.btn.primary:hover { background: var(--accent-press); border-color: var(--accent-press); }
+
+/* hero grid: globe card + side stat strip */
+.hero-grid {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+@media (max-width: 1080px) {
+  .hero-grid { grid-template-columns: 1fr; }
+}
+
+.card {
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  transition: var(--t-color);
+  overflow: hidden;
+}
+
+/* globe card */
+.globe-card {
+  padding: 20px;
+  display: flex; flex-direction: column;
+  gap: 16px;
+}
+.globe-head {
+  display: flex; align-items: center;
+  justify-content: space-between;
+}
+.globe-title {
+  font-size: 15px; font-weight: 600;
+  color: var(--g1); letter-spacing: -0.01em;
+}
+.globe-meta {
+  font-size: 12px; color: var(--g4);
+  display: flex; align-items: center; gap: 6px;
+}
+.live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--ok);
+}
+
+.globe-stage {
+  position: relative;
+  width: 320px; height: 320px;
+  margin: 0 auto;
+  display: grid; place-items: center;
+}
+.globe-canvas {
+  width: 100%; height: 100%;
+  display: block;
+}
+.globe-frame {
+  position: absolute; inset: 0;
+  pointer-events: none;
+}
+
+.globe-foot {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.gf-cell {
+  display: flex; flex-direction: column; gap: 2px;
+}
+.gf-label {
+  font-size: 11px; color: var(--g4);
+  letter-spacing: 0.02em; text-transform: uppercase;
+}
+.gf-value {
+  font-size: 18px; font-weight: 600;
+  color: var(--g1);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  font-family: 'Georgia', serif;
+}
+
+/* side stat cards */
+.stat-stack {
+  display: flex; flex-direction: column; gap: 16px;
+}
+.stat-card {
+  padding: 16px 20px;
+  display: flex; align-items: center;
+  justify-content: space-between;
+}
+.stat-info { display: flex; flex-direction: column; gap: 4px; }
+.stat-label {
+  font-size: 12px; color: var(--g3);
+  letter-spacing: 0.01em;
+}
+.stat-value {
+  font-size: 24px; font-weight: 600;
+  color: var(--g1); letter-spacing: -0.02em;
+  font-family: 'Georgia', serif;
+  font-variant-numeric: tabular-nums;
+}
+.stat-delta {
+  font-size: 12px; color: var(--ok);
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: 2px;
+}
+.stat-delta.down { color: var(--err); }
+.stat-spark {
+  width: 88px; height: 32px;
+  display: block;
+}
+
+/* cities table */
+.cities-card {
+  padding: 0;
+}
+.card-head {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.card-title {
+  font-size: 14px; font-weight: 600;
+  color: var(--g1); letter-spacing: -0.005em;
+}
+.card-tabs {
+  display: flex; gap: 2px;
+  background: var(--g6);
+  border-radius: var(--radius-pill);
+  padding: 2px;
+}
+.tab-pill {
+  font-size: 12px; padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  color: var(--g3);
+  font-weight: 500;
+  transition: all 0.2s var(--t);
+}
+.tab-pill.active {
+  background: var(--surface-solid);
+  color: var(--g1);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+[data-theme="dark"] .tab-pill.active { box-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+
+.city-row {
+  display: grid;
+  grid-template-columns: 24px 1.4fr 0.8fr 0.8fr 0.8fr 24px;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  transition: background-color 0.15s var(--t);
+}
+.city-row:last-child { border-bottom: 0; }
+.city-row:hover { background: var(--accent-soft); }
+.city-name {
+  color: var(--g1); font-weight: 500;
+  display: flex; align-items: center; gap: 10px;
+}
+.city-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+.city-coord { color: var(--g3); }
+.city-val { color: var(--g1); font-variant-numeric: tabular-nums; }
+.city-up { color: var(--ok); font-variant-numeric: tabular-nums; font-size: 12px; }
+.city-chev { color: var(--g5); }
+.city-row.head {
+  background: transparent;
+  border-bottom: 1px solid var(--border);
+  padding: 10px 20px;
+  font-size: 11px;
+  color: var(--g4);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+}
+.city-row.head:hover { background: transparent; }
+
+/* legend */
+.legend {
+  display: flex; gap: 16px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--g3);
+}
+.legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.legend-mark {
+  width: 10px; height: 10px; border-radius: 50%;
+}
+.legend-mark.land { background: var(--g2); }
+.legend-mark.city { background: var(--accent); }
+.legend-mark.line { background: var(--accent); width: 12px; height: 2px; border-radius: 0; }
+
+/* theme toggle */
+.theme-toggle {
+  width: 56px; height: 28px;
+  background: var(--g6);
+  border-radius: var(--radius-pill);
+  position: relative;
+  transition: background-color 0.3s var(--t);
+}
+.theme-toggle::before {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--surface-solid);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: transform 0.3s var(--t);
+}
+[data-theme="dark"] .theme-toggle::before {
+  transform: translateX(28px);
+}
+.theme-toggle .sun, .theme-toggle .moon {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 12px; height: 12px;
+  display: grid; place-items: center;
+  color: var(--g4);
+}
+.theme-toggle .sun { left: 8px; }
+.theme-toggle .moon { right: 8px; }
+[data-theme="dark"] .theme-toggle .sun { opacity: 0; }
+[data-theme="dark"] .theme-toggle .moon { opacity: 1; }
+[data-theme="light"] .theme-toggle .moon { opacity: 0; }
+[data-theme="light"] .theme-toggle .sun { opacity: 1; }
+
+/* tip card row */
+.tip-row {
+  margin-top: 16px;
+  padding: 14px 20px;
+  display: flex; align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--g3);
+}
+.tip-row .kbd {
+  background: var(--g6);
+  color: var(--g1);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-family: 'SF Mono', Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* utility */
+.flex { display: flex; }
+.row { display: flex; align-items: center; }
+.gap-4 { gap: 4px; }
+.gap-8 { gap: 8px; }
+.gap-12 { gap: 12px; }
+.gap-16 { gap: 16px; }
+.spacer { flex: 1; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div>
+        <div class="brand-name">HabitOS</div>
+        <div class="brand-tag">Admin · v2.4</div>
+      </div>
+    </div>
+
+    <div class="nav-section">概览</div>
+    <a class="nav-item" href="#">
+      <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+      仪表盘
+    </a>
+    <a class="nav-item active" href="#">
+      <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2c2 2 2 10 0 12M8 2c-2 2-2 10 0 12"/></svg>
+      全球节点
+    </a>
+    <a class="nav-item" href="#">
+      <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 13V7M8 13V3M13 13V9"/></svg>
+      数据洞察
+    </a>
+    <a class="nav-item" href="#">
+      <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12v8H2z M2 7h12 M5 10h2"/></svg>
+      内容运营
+    </a>
+
+    <div class="nav-section">系统</div>
+    <a class="nav-item" href="#">
+      <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="6" r="2"/><path d="M8 14s-4-3-4-7a4 4 0 018 0c0 4-4 7-4 7z"/></svg>
+      用户管理
+    </a>
+    <a class="nav-item" href="#">
+      <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v3M8 11v3M2 8h3M11 8h3M4 4l2 2M10 10l2 2M4 12l2-2M10 6l2-2"/></svg>
+      AI 模型
+    </a>
+    <a class="nav-item" href="#">
+      <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1l7 4-7 4-7-4 7-4z M1 9l7 4 7-4 M1 13l7 4 7-4"/></svg>
+      知识库
+    </a>
+    <a class="nav-item" href="#">
+      <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2"/><path d="M8 1v3M8 12v3M1 8h3M12 8h3"/></svg>
+      设置
+    </a>
+
+    <div class="spacer"></div>
+
+    <div class="nav-section">提示</div>
+    <div style="padding: 8px 10px; font-size: 12px; color: var(--g4); line-height: 1.6;">
+      拖动地球可自由旋转。<br>三轴叠加,无固定姿态。
+    </div>
+  </aside>
+
+  <!-- main -->
+  <main class="main">
+
+    <!-- topbar -->
+    <div class="topbar">
+      <div class="crumbs">
+        <span class="crumb-home">概览</span>
+        <span class="crumb-sep">/</span>
+        <span class="crumb-cur">全球节点</span>
+      </div>
+      <div class="topbar-right">
+        <button class="icon-btn" title="搜索">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5"/><path d="M11 11l3 3"/></svg>
+        </button>
+        <button class="icon-btn" title="通知">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 14a2 2 0 002-2H6a2 2 0 002 2z M3 11V7a5 5 0 0110 0v4l2 1H1l2-1z"/></svg>
+        </button>
+        <button class="theme-toggle" id="theme-toggle" title="切换主题">
+          <svg class="sun" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="3"/></svg>
+          <svg class="moon" viewBox="0 0 16 16" fill="currentColor"><path d="M11 9a4 4 0 01-4-4 4 4 0 004-4 6 6 0 100 12 6 6 0 004-4z"/></svg>
+        </button>
+        <div class="divider-v"></div>
+        <div class="avatar">WC</div>
+      </div>
+    </div>
+
+    <!-- page header -->
+    <div class="page-h">
+      <div>
+        <h1 class="page-title">全球节点</h1>
+        <p class="page-sub">六个核心城市 · 四条主干线路 · 实时链路</p>
+      </div>
+      <div class="page-actions">
+        <button class="btn">导出报告</button>
+        <button class="btn primary">新建节点</button>
+      </div>
+    </div>
+
+    <!-- hero -->
+    <section class="hero-grid">
+
+      <!-- globe -->
+      <div class="card globe-card">
+        <div class="globe-head">
+          <div class="globe-title">实时地球</div>
+          <div class="globe-meta">
+            <span class="live-dot"></span>
+            <span>6 城市 · 4 链路</span>
+          </div>
+        </div>
+
+        <div class="globe-stage">
+          <canvas class="globe-canvas" id="globe"></canvas>
+        </div>
+
+        <div class="globe-foot">
+          <div class="gf-cell">
+            <div class="gf-label">在线节点</div>
+            <div class="gf-value num" data-count="6">0</div>
+          </div>
+          <div class="gf-cell">
+            <div class="gf-label">活跃链路</div>
+            <div class="gf-value num" data-count="4">0</div>
+          </div>
+          <div class="gf-cell">
+            <div class="gf-label">延迟中位</div>
+            <div class="gf-value num" data-count="42" data-suffix="ms">0ms</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- side stats -->
+      <div class="stat-stack">
+
+        <div class="card stat-card">
+          <div class="stat-info">
+            <div class="stat-label">今日打卡</div>
+            <div class="stat-value num" data-count="1247">0</div>
+            <div class="stat-delta">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 2l3 4H2z"/></svg>
+              12.4% vs 上周
+            </div>
+          </div>
+          <svg class="stat-spark" viewBox="0 0 88 32" preserveAspectRatio="none">
+            <polyline fill="none" stroke="var(--g2)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+              points="0,22 11,18 22,24 33,14 44,16 55,10 66,12 77,6 88,8"/>
+          </svg>
+        </div>
+
+        <div class="card stat-card">
+          <div class="stat-info">
+            <div class="stat-label">活跃用户</div>
+            <div class="stat-value num" data-count="328">0</div>
+            <div class="stat-delta">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 2l3 4H2z"/></svg>
+              5.7% vs 上周
+            </div>
+          </div>
+          <svg class="stat-spark" viewBox="0 0 88 32" preserveAspectRatio="none">
+            <polyline fill="none" stroke="var(--g2)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+              points="0,18 11,20 22,16 33,18 44,12 55,14 66,8 77,10 88,4"/>
+          </svg>
+        </div>
+
+        <div class="card stat-card">
+          <div class="stat-info">
+            <div class="stat-label">模型调用</div>
+            <div class="stat-value num" data-count="9841">0</div>
+            <div class="stat-delta down">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 8L2 4h6z"/></svg>
+              2.1% vs 上周
+            </div>
+          </div>
+          <svg class="stat-spark" viewBox="0 0 88 32" preserveAspectRatio="none">
+            <polyline fill="none" stroke="var(--g3)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+              points="0,10 11,8 22,12 33,9 44,14 55,11 66,16 77,13 88,18"/>
+          </svg>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- cities table -->
+    <section class="card cities-card">
+      <div class="card-head">
+        <div class="card-title">城市链路</div>
+        <div class="card-tabs">
+          <button class="tab-pill active">全部</button>
+          <button class="tab-pill">主干</button>
+          <button class="tab-pill">边缘</button>
+        </div>
+      </div>
+
+      <div class="city-row head">
+        <div></div>
+        <div>城市</div>
+        <div>经纬</div>
+        <div class="num">今日</div>
+        <div class="num">状态</div>
+        <div></div>
+      </div>
+
+      <div class="city-row">
+        <div></div>
+        <div class="city-name"><span class="city-dot"></span>纽约</div>
+        <div class="city-coord">40.7° N · 74.0° W</div>
+        <div class="city-val num">412</div>
+        <div class="city-up">在线</div>
+        <div class="city-chev">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2l4 4-4 4"/></svg>
+        </div>
+      </div>
+      <div class="city-row">
+        <div></div>
+        <div class="city-name"><span class="city-dot"></span>伦敦</div>
+        <div class="city-coord">51.5° N · 0.1° W</div>
+        <div class="city-val num">287</div>
+        <div class="city-up">在线</div>
+        <div class="city-chev">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2l4 4-4 4"/></svg>
+        </div>
+      </div>
+      <div class="city-row">
+        <div></div>
+        <div class="city-name"><span class="city-dot"></span>东京</div>
+        <div class="city-coord">35.7° N · 139.7° E</div>
+        <div class="city-val num">358</div>
+        <div class="city-up">在线</div>
+        <div class="city-chev">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2l4 4-4 4"/></svg>
+        </div>
+      </div>
+      <div class="city-row">
+        <div></div>
+        <div class="city-name"><span class="city-dot"></span>悉尼</div>
+        <div class="city-coord">33.9° S · 151.2° E</div>
+        <div class="city-val num">94</div>
+        <div class="city-up">在线</div>
+        <div class="city-chev">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2l4 4-4 4"/></svg>
+        </div>
+      </div>
+      <div class="city-row">
+        <div></div>
+        <div class="city-name"><span class="city-dot"></span>巴黎</div>
+        <div class="city-coord">48.9° N · 2.3° E</div>
+        <div class="city-val num">168</div>
+        <div class="city-up">在线</div>
+        <div class="city-chev">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2l4 4-4 4"/></svg>
+        </div>
+      </div>
+      <div class="city-row">
+        <div></div>
+        <div class="city-name"><span class="city-dot"></span>上海</div>
+        <div class="city-coord">31.2° N · 121.5° E</div>
+        <div class="city-val num">496</div>
+        <div class="city-up">在线</div>
+        <div class="city-chev">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2l4 4-4 4"/></svg>
+        </div>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><span class="legend-mark land"></span>大陆</div>
+        <div class="legend-item"><span class="legend-mark city"></span>城市节点</div>
+        <div class="legend-item"><span class="legend-mark line"></span>主干链路</div>
+        <div class="spacer"></div>
+        <div class="legend-item">仅 6 城市 · 仅 4 弧线 · 无云层 · 无粒子</div>
+      </div>
+    </section>
+
+    <!-- tip row -->
+    <div class="card tip-row">
+      <span class="kbd">拖动</span> 旋转 · <span class="kbd">滚轮</span> 缩放 · <span class="kbd">三轴</span> 自转 · 频率互质,无规律周期
+    </div>
+
+  </main>
+</div>
+
+<!-- three.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+
+<script>
+'use strict';
+
+/* =========================================================
+   13-克制-v2-真地球 · 套 B · anti-slop Apple 风
+   关键约束:
+   - 6 城市,4 弧线
+   - 无云层,极简 4 层球: 海洋 + 陆地 + 大气
+   - 城市只有 1 层实心点(无 ring 无 pulse)
+   - 弧线极简(基本是直线,只是轻微抬高 0.06 而非 0.18)
+   - 三轴自转,频率互质
+   ========================================================= */
+
+// ----- 6 城市 -----
+const CITIES = [
+  { name: '纽约', lat:  40.7, lng:  -74.0 },
+  { name: '伦敦', lat:  51.5, lng:   -0.1 },
+  { name: '东京', lat:  35.7, lng:  139.7 },
+  { name: '悉尼', lat: -33.9, lng:  151.2 },
+  { name: '巴黎', lat:  48.9, lng:    2.3 },
+  { name: '上海', lat:  31.2, lng:  121.5 }
+];
+
+// ----- 4 弧线(克制选择:主干大区之间) -----
+const ARCS = [
+  { a: '纽约', b: '伦敦' },   // 跨大西洋
+  { a: '伦敦', b: '东京' },   // 欧亚
+  { a: '东京', b: '悉尼' },   // 亚太
+  { a: '上海', b: '巴黎' }    // 远东 - 西欧
+];
+
+// 经纬度 → 球面坐标(R=1, 经度 0 在 +Z)
+function latLngToVec3(lat, lng, r) {
+  const phi = (90 - lat) * Math.PI / 180;
+  const theta = (lng + 180) * Math.PI / 180;
+  return new THREE.Vector3(
+    -r * Math.sin(phi) * Math.cos(theta),
+     r * Math.cos(phi),
+     r * Math.sin(phi) * Math.sin(theta)
+  );
+}
+
+// ----- 程序化大陆:6 大洲,每洲 3-6 个点的极简单多边形 -----
+function makeLandTexture(isDark) {
+  const c = document.createElement('canvas');
+  c.width = 1024; c.height = 512;
+  const ctx = c.getContext('2d');
+
+  // 海洋底色
+  ctx.fillStyle = isDark ? '#0c1722' : '#dde6ee';
+  ctx.fillRect(0, 0, 1024, 512);
+
+  // 大陆色
+  const landColor = isDark ? '#3d4a5c' : '#a5b3c2';
+  const landHi    = isDark ? '#4d5c70' : '#b8c4d2';
+  ctx.fillStyle = landColor;
+  ctx.strokeStyle = landHi;
+  ctx.lineWidth = 1.5;
+
+  // x = (lng + 180) * 1024 / 360
+  // y = (90 - lat) * 512 / 180
+  function ll(lng, lat) {
+    return [(lng + 180) * 1024 / 360, (90 - lat) * 512 / 180];
+  }
+
+  // ---- 北美 ----
+  ctx.beginPath();
+  let p = ll(-168, 65); ctx.moveTo(p[0], p[1]);
+  [[-160,68],[-130,70],[-100,72],[-80,68],[-65,60],[-58,50],[-70,42],[-80,28],[-95,18],[-110,22],[-125,32],[-140,40],[-155,55],[-165,62]].forEach(([lng,lat]) => { p = ll(lng,lat); ctx.lineTo(p[0],p[1]); });
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // ---- 南美 ----
+  ctx.beginPath();
+  p = ll(-80, 12); ctx.moveTo(p[0], p[1]);
+  [[-75,5],[-65,-5],[-55,-15],[-45,-25],[-40,-35],[-50,-50],[-65,-55],[-72,-45],[-78,-30],[-82,-15],[-80,0]].forEach(([lng,lat]) => { p = ll(lng,lat); ctx.lineTo(p[0],p[1]); });
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // ---- 欧洲 ----
+  ctx.beginPath();
+  p = ll(-10, 60); ctx.moveTo(p[0], p[1]);
+  [[5,65],[15,68],[30,68],[40,60],[35,50],[25,45],[15,40],[5,38],[-5,40],[-10,50]].forEach(([lng,lat]) => { p = ll(lng,lat); ctx.lineTo(p[0],p[1]); });
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // ---- 非洲 ----
+  ctx.beginPath();
+  p = ll(-15, 35); ctx.moveTo(p[0], p[1]);
+  [[0,32],[10,32],[20,32],[30,30],[40,18],[50,12],[45,0],[40,-15],[30,-25],[20,-32],[10,-28],[0,-10],[-10,5]].forEach(([lng,lat]) => { p = ll(lng,lat); ctx.lineTo(p[0],p[1]); });
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // ---- 亚洲 ----
+  ctx.beginPath();
+  p = ll(40, 70); ctx.moveTo(p[0], p[1]);
+  [[60,72],[90,72],[120,72],[145,72],[160,68],[170,62],[165,55],[155,50],[145,40],[140,30],[130,22],[120,18],[110,22],[100,25],[90,30],[80,30],[70,32],[60,40],[50,45],[45,55],[40,65]].forEach(([lng,lat]) => { p = ll(lng,lat); ctx.lineTo(p[0],p[1]); });
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // ---- 澳洲 ----
+  ctx.beginPath();
+  p = ll(115, -12); ctx.moveTo(p[0], p[1]);
+  [[125,-12],[135,-12],[145,-15],[150,-22],[153,-32],[148,-38],[138,-38],[128,-32],[118,-25]].forEach(([lng,lat]) => { p = ll(lng,lat); ctx.lineTo(p[0],p[1]); });
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  return new THREE.CanvasTexture(c);
+}
+
+// ----- 主舞台 -----
+const canvas = document.getElementById('globe');
+const R = 1.0;
+const SIZE = 320;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+camera.position.set(0, 0, 3.0);
+
+const renderer = new THREE.WebGLRenderer({
+  canvas, antialias: true, alpha: true
+});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(SIZE, SIZE, false);
+renderer.setClearColor(0x000000, 0);
+
+// ----- L1 海洋 -----
+const oceanMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+const ocean = new THREE.Mesh(new THREE.SphereGeometry(R, 64, 48), oceanMat);
+
+// ----- L2 陆地(程序化 Canvas 多边形) -----
+const landTex = makeLandTexture(false);
+const landMat = new THREE.MeshBasicMaterial({ map: landTex });
+const land = new THREE.Mesh(new THREE.SphereGeometry(R * 1.001, 64, 48), landMat);
+
+// ----- L3 大气(弱 Fresnel,BackSide,无脉动) -----
+const atmoMat = new THREE.ShaderMaterial({
+  uniforms: {
+    uColor: { value: new THREE.Color(0x0071e3) },
+    uIntensity: { value: 0.35 }   // 克制:弱
+  },
+  vertexShader: `
+    varying vec3 vN;
+    void main() {
+      vN = normalize(normalMatrix * normal);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+    }
+  `,
+  fragmentShader: `
+    varying vec3 vN;
+    uniform vec3 uColor;
+    uniform float uIntensity;
+    void main() {
+      float f = pow(1.0 - abs(dot(vN, vec3(0.0, 0.0, 1.0))), 3.0);
+      gl_FragColor = vec4(uColor, f * uIntensity);
+    }
+  `,
+  side: THREE.BackSide,
+  blending: THREE.AdditiveBlending,
+  transparent: true,
+  depthWrite: false
+});
+const atmo = new THREE.Mesh(
+  new THREE.SphereGeometry(R * 1.06, 64, 48),
+  atmoMat
+);
+
+const earth = new THREE.Group();
+earth.add(ocean);
+earth.add(land);
+earth.add(atmo);
+scene.add(earth);
+
+// ----- 城市节点(只 1 层:实心 sphere,无 ring 无 pulse) -----
+const cityMeshes = [];
+CITIES.forEach((c) => {
+  const pos = latLngToVec3(c.lat, c.lng, R * 1.005);
+  // 一颗实心点
+  const dot = new THREE.Mesh(
+    new THREE.SphereGeometry(0.012, 10, 10),
+    new THREE.MeshBasicMaterial({ color: 0x0071e3 })
+  );
+  dot.position.copy(pos);
+  earth.add(dot);
+  cityMeshes.push(dot);
+});
+
+// ----- 4 弧线(轻微抬高 lift=0.06,克制,接近直线) -----
+ARCS.forEach(({ a, b }) => {
+  const ca = CITIES.find(c => c.name === a);
+  const cb = CITIES.find(c => c.name === b);
+  const va = latLngToVec3(ca.lat, ca.lng, R);
+  const vb = latLngToVec3(cb.lat, cb.lng, R);
+
+  const pts = [];
+  const segs = Math.max(24, Math.floor(va.distanceTo(vb) * 30));
+  for (let i = 0; i <= segs; i++) {
+    const t = i / segs;
+    const v = new THREE.Vector3().lerpVectors(va, vb, t)
+      .normalize().multiplyScalar(R * (1.005 + Math.sin(t * Math.PI) * 0.06));
+    pts.push(v);
+  }
+  const line = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({
+      color: 0x0071e3,
+      transparent: true,
+      opacity: 0.55
+    })
+  );
+  earth.add(line);
+});
+
+// ----- 交互 -----
+let isDragging = false;
+let prevX = 0, prevY = 0;
+let rotationVel = { x: 0.0001, y: 0.0006 };
+
+function getPos(e) {
+  if (e.touches && e.touches[0]) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  return { x: e.clientX, y: e.clientY };
+}
+
+function onDown(e) {
+  isDragging = true;
+  const p = getPos(e);
+  prevX = p.x; prevY = p.y;
+  rotationVel.x = 0; rotationVel.y = 0;
+}
+function onMove(e) {
+  if (!isDragging) return;
+  e.preventDefault?.();
+  const p = getPos(e);
+  const dx = p.x - prevX;
+  const dy = p.y - prevY;
+  prevX = p.x; prevY = p.y;
+  earth.rotation.y += dx * 0.005;
+  earth.rotation.x += dy * 0.005;
+  // 限位
+  if (earth.rotation.x >  Math.PI / 2.5) earth.rotation.x =  Math.PI / 2.5;
+  if (earth.rotation.x < -Math.PI / 2.5) earth.rotation.x = -Math.PI / 2.5;
+  rotationVel.x = dy * 0.0003;
+  rotationVel.y = dx * 0.0003;
+}
+function onUp() {
+  isDragging = false;
+}
+canvas.addEventListener('mousedown', onDown);
+window.addEventListener('mousemove', onMove);
+window.addEventListener('mouseup', onUp);
+canvas.addEventListener('touchstart', onDown, { passive: true });
+window.addEventListener('touchmove', onMove, { passive: false });
+window.addEventListener('touchend', onUp);
+
+// 滚轮缩放
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  camera.position.z = Math.max(2.0, Math.min(5.0, camera.position.z + e.deltaY * 0.002));
+}, { passive: false });
+
+// ----- 三轴自转 -----
+const startTime = performance.now();
+function animate() {
+  requestAnimationFrame(animate);
+  const now = performance.now();
+
+  if (!isDragging) {
+    // 惯性衰减
+    rotationVel.y *= 0.988;
+    rotationVel.x *= 0.988;
+    // Y 主自转 + 衰减动量叠加
+    earth.rotation.y += 0.0008 + rotationVel.y;
+    earth.rotation.x += rotationVel.x;
+  }
+
+  // X 极慢漂移(周期正弦)
+  earth.rotation.x += Math.sin(now * 0.0001) * 0.0005;
+  // Z 更慢漂移
+  earth.rotation.z = Math.cos(now * 0.00007) * 0.04;
+
+  renderer.render(scene, camera);
+}
+animate();
+
+// ----- 主题切换:重绘陆地纹理 + 大气颜色 + 城市点颜色 -----
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const isDark = theme === 'dark';
+
+  // 大陆纹理
+  const newTex = makeLandTexture(isDark);
+  if (landMat.map) landMat.map.dispose();
+  landMat.map = newTex;
+  landMat.needsUpdate = true;
+
+  // 海洋
+  oceanMat.color.set(isDark ? 0x0c1722 : 0xdde6ee);
+
+  // 大气
+  atmoMat.uniforms.uColor.value.set(isDark ? 0x2997ff : 0x0071e3);
+
+  // 城市点
+  const cityColor = isDark ? 0x2997ff : 0x0071e3;
+  cityMeshes.forEach(m => m.material.color.set(cityColor));
+
+  // 弧线
+  earth.children.forEach(c => {
+    if (c.isLine) c.material.color.set(cityColor);
+  });
+}
+
+document.getElementById('theme-toggle').addEventListener('click', () => {
+  const cur = document.documentElement.getAttribute('data-theme') || 'light';
+  applyTheme(cur === 'light' ? 'dark' : 'light');
+});
+
+// 初始同步(深色模式默认 dark 大陆纹理已在 light 创建,这里矫正)
+const init = document.documentElement.getAttribute('data-theme') || 'light';
+if (init === 'dark') applyTheme('dark');
+
+/* =========================================================
+   countup 动画 · 仅这一种动画,克制
+   ========================================================= */
+const counters = document.querySelectorAll('[data-count]');
+function animateCount() {
+  counters.forEach(el => {
+    const target = parseFloat(el.dataset.count);
+    const suffix = el.dataset.suffix || '';
+    const dur = 1200;
+    const t0 = performance.now();
+    function tick(now) {
+      const t = Math.min(1, (now - t0) / dur);
+      // easeOutCubic
+      const e = 1 - Math.pow(1 - t, 3);
+      el.textContent = Math.round(target * e).toLocaleString() + suffix;
+      if (t < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  });
+}
+// IntersectionObserver 触发
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      animateCount();
+      obs.disconnect();
+    }
+  });
+}, { threshold: 0.3 });
+const gf = document.querySelector('.globe-foot');
+if (gf) obs.observe(gf);
+
+// tabs(纯静态,切换 active 样式)
+document.querySelectorAll('.card-tabs').forEach(tabs => {
+  tabs.addEventListener('click', e => {
+    if (!e.target.classList.contains('tab-pill')) return;
+    tabs.querySelectorAll('.tab-pill').forEach(p => p.classList.remove('active'));
+    e.target.classList.add('active');
+  });
+});
+
+</script>
+
+</body>
+</html>

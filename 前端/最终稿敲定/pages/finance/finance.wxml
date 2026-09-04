@@ -1,0 +1,91 @@
+<view class="container">
+  <view class="custom-nav" style="height: {{navHeight}}px; padding-top: {{statusBarHeight}}px;">
+    <view class="nav-content">
+      <view class="nav-back bump-sm" bindtap="goBack">
+        <text style="font-size: 20px; color: var(--ink-2);">‹</text>
+      </view>
+      <view class="nav-titles">
+        <text class="nav-meta">FINANCE</text>
+        <text class="nav-title serif">Money <text class="serif-italic">Ledger.</text></text>
+      </view>
+      <view style="width: 36px;"></view>
+    </view>
+  </view>
+
+  <scroll-view class="page-content" scroll-y>
+    <view style="height: 20rpx;"></view>
+
+    <!-- 月度统计卡片(I 方案:大数字 + Georgia 斜体) -->
+    <view class="finance-card">
+      <view class="finance-stats">
+        <view class="finance-item">
+          <text class="finance-symbol">+</text>
+          <text class="finance-num income-italic">¥{{summary.income}}</text>
+          <text class="finance-label">本月收入</text>
+        </view>
+        <view class="finance-item">
+          <text class="finance-num expense-italic">¥{{summary.expense}}</text>
+          <text class="finance-label">本月支出</text>
+        </view>
+        <view class="finance-item">
+          <text class="finance-symbol">+</text>
+          <text class="finance-num net-italic">¥{{summary.net}}</text>
+          <text class="finance-label">本月结余</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 月份切换 -->
+    <view class="date-bar">
+      <view class="arrow bump-sm" bindtap="onPrevMonth">‹</view>
+      <text class="current">{{currentYear}}年{{currentMonth}}月</text>
+      <view class="arrow bump-sm" bindtap="onNextMonth">›</view>
+    </view>
+
+    <!-- 交易列表 -->
+    <view class="list-card bump">
+      <view wx:if="{{records.length === 0}}" class="empty-tip">本月暂无记录</view>
+      <view class="list-item" wx:for="{{records}}" wx:key="id">
+        <view class="icon-pit pit-sm">{{item.icon}}</view>
+        <view class="info">
+          <text class="title">{{item.title}}</text>
+          <text class="desc">{{item.desc}}</text>
+        </view>
+        <view>
+          <text class="amount {{item.type}}">{{item.type === 'income' ? '+' : ''}}¥{{item.amount < 0 ? -item.amount : item.amount}}</text>
+          <text class="time">{{item.time}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="safe-bottom"></view>
+  </scroll-view>
+
+  <view class="fab" bindtap="onFabTap">+</view>
+
+  <!-- 新增弹窗 -->
+  <view class="modal-mask" wx:if="{{showAdd}}" bindtap="onCancel">
+    <view class="modal-content bump" catchtap="stopPropagation">
+      <text class="modal-title">记一笔</text>
+      <view class="form-input">
+        <input class="modal-input" placeholder="分类（如：餐饮、交通）" value="{{formData.category}}" focus="{{showAdd}}" bindinput="onFormInput" data-field="category" />
+      </view>
+      <view class="form-input" style="margin-top: 16rpx;">
+        <input class="modal-input" placeholder="描述" value="{{formData.desc}}" bindinput="onFormInput" data-field="desc" />
+      </view>
+      <view class="form-row">
+        <view class="form-input form-half">
+          <input class="modal-input" placeholder="金额" type="number" value="{{formData.amount}}" bindinput="onFormInput" data-field="amount" />
+        </view>
+        <view class="type-toggle">
+          <view class="type-btn {{formData.type === 'income' ? 'active' : ''}}" bindtap="onTypeToggle" data-value="income">收入</view>
+          <view class="type-btn {{formData.type === 'expense' ? 'active' : ''}}" bindtap="onTypeToggle" data-value="expense">支出</view>
+        </view>
+      </view>
+      <view class="modal-actions">
+        <view class="modal-btn cancel-btn bump-sm" bindtap="onCancel">取消</view>
+        <view class="modal-btn confirm-btn" bindtap="onSave">保存</view>
+      </view>
+    </view>
+  </view>
+</view>

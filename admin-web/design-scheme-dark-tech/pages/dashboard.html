@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仪表盘</title>
+    <style id="theme-vars">
+:root {
+  --brand-background: #0b1120;
+  --brand-foreground: #f3f4f6;
+  --brand-card: #111827;
+  --brand-card-foreground: #f3f4f6;
+  --brand-popover: #111827;
+  --brand-popover-foreground: #f3f4f6;
+  --brand-primary: #06b6d4;
+  --brand-primary-foreground: #020617;
+  --brand-muted: #1f2937;
+  --brand-muted-foreground: #9ca3af;
+  --brand-border: #1f2937;
+  --brand-input: #1f2937;
+  --brand-ring: #06b6d4;
+
+  --brand-radius-sm: 4px;
+  --brand-radius-md: 8px;
+  --brand-radius-lg: 12px;
+
+  --brand-surface: #111827;
+  --brand-surface-2: #1f2937;
+  --brand-ink: #f3f4f6;
+  --brand-ink-2: #9ca3af;
+  --brand-ink-3: #6b7280;
+  --brand-line: #1f2937;
+
+  --brand-state-success: #22c55e;
+  --brand-state-warning: #eab308;
+  --brand-state-error: #f87171;
+  --brand-state-info: #38bdf8;
+
+  --brand-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 1px rgba(0, 0, 0, 0.15);
+  --brand-shadow-2: 0 8px 30px -8px rgba(6, 182, 212, 0.18);
+
+  --brand-font-sans: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --brand-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.dark, :root {
+  color-scheme: dark;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--brand-background);
+    --color-foreground: var(--brand-foreground);
+    --color-card: var(--brand-card);
+    --color-card-foreground: var(--brand-card-foreground);
+    --color-popover: var(--brand-popover);
+    --color-popover-foreground: var(--brand-popover-foreground);
+    --color-primary: var(--brand-primary);
+    --color-primary-foreground: var(--brand-primary-foreground);
+    --color-muted: var(--brand-muted);
+    --color-muted-foreground: var(--brand-muted-foreground);
+    --color-border: var(--brand-border);
+    --color-input: var(--brand-input);
+    --color-ring: var(--brand-ring);
+    --radius-sm: var(--brand-radius-sm);
+    --radius-md: var(--brand-radius-md);
+    --radius-lg: var(--brand-radius-lg);
+  }
+  @layer base {
+    body { background: var(--brand-background); color: var(--brand-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--brand-background); }
+      .text-background { color: var(--brand-background); }
+      .border-background { border-color: var(--brand-background); }
+      .ring-background { --tw-ring-color: var(--brand-background); }
+      .bg-foreground { background-color: var(--brand-foreground); }
+      .text-foreground { color: var(--brand-foreground); }
+      .border-foreground { border-color: var(--brand-foreground); }
+      .ring-foreground { --tw-ring-color: var(--brand-foreground); }
+      .bg-card { background-color: var(--brand-card); }
+      .text-card { color: var(--brand-card); }
+      .border-card { border-color: var(--brand-card); }
+      .ring-card { --tw-ring-color: var(--brand-card); }
+      .bg-card-foreground { background-color: var(--brand-card-foreground); }
+      .text-card-foreground { color: var(--brand-card-foreground); }
+      .border-card-foreground { border-color: var(--brand-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--brand-card-foreground); }
+      .bg-popover { background-color: var(--brand-popover); }
+      .text-popover { color: var(--brand-popover); }
+      .border-popover { border-color: var(--brand-popover); }
+      .ring-popover { --tw-ring-color: var(--brand-popover); }
+      .bg-popover-foreground { background-color: var(--brand-popover-foreground); }
+      .text-popover-foreground { color: var(--brand-popover-foreground); }
+      .border-popover-foreground { border-color: var(--brand-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--brand-popover-foreground); }
+      .bg-primary { background-color: var(--brand-primary); }
+      .text-primary { color: var(--brand-primary); }
+      .border-primary { border-color: var(--brand-primary); }
+      .ring-primary { --tw-ring-color: var(--brand-primary); }
+      .bg-primary-foreground { background-color: var(--brand-primary-foreground); }
+      .text-primary-foreground { color: var(--brand-primary-foreground); }
+      .border-primary-foreground { border-color: var(--brand-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--brand-primary-foreground); }
+      .bg-muted { background-color: var(--brand-muted); }
+      .text-muted { color: var(--brand-muted); }
+      .border-muted { border-color: var(--brand-muted); }
+      .ring-muted { --tw-ring-color: var(--brand-muted); }
+      .bg-muted-foreground { background-color: var(--brand-muted-foreground); }
+      .text-muted-foreground { color: var(--brand-muted-foreground); }
+      .border-muted-foreground { border-color: var(--brand-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--brand-muted-foreground); }
+      .bg-border { background-color: var(--brand-border); }
+      .text-border { color: var(--brand-border); }
+      .border-border { border-color: var(--brand-border); }
+      .ring-border { --tw-ring-color: var(--brand-border); }
+      .bg-input { background-color: var(--brand-input); }
+      .text-input { color: var(--brand-input); }
+      .border-input { border-color: var(--brand-input); }
+      .ring-input { --tw-ring-color: var(--brand-input); }
+      .bg-ring { background-color: var(--brand-ring); }
+      .text-ring { color: var(--brand-ring); }
+      .border-ring { border-color: var(--brand-ring); }
+      .ring-ring { --tw-ring-color: var(--brand-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+    <style id="critical-layout">
+      html, body { margin: 0; padding: 0; }
+      .app-shell { min-height: 100vh; overflow-x: hidden; }
+      .app-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 220px;
+        height: 100vh;
+        z-index: 50;
+      }
+      .app-header {
+        position: fixed;
+        top: 0;
+        left: 220px;
+        right: 0;
+        height: 64px;
+        z-index: 40;
+      }
+      .app-main {
+        margin-left: 220px;
+        margin-top: 64px;
+        min-height: calc(100vh - 64px);
+        overflow-y: auto;
+      }
+      @media (max-width: 768px) {
+        .app-sidebar {
+          transform: translateX(-100%);
+          transition: transform 0.2s ease;
+        }
+        .app-sidebar.is-open {
+          transform: translateX(0);
+        }
+        .app-header {
+          left: 0;
+        }
+        .app-main {
+          margin-left: 0;
+        }
+      }
+    </style>
+    <style id="state-utilities">
+      .text-state-success { color: var(--brand-state-success); }
+      .text-state-warning { color: var(--brand-state-warning); }
+      .text-state-info { color: var(--brand-state-info); }
+      .bg-state-success-10 { background-color: color-mix(in srgb, var(--brand-state-success) 10%, transparent); }
+      .bg-state-warning-10 { background-color: color-mix(in srgb, var(--brand-state-warning) 10%, transparent); }
+      .bg-state-info-10 { background-color: color-mix(in srgb, var(--brand-state-info) 10%, transparent); }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main>
+      <div class="app-shell bg-background text-foreground">
+        <aside id="app-sidebar" class="app-sidebar bg-card border-r border-border flex flex-col">
+          <div class="h-16 flex items-center gap-3 px-6 border-b border-border">
+            <div class="w-8 h-8 rounded-md bg-primary flex items-center justify-center text-primary-foreground">
+              <i data-lucide="hexagon" class="w-5 h-5"></i>
+            </div>
+            <span class="font-semibold text-lg tracking-tight">NeuroAdmin</span>
+          </div>
+          <nav class="flex-1 py-4 px-3 space-y-1">
+            <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium">
+              <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+              <span>仪表盘</span>
+            </a>
+            <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted text-sm font-medium transition-colors">
+              <i data-lucide="users" class="w-4 h-4"></i>
+              <span>用户管理</span>
+            </a>
+            <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted text-sm font-medium transition-colors">
+              <i data-lucide="brain-circuit" class="w-4 h-4"></i>
+              <span>AI 模型</span>
+            </a>
+            <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted text-sm font-medium transition-colors">
+              <i data-lucide="library" class="w-4 h-4"></i>
+              <span>知识库</span>
+            </a>
+            <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted text-sm font-medium transition-colors">
+              <i data-lucide="file-text" class="w-4 h-4"></i>
+              <span>系统日志</span>
+            </a>
+          </nav>
+          <div class="p-4 border-t border-border">
+            <div class="text-xs text-muted-foreground">系统版本</div>
+            <div class="text-sm font-mono text-foreground">v2.4.0</div>
+          </div>
+        </aside>
+
+        <header id="app-header" class="app-header bg-background/80 backdrop-blur border-b border-border flex items-center justify-between px-6">
+          <div class="flex items-center gap-3">
+            <button type="button" class="md:hidden p-2 rounded-md hover:bg-muted text-muted-foreground" aria-label="切换菜单">
+              <i data-lucide="menu" class="w-5 h-5"></i>
+            </button>
+            <h1 class="text-lg font-semibold">仪表盘</h1>
+          </div>
+          <div class="flex items-center gap-4">
+            <button type="button" class="relative p-2 rounded-md hover:bg-muted text-muted-foreground transition-colors" aria-label="通知">
+              <i data-lucide="bell" class="w-5 h-5"></i>
+              <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary"></span>
+            </button>
+            <div class="flex items-center gap-3 pl-4 border-l border-border">
+              <div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-foreground">
+                <i data-lucide="user" class="w-4 h-4"></i>
+              </div>
+              <div class="hidden md:block">
+                <div class="text-sm font-medium">管理员</div>
+                <div class="text-xs text-muted-foreground">admin@example.com</div>
+              </div>
+              <i data-lucide="chevron-down" class="w-4 h-4 text-muted-foreground"></i>
+            </div>
+          </div>
+        </header>
+
+        <section id="content-scroll-region" class="app-main p-6">
+          <div class="max-w-7xl mx-auto space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+              <div>
+                <h2 class="text-2xl font-semibold">欢迎回来，管理员</h2>
+                <p class="text-sm text-muted-foreground mt-1">以下是今日系统概览</p>
+              </div>
+              <div class="text-sm text-muted-foreground font-mono" id="current-date">2026-08-28</div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <article id="stat-total-users" class="rounded-lg border border-border bg-card shadow-[var(--brand-shadow-1)] p-5">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm text-muted-foreground">总用户数</p>
+                    <p class="text-2xl font-semibold font-mono text-foreground mt-1">12,458</p>
+                  </div>
+                  <div class="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center text-primary">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                  </div>
+                </div>
+                <div class="mt-4 flex items-center gap-2 text-xs">
+                  <span class="text-state-success flex items-center gap-1">
+                    <i data-lucide="trending-up" class="w-3 h-3"></i>
+                    +8.2%
+                  </span>
+                  <span class="text-muted-foreground">较上月</span>
+                </div>
+              </article>
+
+              <article id="stat-active" class="rounded-lg border border-border bg-card shadow-[var(--brand-shadow-1)] p-5">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm text-muted-foreground">7 日活跃</p>
+                    <p class="text-2xl font-semibold font-mono text-foreground mt-1">3,291</p>
+                  </div>
+                  <div class="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center text-primary">
+                    <i data-lucide="activity" class="w-5 h-5"></i>
+                  </div>
+                </div>
+                <div class="mt-4 flex items-center gap-2 text-xs">
+                  <span class="text-state-success flex items-center gap-1">
+                    <i data-lucide="trending-up" class="w-3 h-3"></i>
+                    +12.5%
+                  </span>
+                  <span class="text-muted-foreground">较上周</span>
+                </div>
+              </article>
+
+              <article id="stat-ai-calls" class="rounded-lg border border-border bg-card shadow-[var(--brand-shadow-1)] p-5">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm text-muted-foreground">AI 调用</p>
+                    <p class="text-2xl font-semibold font-mono text-foreground mt-1">89,432</p>
+                  </div>
+                  <div class="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center text-primary">
+                    <i data-lucide="brain-circuit" class="w-5 h-5"></i>
+                  </div>
+                </div>
+                <div class="mt-4 flex items-center gap-2 text-xs">
+                  <span class="text-state-warning flex items-center gap-1">
+                    <i data-lucide="trending-up" class="w-3 h-3"></i>
+                    +5.7%
+                  </span>
+                  <span class="text-muted-foreground">较昨日</span>
+                </div>
+              </article>
+
+              <article id="stat-docs" class="rounded-lg border border-border bg-card shadow-[var(--brand-shadow-1)] p-5">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm text-muted-foreground">知识库文档</p>
+                    <p class="text-2xl font-semibold font-mono text-foreground mt-1">2,847</p>
+                  </div>
+                  <div class="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center text-primary">
+                    <i data-lucide="library" class="w-5 h-5"></i>
+                  </div>
+                </div>
+                <div class="mt-4 flex items-center gap-2 text-xs">
+                  <span class="text-state-success flex items-center gap-1">
+                    <i data-lucide="trending-up" class="w-3 h-3"></i>
+                    +3.4%
+                  </span>
+                  <span class="text-muted-foreground">较上周</span>
+                </div>
+              </article>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <article id="chart-weekly" class="rounded-lg border border-border bg-card shadow-[var(--brand-shadow-1)] p-5">
+                <div class="flex items-center justify-between mb-6">
+                  <h3 class="font-medium">最近 7 天 AI 调用</h3>
+                  <span class="text-xs text-muted-foreground font-mono">单位：千次</span>
+                </div>
+                <div class="h-48 flex items-end gap-3">
+                  <div class="flex-1 flex flex-col items-center gap-2">
+                    <div class="w-full bg-primary/80 rounded-t-sm" style="height: 42%"></div>
+                    <span class="text-xs text-muted-foreground font-mono">08-22</span>
+                  </div>
+                  <div class="flex-1 flex flex-col items-center gap-2">
+                    <div class="w-full bg-primary/80 rounded-t-sm" style="height: 58%"></div>
+                    <span class="text-xs text-muted-foreground font-mono">08-23</span>
+                  </div>
+                  <div class="flex-1 flex flex-col items-center gap-2">
+                    <div class="w-full bg-primary/80 rounded-t-sm" style="height: 36%"></div>
+                    <span class="text-xs text-muted-foreground font-mono">08-24</span>
+                  </div>
+                  <div class="flex-1 flex flex-col items-center gap-2">
+                    <div class="w-full bg-primary/80 rounded-t-sm" style="height: 71%"></div>
+                    <span class="text-xs text-muted-foreground font-mono">08-25</span>
+                  </div>
+                  <div class="flex-1 flex flex-col items-center gap-2">
+                    <div class="w-full bg-primary/80 rounded-t-sm" style="height: 55%"></div>
+                    <span class="text-xs text-muted-foreground font-mono">08-26</span>
+                  </div>
+                  <div class="flex-1 flex flex-col items-center gap-2">
+                    <div class="w-full bg-primary/80 rounded-t-sm" style="height: 84%"></div>
+                    <span class="text-xs text-muted-foreground font-mono">08-27</span>
+                  </div>
+                  <div class="flex-1 flex flex-col items-center gap-2">
+                    <div class="w-full bg-primary rounded-t-sm" style="height: 92%"></div>
+                    <span class="text-xs text-primary font-mono">08-28</span>
+                  </div>
+                </div>
+              </article>
+
+              <article id="chart-goal" class="rounded-lg border border-border bg-card shadow-[var(--brand-shadow-1)] p-5">
+                <div class="flex items-center justify-between mb-6">
+                  <h3 class="font-medium">目标完成率</h3>
+                  <span class="text-xs text-muted-foreground font-mono">月度 AI 调用配额</span>
+                </div>
+                <div class="flex items-center justify-center h-48 gap-8">
+                  <div class="relative w-36 h-36">
+                    <svg viewBox="0 0 36 36" class="w-full h-full -rotate-90">
+                      <path class="text-muted" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+                      <path class="text-primary" stroke-dasharray="78, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                      <span class="text-2xl font-semibold font-mono">78%</span>
+                      <span class="text-xs text-muted-foreground">已完成</span>
+                    </div>
+                  </div>
+                  <div class="space-y-4">
+                    <div>
+                      <div class="text-xs text-muted-foreground">已使用</div>
+                      <div class="text-lg font-mono font-semibold">780K</div>
+                    </div>
+                    <div>
+                      <div class="text-xs text-muted-foreground">剩余</div>
+                      <div class="text-lg font-mono font-semibold text-muted-foreground">220K</div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <article class="rounded-lg border border-border bg-card shadow-[var(--brand-shadow-1)] p-5">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="font-medium">最近活动</h3>
+                <a href="#" class="text-sm text-primary hover:underline">查看全部</a>
+              </div>
+              <ul id="recent-activity" class="divide-y divide-border">
+                <li class="py-3 flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center text-primary shrink-0 mt-0.5">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm text-foreground">新增用户 <span class="font-mono text-primary">@lisa_chen</span></p>
+                    <p class="text-xs text-muted-foreground">通过邮箱验证注册成功</p>
+                  </div>
+                  <span class="text-xs text-muted-foreground font-mono shrink-0">10 分钟前</span>
+                </li>
+                <li class="py-3 flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-md bg-state-success-10 flex items-center justify-center text-state-success shrink-0 mt-0.5">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm text-foreground">AI 模型 <span class="font-mono">gpt-4o-mini</span> 部署完成</p>
+                    <p class="text-xs text-muted-foreground">推理节点状态正常</p>
+                  </div>
+                  <span class="text-xs text-muted-foreground font-mono shrink-0">32 分钟前</span>
+                </li>
+                <li class="py-3 flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-md bg-state-info-10 flex items-center justify-center text-state-info shrink-0 mt-0.5">
+                    <i data-lucide="file-plus" class="w-4 h-4"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm text-foreground">知识库新增 <span class="font-mono">24</span> 篇文档</p>
+                    <p class="text-xs text-muted-foreground">来源：产品手册导入任务</p>
+                  </div>
+                  <span class="text-xs text-muted-foreground font-mono shrink-0">1 小时前</span>
+                </li>
+                <li class="py-3 flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-md bg-state-warning-10 flex items-center justify-center text-state-warning shrink-0 mt-0.5">
+                    <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm text-foreground">系统日志告警：API 延迟峰值 <span class="font-mono">1.2s</span></p>
+                    <p class="text-xs text-muted-foreground">自动恢复，已记录审计日志</p>
+                  </div>
+                  <span class="text-xs text-muted-foreground font-mono shrink-0">2 小时前</span>
+                </li>
+              </ul>
+            </article>
+          </div>
+        </section>
+      </div>
+    </main>
+    <script>if(window.lucide) lucide.createIcons();</script>
+</body>
+</html>

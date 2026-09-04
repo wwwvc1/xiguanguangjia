@@ -1,0 +1,50 @@
+INFO:     Started server process [29564]
+INFO:     Waiting for application startup.
+C:\Users\wangchang\Desktop\脚本练习\个人习惯小程序\backend\utils\ai_rag.py:32: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the `langchain-huggingface package and should be used instead. To use it run `pip install -U `langchain-huggingface` and import as `from `langchain_huggingface import HuggingFaceEmbeddings``.
+  self.embeddings = HuggingFaceEmbeddings(
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 3876.09it/s]
+C:\Users\wangchang\Desktop\脚本练习\个人习惯小程序\backend\utils\ai_rag.py:38: LangChainDeprecationWarning: The class `Chroma` was deprecated in LangChain 0.2.9 and will be removed in 1.0. An updated version of the class exists in the `langchain-chroma package and should be used instead. To use it run `pip install -U `langchain-chroma` and import as `from `langchain_chroma import Chroma``.
+  self.vectorstore = Chroma(
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8001 (Press CTRL+C to quit)
+[RAG] 已有 5 个文档,跳过静态加载
+[RAG] 引擎就绪,持久化路径: ./chroma_db
+[Scheduler] 启动失败(非致命): No module named 'apscheduler'
+INFO:     127.0.0.1:7380 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:22420 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:18877 - "POST /api/ai/chat/general HTTP/1.1" 200 OK
+[AI-General] Token消耗: 输入=112, 输出=163, 总计=275
+INFO:     127.0.0.1:46673 - "GET /api/todos?done=false&date=2026-08-30 HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:46673 - "GET /api/todos/?done=false&date=2026-08-30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46673 - "GET /api/todos?done=true&date=2026-08-30 HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:46673 - "GET /api/todos/?done=true&date=2026-08-30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46673 - "GET /api/transactions/daily-stats?date=2026-08-30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46673 - "GET /api/meals HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:46673 - "GET /api/meals/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46673 - "GET /api/user/settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46673 - "POST /api/ai/insights HTTP/1.1" 200 OK
+INFO:     127.0.0.1:18608 - "GET /api/transactions?year=2026&month=8 HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:1935 - "GET /api/transactions/summary?month=2026-08 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:1935 - "GET /api/transactions/?year=2026&month=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59642 - "GET /api/todos?done=false&date=2026-08-30 HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:59642 - "GET /api/todos/?done=false&date=2026-08-30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59642 - "GET /api/todos?done=true&date=2026-08-30 HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:59642 - "GET /api/todos/?done=true&date=2026-08-30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59642 - "GET /api/transactions/daily-stats?date=2026-08-30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59642 - "GET /api/meals HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:59642 - "GET /api/meals/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59642 - "GET /api/user/settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59642 - "POST /api/ai/insights HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59642 - "GET /api/meals HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:59642 - "GET /api/user/settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42483 - "GET /api/meals/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40618 - "GET /api/todos?done=false&date=2026-08-30 HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:40618 - "GET /api/todos/?done=false&date=2026-08-30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40618 - "GET /api/todos?done=true&date=2026-08-30 HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:40618 - "GET /api/todos/?done=true&date=2026-08-30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40618 - "GET /api/transactions/daily-stats?date=2026-08-30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40618 - "GET /api/meals HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:40618 - "GET /api/meals/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40618 - "GET /api/user/settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40618 - "POST /api/ai/insights HTTP/1.1" 200 OK

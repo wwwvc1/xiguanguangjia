@@ -1,0 +1,82 @@
+<view class="container">
+  <view class="custom-nav" style="height: {{navHeight}}px; padding-top: {{statusBarHeight}}px;">
+    <view class="nav-content">
+      <view class="nav-back bump-sm" bindtap="goBack">
+        <text style="font-size: 20px; color: var(--ink-2);">‹</text>
+      </view>
+      <text class="nav-title">数据洞察</text>
+      <view style="width: 36px;"></view>
+    </view>
+  </view>
+
+  <scroll-view class="page-content" scroll-y>
+    <view style="height: 20rpx;"></view>
+
+    <!-- 概览卡片 -->
+    <view class="overview-row">
+      <view class="ov-card bump-sm">
+        <text class="ov-label">完成率</text>
+        <text class="ov-value primary-dark">{{summary.overall_completion_rate || 0}}%</text>
+      </view>
+      <view class="ov-card bump-sm">
+        <text class="ov-label">连续打卡</text>
+        <text class="ov-value" style="color: #E6A95B;">🔥 {{summary.streak_days || 0}} 天</text>
+      </view>
+      <view class="ov-card bump-sm">
+        <text class="ov-label">30天账单</text>
+        <text class="ov-value success-dark">{{summary.tx_count_30d || 0}} 笔</text>
+      </view>
+    </view>
+
+    <!-- 1. 完成率趋势(轻量柱状图) -->
+    <view class="section-block bump">
+      <text class="block-title">📈 30 天完成率趋势</text>
+      <scroll-view scroll-x class="trend-scroll">
+        <view class="trend-chart">
+          <view wx:for="{{trend}}" wx:key="date" class="trend-bar-col">
+            <text class="bar-value">{{item.rate}}%</text>
+            <view class="bar {{item.rate >= 80 ? 'high' : (item.rate >= 50 ? 'mid' : 'low')}}" style="height: {{item.rate * 1.5 || 4}}rpx;"></view>
+            <text class="bar-label">{{item.dateLabel}}</text>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 2. 最佳/最差完成日 -->
+    <view class="section-block bump" wx:if="{{weekdayStats.length > 0}}">
+      <text class="block-title">📊 各日完成率</text>
+      <view class="weekday-list">
+        <view wx:for="{{weekdayStats}}" wx:key="dow" class="weekday-row">
+          <text class="wd-name">{{item.weekday}}</text>
+          <view class="wd-bar-bg">
+            <view class="wd-bar" style="width: {{item.completion_rate}}%;"></view>
+          </view>
+          <text class="wd-rate">{{item.completion_rate}}%</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 3. 收支分类 -->
+    <view class="section-block bump" wx:if="{{txCategoryStats.length > 0}}">
+      <text class="block-title">🧾 近 30 天分类(支出 Top 5)</text>
+      <view class="cat-list">
+        <view wx:for="{{txTop5}}" wx:key="category" class="cat-row">
+          <text class="cat-name">{{item.category}}</text>
+          <text class="cat-count">{{item.count}} 笔</text>
+          <text class="cat-amount" style="color: #B08070;">¥{{item.total}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 4. 跨维度关联 -->
+    <view class="section-block bump">
+      <text class="block-title">🔗 关联分析</text>
+      <view wx:for="{{correlations}}" wx:key="title" class="corr-card pit-sm">
+        <text class="corr-title">{{item.title}}</text>
+        <text class="corr-detail">{{item.detail}}</text>
+      </view>
+    </view>
+
+    <view class="safe-bottom"></view>
+  </scroll-view>
+</view>

@@ -1,0 +1,135 @@
+<view class="container">
+  <!-- 导航栏 -->
+  <view class="custom-nav" style="height: {{navHeight}}px; padding-top: {{statusBarHeight}}px;">
+    <view class="nav-content">
+      <view class="nav-back bump-sm" bindtap="goBack">
+        <text style="font-size: 20px; color: var(--ink-2);">‹</text>
+      </view>
+      <text class="nav-title">任务管理</text>
+      <view style="width: 36px;"></view>
+    </view>
+  </view>
+
+  <!-- 内容区 -->
+  <scroll-view class="page-content" scroll-y>
+    <!-- Tab 切换 -->
+    <view class="tab-bar-top pit" style="margin-top: 20rpx;">
+      <view class="tab {{activeTab === 'todo' ? 'active' : ''}}" bindtap="switchTab" data-tab="todo">待办</view>
+      <view class="tab {{activeTab === 'goal' ? 'active' : ''}}" bindtap="switchTab" data-tab="goal">目标</view>
+      <view class="tab {{activeTab === 'finance' ? 'active' : ''}}" bindtap="switchTab" data-tab="finance">收支</view>
+    </view>
+
+    <!-- 待办列表 -->
+    <view wx:if="{{activeTab === 'todo'}}">
+      <view class="task-card bump-sm" wx:for="{{todoList}}" wx:key="id">
+        <view class="checkbox {{item.done ? 'checked' : 'unchecked'}}" bindtap="toggleTodo" data-id="{{item.id}}">{{item.done ? '✓' : ''}}</view>
+        <text class="task-text {{item.done ? 'done' : ''}}">{{item.text}}</text>
+        <view class="task-actions">
+          <view class="action-btn pit-sm" bindtap="onEdit" data-id="{{item.id}}">✏</view>
+          <view class="action-btn pit-sm" bindtap="onDelete" data-id="{{item.id}}">✕</view>
+        </view>
+      </view>
+      <view wx:if="{{todoList.length === 0}}" class="empty-tip">暂无待办，点击底部 + 新增</view>
+    </view>
+
+    <!-- 目标列表 -->
+    <view wx:if="{{activeTab === 'goal'}}">
+      <view class="task-card bump-sm" wx:for="{{goalList}}" wx:key="id">
+        <view class="goal-info" bindtap="onEditGoal" data-id="{{item.id}}">
+          <text class="task-text">{{item.name}}</text>
+          <view class="progress-track">
+            <view class="fill" style="width: {{item.progress}}%;"></view>
+          </view>
+          <text class="progress-label">{{item.progress}}%</text>
+        </view>
+        <view class="task-actions">
+          <view class="action-btn pit-sm" bindtap="onEdit" data-id="{{item.id}}">✏</view>
+          <view class="action-btn pit-sm" bindtap="onDelete" data-id="{{item.id}}">✕</view>
+        </view>
+      </view>
+      <view wx:if="{{goalList.length === 0}}" class="empty-tip">暂无目标，点击底部 + 新增</view>
+    </view>
+
+    <!-- 收支列表 -->
+    <view wx:if="{{activeTab === 'finance'}}">
+      <view class="task-card bump-sm" wx:for="{{financeList}}" wx:key="id">
+        <view class="icon-pit pit-sm">{{item.type === 'income' ? '💰' : '💸'}}</view>
+        <view class="finance-info">
+          <text class="task-text">{{item.category}}</text>
+          <text class="finance-desc">{{item.desc}} · {{item.time}}</text>
+        </view>
+        <text class="finance-amount {{item.type === 'income' ? 'income' : 'expense'}}">{{item.type === 'income' ? '+' : ''}}{{item.amount}}</text>
+        <view class="task-actions">
+          <view class="action-btn pit-sm" bindtap="onEdit" data-id="{{item.id}}"></view>
+          <view class="action-btn pit-sm" bindtap="onDelete" data-id="{{item.id}}">✕</view>
+        </view>
+      </view>
+      <view wx:if="{{financeList.length === 0}}" class="empty-tip">暂无收支记录，点击底部 + 新增</view>
+    </view>
+
+    <view class="safe-bottom" style="height: 200rpx;"></view>
+  </scroll-view>
+
+  <!-- 底部操作栏 -->
+  <view class="task-bottom-bar">
+    <view class="task-bottom-inner pit">
+      <view class="bottom-btn bump-sm" bindtap="onAdd">
+        <text class="btn-icon">+</text>
+        <text class="btn-text">手动添加</text>
+      </view>
+      <view class="divider"></view>
+      <view class="bottom-btn ai-btn" bindtap="goAICreate">
+        <text class="btn-icon">✨</text>
+        <text class="btn-text">智能创建</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 新增/编辑弹窗 -->
+  <view class="modal-mask" wx:if="{{showAdd}}" bindtap="onCancel">
+    <view class="modal-content bump" catchtap="stopPropagation">
+      <text class="modal-title">{{isEdit ? '编辑' : '新增'}}{{activeTab === 'todo' ? '待办' : activeTab === 'goal' ? '目标' : '收支'}}</text>
+
+      <!-- 待办表单 -->
+      <view wx:if="{{activeTab === 'todo'}}">
+        <view class="form-input">
+          <input class="modal-input" placeholder="输入待办内容..." value="{{formData.text}}" focus="{{showAdd}}" bindinput="onFormInput" data-field="text" />
+        </view>
+      </view>
+
+      <!-- 目标表单 -->
+      <view wx:if="{{activeTab === 'goal'}}">
+        <view class="form-input">
+          <input class="modal-input" placeholder="输入目标名称..." value="{{formData.name}}" focus="{{showAdd}}" bindinput="onFormInput" data-field="name" />
+        </view>
+        <view class="form-input" style="margin-top: 16rpx;">
+          <input class="modal-input" placeholder="进度 (0-100)" type="number" value="{{formData.progress}}" focus="{{showAdd}}" bindinput="onFormInput" data-field="progress" />
+        </view>
+      </view>
+
+      <!-- 收支表单 -->
+      <view wx:if="{{activeTab === 'finance'}}">
+        <view class="form-input">
+          <input class="modal-input" placeholder="分类（如：餐饮、交通）" value="{{formData.category}}" focus="{{showAdd}}" bindinput="onFormInput" data-field="category" />
+        </view>
+        <view class="form-input" style="margin-top: 16rpx;">
+          <input class="modal-input" placeholder="描述" value="{{formData.desc}}" focus="{{showAdd}}" bindinput="onFormInput" data-field="desc" />
+        </view>
+        <view class="form-row">
+          <view class="form-input form-half">
+            <input class="modal-input" placeholder="金额" type="number" value="{{formData.amount}}" bindinput="onFormInput" data-field="amount" />
+          </view>
+          <view class="type-toggle">
+            <view class="type-btn {{formData.type === 'income' ? 'active' : ''}}" bindtap="onTypeToggle" data-value="income">收入</view>
+            <view class="type-btn {{formData.type === 'expense' ? 'active' : ''}}" bindtap="onTypeToggle" data-value="expense">支出</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="modal-actions">
+        <view class="modal-btn cancel-btn bump-sm" bindtap="onCancel">取消</view>
+        <view class="modal-btn confirm-btn" bindtap="onSave">保存</view>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,29 @@
+<view class="login-page">
+  <!-- 自定义导航栏 -->
+  <view class="custom-nav" style="height: {{navHeight}}px; padding-top: {{statusBarHeight}}px;">
+    <view class="nav-content">
+      <view style="width: 36px;"></view>
+      <text class="nav-title">登录</text>
+      <view style="width: 36px;"></view>
+    </view>
+  </view>
+
+  <view class="login-content" style="padding-top: {{navHeight}}px;">
+    <!-- Logo 区域 -->
+    <view class="login-logo">
+      <view class="logo-circle bump">🏠</view>
+      <text class="app-name">习惯管家</text>
+      <text class="app-desc">管理你的每一个好习惯</text>
+    </view>
+
+    <!-- 登录按钮 -->
+    <view class="login-actions">
+      <button class="wechat-login-btn" bindtap="onWechatLogin" loading="{{isLoading}}">
+        <text wx:if="{{!isLoading}}">微信一键登录</text>
+        <text wx:if="{{isLoading}}">登录中...</text>
+      </button>
+
+      <text class="login-hint">登录即表示你同意《用户协议》和《隐私政策》</text>
+    </view>
+  </view>
+</view>

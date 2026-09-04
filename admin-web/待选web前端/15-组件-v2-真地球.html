@@ -1,0 +1,2189 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aurora · Deep Module · 真地球 v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ================================================================
+   15-组件-v2-真地球  ·  deep-module v2
+   套 D 重做:
+     · 保留 FBM noise 片元 shader(4 套里最真的大陆)
+     · 三轴自转(Y 主 + X/Z 漂)
+     · 4 层球(海洋 + 大陆 + 云 + 大气)
+     · 6 城市 + 4 弧线 + Sprite 文字标签
+     · deep-module 架构 + 卸载验证
+   ================================================================ */
+
+:root {
+  --bg: #fafafa;
+  --bg-grid: rgba(0,0,0,0.025);
+  --bg-glow-1: rgba(129,140,248,0.05);
+  --bg-glow-2: rgba(168,85,247,0.04);
+  --surface-frosted: rgba(255,255,255,0.55);
+  --surface-crystal: rgba(255,255,255,0.72);
+  --surface-mist: rgba(255,255,255,0.88);
+  --border: rgba(10,10,10,0.08);
+  --border-strong: rgba(10,10,10,0.14);
+  --text-1: #0a0a0a;
+  --text-2: #525252;
+  --text-3: #a3a3a3;
+  --accent: #818cf8;
+  --accent-2: #6366f1;
+  --accent-3: #c7d2fe;
+  --accent-soft: rgba(129,140,248,0.10);
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #06b6d4;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+  --shadow-sm: 0 1px 2px rgba(10,10,10,0.04);
+  --shadow: 0 1px 2px rgba(10,10,10,0.04), 0 8px 24px rgba(10,10,10,0.06);
+  --shadow-lg: 0 4px 12px rgba(10,10,10,0.06), 0 24px 48px rgba(10,10,10,0.10);
+  --shadow-accent: 0 4px 16px rgba(129,140,248,0.22);
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --t: 0.4s var(--ease);
+  --grid: 24px;
+  --topbar-h: 60px;
+  --max-w: 1440px;
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+}
+[data-theme="dark"] {
+  --bg: #0a0a0a;
+  --bg-grid: rgba(255,255,255,0.025);
+  --bg-glow-1: rgba(129,140,248,0.10);
+  --bg-glow-2: rgba(168,85,247,0.06);
+  --surface-frosted: rgba(255,255,255,0.04);
+  --surface-crystal: rgba(255,255,255,0.07);
+  --surface-mist: rgba(22,22,24,0.88);
+  --border: rgba(255,255,255,0.10);
+  --border-strong: rgba(255,255,255,0.18);
+  --text-1: #fafafa;
+  --text-2: #a3a3a3;
+  --text-3: #525252;
+  --accent: #a5b4fc;
+  --accent-2: #818cf8;
+  --accent-3: rgba(165,180,252,0.20);
+  --accent-soft: rgba(129,140,248,0.18);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.30);
+  --shadow: 0 1px 2px rgba(0,0,0,0.20), 0 8px 24px rgba(0,0,0,0.40);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,0.30), 0 24px 48px rgba(0,0,0,0.50);
+  --shadow-accent: 0 4px 16px rgba(129,140,248,0.30);
+}
+
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-1);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  min-height: 100vh;
+  transition: background var(--t), color var(--t);
+}
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 800px 600px at 0% 0%, var(--bg-glow-1) 0%, transparent 60%),
+    radial-gradient(ellipse 800px 600px at 100% 100%, var(--bg-glow-2) 0%, transparent 60%);
+  pointer-events: none; z-index: 0;
+  transition: background var(--t);
+}
+body::after {
+  content: ''; position: fixed; inset: 0;
+  background-image:
+    linear-gradient(to right, var(--bg-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--bg-grid) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none; z-index: 0;
+  mask-image: radial-gradient(ellipse 100% 80% at 50% 0%, black 30%, transparent 100%);
+}
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+input { font: inherit; color: inherit; }
+a { color: var(--accent); text-decoration: none; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+.app { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
+
+/* --- TOPBAR --- */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  height: var(--topbar-h);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 0 24px;
+  background: var(--surface-frosted);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid var(--border);
+  transition: background var(--t), border-color var(--t);
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-mark {
+  width: 28px; height: 28px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+  border-radius: 7px;
+  display: grid; place-items: center;
+  color: white; font-weight: 700; font-size: 14px;
+  box-shadow: var(--shadow-accent);
+  position: relative;
+}
+.brand-mark::after {
+  content: ''; position: absolute; inset: 1px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 50%);
+  border-radius: 6px; pointer-events: none;
+}
+.brand-text { display: flex; flex-direction: column; line-height: 1.1; }
+.brand-name { font-weight: 700; font-size: 14px; letter-spacing: -0.01em; }
+.brand-sub { font-size: 10.5px; color: var(--text-3); font-family: var(--font-mono); margin-top: 1px; }
+
+.tabs {
+  display: flex; gap: 2px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  transition: background var(--t), border-color var(--t);
+}
+.tab {
+  padding: 6px 16px;
+  font-size: 13px; font-weight: 500;
+  color: var(--text-2);
+  border-radius: var(--radius-pill);
+  display: flex; align-items: center; gap: 6px;
+  transition: color var(--t), background var(--t);
+}
+.tab:hover { color: var(--text-1); }
+.tab.active {
+  color: var(--text-1);
+  background: var(--surface-mist);
+  box-shadow: var(--shadow-sm);
+  font-weight: 600;
+}
+.tab-num { font-family: var(--font-mono); font-size: 10px; color: var(--text-3); font-weight: 500; }
+.tab.active .tab-num { color: var(--accent); }
+
+.topbar-right { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+
+.search-box {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 10px; height: 32px; width: 240px;
+  transition: background var(--t), border-color var(--t);
+}
+.search-box:focus-within { border-color: var(--accent); }
+.search-icon { color: var(--text-3); font-size: 13px; }
+.search-box input { background: none; border: none; outline: none; flex: 1; font-size: 13px; }
+.search-box input::placeholder { color: var(--text-3); }
+.kbd {
+  font-family: var(--font-mono); font-size: 10px;
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-3); background: var(--surface-frosted);
+}
+
+/* THEME SWITCH */
+.theme-switch {
+  position: relative;
+  width: 56px; height: 28px;
+  border-radius: var(--radius-pill);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  transition: background var(--t), border-color var(--t);
+  cursor: pointer;
+  display: flex; align-items: center;
+  padding: 0 4px; flex-shrink: 0;
+}
+.theme-switch-track {
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  transition: transform var(--t), background var(--t);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+[data-theme="dark"] .theme-switch-track {
+  transform: translateX(28px);
+  background: linear-gradient(135deg, #c7d2fe 0%, #818cf8 100%);
+}
+.theme-icon {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  font-size: 11px; pointer-events: none; transition: opacity var(--t);
+}
+.theme-icon.sun { left: 7px; opacity: 1; }
+.theme-icon.moon { right: 7px; opacity: 0; }
+[data-theme="dark"] .theme-icon.sun { opacity: 0; }
+[data-theme="dark"] .theme-icon.moon { opacity: 1; }
+
+.avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+  display: grid; place-items: center;
+  color: white; font-size: 11px; font-weight: 600;
+  border: 1.5px solid var(--surface-mist);
+  box-shadow: var(--shadow-sm);
+}
+
+/* --- TAB PANES --- */
+.pane { display: none; padding: 32px; max-width: var(--max-w); margin: 0 auto; width: 100%; }
+.pane.active { display: block; animation: paneIn 0.4s var(--ease); }
+@keyframes paneIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ================================================================
+   GLASS COMPONENT — 3 types
+   ================================================================ */
+.glass {
+  position: relative;
+  border-radius: var(--radius);
+  transition: background var(--t), border-color var(--t), box-shadow var(--t), backdrop-filter var(--t);
+}
+.glass[data-glass="frosted"] {
+  background: var(--surface-frosted);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.glass[data-glass="crystal"] {
+  background: var(--surface-crystal);
+  backdrop-filter: blur(20px) saturate(200%) contrast(120%);
+  -webkit-backdrop-filter: blur(20px) saturate(200%) contrast(120%);
+  border: 1px solid rgba(129,140,248,0.18);
+  box-shadow: 0 8px 32px rgba(129,140,248,0.08), var(--shadow), inset 0 1px 0 rgba(255,255,255,0.4);
+}
+[data-theme="dark"] .glass[data-glass="crystal"] {
+  border-color: rgba(165,180,252,0.20);
+  box-shadow: 0 8px 32px rgba(99,102,241,0.15), var(--shadow), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.glass[data-glass="mist"] {
+  background: var(--surface-mist);
+  backdrop-filter: blur(60px) saturate(150%);
+  -webkit-backdrop-filter: blur(60px) saturate(150%);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ================================================================
+   LOGIN PANE
+   ================================================================ */
+.login-pane {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px; align-items: stretch;
+  min-height: calc(100vh - var(--topbar-h) - 64px);
+}
+.login-hero {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 48px; position: relative;
+}
+.login-hero-mark {
+  width: 64px; height: 64px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 50%, #c084fc 100%);
+  border-radius: 16px;
+  display: grid; place-items: center;
+  font-size: 28px; color: white;
+  box-shadow: 0 8px 32px rgba(129,140,248,0.3);
+  margin-bottom: 24px; position: relative;
+}
+.login-hero-mark::after {
+  content: ''; position: absolute; inset: 0;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 50%);
+  pointer-events: none;
+}
+.login-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-soft);
+  border-radius: var(--radius-pill);
+  font-size: 11px; font-weight: 500;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  margin-bottom: 16px; width: fit-content;
+}
+.login-tag::before {
+  content: ''; width: 6px; height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: pulse 2s var(--ease) infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+.login-h1 {
+  font-size: 44px; font-weight: 700;
+  letter-spacing: -0.02em; line-height: 1.1;
+  margin-bottom: 16px;
+}
+.login-h1 span { color: var(--accent); font-style: italic; font-weight: 500; }
+.login-p {
+  font-size: 15px; color: var(--text-2);
+  max-width: 420px; margin-bottom: 32px; line-height: 1.6;
+}
+.login-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  max-width: 420px;
+  margin-top: auto;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+}
+.login-stat-num {
+  font-family: var(--font-mono);
+  font-size: 22px; font-weight: 600;
+  color: var(--text-1); letter-spacing: -0.02em;
+}
+.login-stat-label { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+.login-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px; align-content: center;
+}
+.login-card {
+  padding: 28px 24px;
+  display: flex; flex-direction: column;
+  min-height: 440px;
+  position: relative; overflow: hidden;
+}
+.login-card::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-strong), transparent);
+}
+.login-card-type {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-3);
+  margin-bottom: 6px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.login-card-name {
+  font-size: 18px; font-weight: 600;
+  margin-bottom: 4px; letter-spacing: -0.01em;
+}
+.login-card-sub { font-size: 12px; color: var(--text-2); margin-bottom: 24px; }
+.login-form { display: flex; flex-direction: column; gap: 12px; }
+.login-field { display: flex; flex-direction: column; gap: 6px; }
+.login-label { font-size: 11px; color: var(--text-2); font-weight: 500; }
+.login-input {
+  height: 38px; padding: 0 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color var(--t), background var(--t);
+  font-size: 13px;
+}
+.login-input:focus { border-color: var(--accent); }
+.login-input::placeholder { color: var(--text-3); }
+.login-check {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text-2);
+  margin-top: 4px;
+}
+.login-check input { accent-color: var(--accent); }
+.login-btn {
+  margin-top: 16px; height: 40px;
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-2) 100%);
+  color: white;
+  border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600;
+  transition: transform 0.15s var(--ease), box-shadow var(--t);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.2) inset, 0 4px 12px rgba(129,140,248,0.3);
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.login-btn:hover { transform: translateY(-1px); box-shadow: 0 1px 0 rgba(255,255,255,0.2) inset, 0 8px 20px rgba(129,140,248,0.4); }
+.login-card-footer {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between;
+  font-size: 11px; color: var(--text-3);
+  font-family: var(--font-mono);
+}
+
+/* ================================================================
+   DASHBOARD PANE
+   ================================================================ */
+.dash-header {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  margin-bottom: 24px;
+}
+.dash-title {
+  font-size: 28px; font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.dash-title-sub { color: var(--text-2); font-size: 13px; margin-top: 4px; }
+.dash-actions { display: flex; gap: 8px; }
+.pill {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  font-size: 12px; color: var(--text-2);
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: background var(--t), border-color var(--t), color var(--t);
+}
+.pill:hover { color: var(--text-1); border-color: var(--border-strong); }
+.pill.primary {
+  background: var(--accent); color: white; border-color: transparent;
+}
+.pill.primary:hover { background: var(--accent-2); }
+
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px; margin-bottom: 24px;
+}
+.kpi-card {
+  padding: 20px;
+  display: flex; flex-direction: column;
+  min-height: 140px;
+  position: relative; overflow: hidden;
+}
+.kpi-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.kpi-label { font-size: 12px; color: var(--text-2); font-weight: 500; }
+.kpi-icon {
+  width: 28px; height: 28px;
+  border-radius: 7px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: grid; place-items: center;
+  font-size: 13px;
+}
+.kpi-value-row { display: flex; align-items: baseline; gap: 4px; margin-bottom: 4px; }
+.kpi-value {
+  font-family: var(--font-mono);
+  font-size: 28px; font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.kpi-unit { font-size: 12px; color: var(--text-2); }
+.kpi-delta { font-size: 11px; font-weight: 500; }
+.kpi-delta.up { color: var(--success); }
+.kpi-delta.down { color: var(--danger); }
+.kpi-spark { margin-top: auto; height: 32px; }
+.kpi-spark svg { width: 100%; height: 100%; display: block; }
+.kpi-spark .spark-line { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.kpi-spark .spark-area { fill: url(#sparkGrad); opacity: 0.4; }
+.kpi-spark .spark-dot { fill: var(--accent); }
+.kpi-spark .spark-baseline { stroke: var(--border); stroke-width: 1; stroke-dasharray: 2,2; }
+
+.dash-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 16px; margin-bottom: 16px;
+}
+.card {
+  padding: 24px;
+  display: flex; flex-direction: column;
+  min-height: 380px;
+  position: relative; overflow: hidden;
+}
+.card-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.card-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.card-sub { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+.card-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent-soft);
+}
+
+/* EARTH */
+.earth-wrap {
+  flex: 1; position: relative;
+  display: flex;
+  align-items: center; justify-content: center;
+  margin: 8px -8px -8px;
+}
+.earth-container {
+  width: 100%;
+  height: 360px;            /* 套 D 尺寸:360px */
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.earth-container canvas { display: block; width: 100% !important; height: 100% !important; cursor: grab; }
+.earth-container canvas:active { cursor: grabbing; }
+.earth-stats {
+  position: absolute;
+  bottom: 12px; left: 12px;
+  display: flex; gap: 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-2);
+}
+.earth-stat-dot {
+  display: inline-block; width: 6px; height: 6px;
+  border-radius: 50%; margin-right: 6px;
+  background: var(--success);
+  box-shadow: 0 0 6px currentColor;
+  animation: pulse 2s var(--ease) infinite;
+}
+.earth-fallback {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+}
+.earth-fallback .fb-circle {
+  width: 80px; height: 80px;
+  border: 2px dashed var(--text-3);
+  border-radius: 50%;
+}
+
+/* ACTIVITY */
+.activity-list { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.activity-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  transition: background var(--t);
+}
+.activity-item:hover { background: var(--bg); }
+.activity-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--c, var(--accent));
+  box-shadow: 0 0 6px var(--c, var(--accent));
+  flex-shrink: 0;
+}
+.activity-content { flex: 1; min-width: 0; }
+.activity-msg { font-size: 13px; font-weight: 500; }
+.activity-time { font-size: 11px; color: var(--text-3); font-family: var(--font-mono); margin-top: 1px; }
+.activity-val {
+  font-size: 13px; font-weight: 600; color: var(--text-1);
+}
+
+.dash-footer-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+.mini-card {
+  padding: 16px 18px;
+  display: flex; flex-direction: column; gap: 8px;
+  min-height: 110px;
+}
+.mini-card-head { display: flex; justify-content: space-between; align-items: center; }
+.mini-card-title { font-size: 12px; color: var(--text-2); }
+.mini-card-icon {
+  width: 22px; height: 22px;
+  border-radius: 5px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: grid; place-items: center;
+  font-size: 11px;
+}
+.mini-card-value {
+  font-family: var(--font-mono);
+  font-size: 20px; font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.mini-card-meta { font-size: 11px; color: var(--text-3); display: flex; gap: 8px; }
+.mini-card-meta .dot { width: 4px; height: 4px; background: var(--text-3); border-radius: 50%; align-self: center; }
+
+.bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 70px; padding-top: 4px; }
+.bar {
+  flex: 1;
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-2) 100%);
+  border-radius: 3px 3px 1px 1px;
+  min-height: 4px;
+  position: relative;
+  transition: opacity 0.2s;
+}
+.bar:hover { opacity: 0.8; }
+.bar::after {
+  content: attr(data-v);
+  position: absolute; top: -16px; left: 50%; transform: translateX(-50%);
+  font-family: var(--font-mono); font-size: 9px;
+  color: var(--text-3);
+  opacity: 0; transition: opacity 0.2s;
+}
+.bar:hover::after { opacity: 1; }
+
+/* ================================================================
+   COMPONENTS PANE
+   ================================================================ */
+.comp-header { margin-bottom: 24px; }
+.comp-title { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+.comp-sub { color: var(--text-2); font-size: 13px; margin-top: 4px; max-width: 600px; }
+
+.comp-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.comp-col {
+  display: flex; flex-direction: column; gap: 16px;
+}
+.comp-col-head {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: background var(--t), border-color var(--t);
+}
+.comp-col-name { font-size: 16px; font-weight: 600; }
+.comp-col-id { font-family: var(--font-mono); font-size: 11px; color: var(--text-3); }
+.comp-col-desc { font-size: 12px; color: var(--text-2); margin-top: 8px; line-height: 1.5; }
+
+.variant {
+  padding: 20px;
+  min-height: 180px;
+  display: flex; flex-direction: column;
+  cursor: pointer; position: relative;
+  transition: transform 0.2s var(--ease);
+}
+.variant:hover { transform: translateY(-2px); }
+.variant-tag {
+  font-family: var(--font-mono);
+  font-size: 10px; color: var(--text-3);
+  letter-spacing: 0.04em; text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.variant-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.variant-desc { font-size: 12px; color: var(--text-2); margin-bottom: 12px; }
+.variant-code {
+  margin-top: auto;
+  padding: 8px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 10.5px; color: var(--text-2);
+  display: flex; justify-content: space-between; align-items: center;
+  transition: background var(--t), border-color var(--t);
+}
+.variant-copy { font-size: 10px; color: var(--text-3); font-family: var(--font-mono); }
+.variant:hover .variant-copy { color: var(--accent); }
+
+.interface-block {
+  margin-top: 32px;
+  padding: 24px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: background var(--t), border-color var(--t);
+}
+.interface-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.interface-sub { font-size: 12px; color: var(--text-2); margin-bottom: 16px; }
+.interface-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.interface-table th, .interface-table td {
+  text-align: left; padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  transition: border-color var(--t);
+}
+.interface-table th {
+  font-weight: 500; color: var(--text-2);
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.interface-table td { font-family: var(--font-mono); }
+.interface-table td:first-child { color: var(--accent); font-weight: 500; }
+.interface-table td:last-child { color: var(--text-2); font-family: var(--font-ui); }
+
+/* ================================================================
+   DEV CONSOLE — deep module 删除测试面板
+   ================================================================ */
+.dev-console {
+  position: fixed; bottom: 20px; right: 20px;
+  z-index: 100;
+  width: 320px;
+  padding: 16px;
+  background: var(--surface-mist);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  transition: background var(--t), border-color var(--t);
+}
+.dev-console-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.dev-console-title { font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.dev-console-title::before {
+  content: ''; width: 6px; height: 6px;
+  background: var(--success); border-radius: 50%;
+  box-shadow: 0 0 6px var(--success);
+  animation: pulse 2s var(--ease) infinite;
+}
+.dev-console-sub { font-family: var(--font-mono); font-size: 10px; color: var(--text-3); }
+.dc-modules { display: flex; flex-direction: column; gap: 8px; }
+.dc-module {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: background var(--t), border-color var(--t), opacity 0.3s;
+}
+.dc-module.disabled { opacity: 0.5; }
+.dc-status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success);
+  flex-shrink: 0;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+.dc-module.disabled .dc-status-dot {
+  background: var(--text-3);
+  box-shadow: none;
+}
+.dc-info { flex: 1; min-width: 0; }
+.dc-name { font-size: 12px; font-weight: 600; font-family: var(--font-mono); }
+.dc-status { font-size: 10px; color: var(--text-3); font-family: var(--font-mono); margin-top: 1px; }
+.dc-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  font-size: 10.5px; font-weight: 500;
+  font-family: var(--font-mono);
+  color: var(--text-2);
+  transition: all 0.2s var(--ease);
+}
+.dc-btn:hover { color: var(--text-1); border-color: var(--danger); }
+.dc-module.disabled .dc-btn { color: var(--success); border-color: var(--accent-soft); }
+.dc-module.disabled .dc-btn:hover { border-color: var(--success); }
+.dc-reset {
+  margin-top: 12px; width: 100%; height: 32px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 11px; font-family: var(--font-mono);
+  color: var(--text-2);
+  transition: all 0.2s var(--ease);
+}
+.dc-reset:hover { color: var(--accent); border-color: var(--accent); }
+.dc-foot {
+  margin-top: 8px; padding-top: 8px;
+  border-top: 1px dashed var(--border);
+  font-size: 10px; color: var(--text-3);
+  font-family: var(--font-mono); line-height: 1.5;
+}
+
+.toast {
+  position: fixed;
+  bottom: 20px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  padding: 10px 16px;
+  background: var(--text-1);
+  color: var(--bg);
+  border-radius: var(--radius-sm);
+  font-size: 12px; font-family: var(--font-mono);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s var(--ease), transform 0.3s var(--ease);
+  z-index: 200;
+  box-shadow: var(--shadow-lg);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (max-width: 1200px) {
+  .login-grid { grid-template-columns: 1fr; }
+  .login-pane { grid-template-columns: 1fr; }
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .dash-row { grid-template-columns: 1fr; }
+  .comp-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ============================== TOPBAR ============================== -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">A</div>
+    <div class="brand-text">
+      <div class="brand-name">Aurora</div>
+      <div class="brand-sub">admin · v2.5.0 · 真地球</div>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="login" role="tab">
+      <span class="tab-num">01</span>登录
+    </button>
+    <button class="tab" data-tab="dashboard" role="tab">
+      <span class="tab-num">02</span>仪表盘
+    </button>
+    <button class="tab" data-tab="components" role="tab">
+      <span class="tab-num">03</span>组件库
+    </button>
+  </nav>
+  <div class="topbar-right">
+    <div class="search-box">
+      <span class="search-icon">⌕</span>
+      <input type="text" placeholder="搜索命令、用户、文档...">
+      <span class="kbd">⌘K</span>
+    </div>
+    <button class="theme-switch" id="themeSwitch" aria-label="主题切换">
+      <div class="theme-switch-track"></div>
+      <span class="theme-icon sun">☀</span>
+      <span class="theme-icon moon">☾</span>
+    </button>
+    <div class="avatar">WC</div>
+  </div>
+</header>
+
+<!-- ============================== LOGIN PANE ============================== -->
+<section class="pane active" data-pane="login" role="tabpanel">
+  <div class="login-pane">
+    <div class="login-hero">
+      <div class="login-hero-mark">◆</div>
+      <span class="login-tag">v2.5 · DEEP MODULE · 真地球</span>
+      <h1 class="login-h1">用 <span>小接口</span><br>驱动大系统</h1>
+      <p class="login-p">
+        Aurora Admin v2.5 升级为「真地球」—— FBM noise 程序化大陆、三轴自转、4 弧线、6 城市 Sprite 标签。每个模块仍是 1-2 个公开方法,删掉不影响其他模块。
+      </p>
+      <div class="login-stats">
+        <div>
+          <div class="login-stat-num mono">4</div>
+          <div class="login-stat-label">核心模块</div>
+        </div>
+        <div>
+          <div class="login-stat-num mono">3</div>
+          <div class="login-stat-label">玻璃变体</div>
+        </div>
+        <div>
+          <div class="login-stat-num mono">≤2</div>
+          <div class="login-stat-label">公开方法</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="login-grid">
+      <div class="login-card glass" data-glass="frosted">
+        <div class="login-card-type">type · 01</div>
+        <div class="login-card-name">FrostedGlass</div>
+        <div class="login-card-sub">磨砂玻璃 · 极简留白 · 高透明</div>
+        <div class="login-form">
+          <div class="login-field">
+            <label class="login-label">邮箱</label>
+            <input class="login-input" placeholder="name@company.com">
+          </div>
+          <div class="login-field">
+            <label class="login-label">密码</label>
+            <input class="login-input" type="password" placeholder="••••••••">
+          </div>
+          <label class="login-check">
+            <input type="checkbox" checked> 7 天内自动登录
+          </label>
+          <button class="login-btn">登录 →</button>
+        </div>
+        <div class="login-card-footer">
+          <span>blur 40px</span>
+          <span>opacity 0.55</span>
+        </div>
+      </div>
+
+      <div class="login-card glass" data-glass="crystal">
+        <div class="login-card-type">type · 02</div>
+        <div class="login-card-name">CrystalGlass</div>
+        <div class="login-card-sub">水晶玻璃 · 锐利描边 · 对比增强</div>
+        <div class="login-form">
+          <div class="login-field">
+            <label class="login-label">邮箱</label>
+            <input class="login-input" placeholder="name@company.com">
+          </div>
+          <div class="login-field">
+            <label class="login-label">密码</label>
+            <input class="login-input" type="password" placeholder="••••••••">
+          </div>
+          <label class="login-check">
+            <input type="checkbox" checked> 7 天内自动登录
+          </label>
+          <button class="login-btn">登录 →</button>
+        </div>
+        <div class="login-card-footer">
+          <span>blur 20px</span>
+          <span>contrast 120</span>
+        </div>
+      </div>
+
+      <div class="login-card glass" data-glass="mist">
+        <div class="login-card-type">type · 03</div>
+        <div class="login-card-name">MistGlass</div>
+        <div class="login-card-sub">薄雾玻璃 · 雾感漂浮 · 强模糊</div>
+        <div class="login-form">
+          <div class="login-field">
+            <label class="login-label">邮箱</label>
+            <input class="login-input" placeholder="name@company.com">
+          </div>
+          <div class="login-field">
+            <label class="login-label">密码</label>
+            <input class="login-input" type="password" placeholder="••••••••">
+          </div>
+          <label class="login-check">
+            <input type="checkbox" checked> 7 天内自动登录
+          </label>
+          <button class="login-btn">登录 →</button>
+        </div>
+        <div class="login-card-footer">
+          <span>blur 60px</span>
+          <span>opacity 0.88</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== DASHBOARD PANE ============================== -->
+<section class="pane" data-pane="dashboard" role="tabpanel">
+  <div class="dash-header">
+    <div>
+      <h1 class="dash-title">仪表盘</h1>
+      <div class="dash-title-sub">实时系统状态 · 三轴自转 · FBM 大陆 · 4 弧线</div>
+    </div>
+    <div class="dash-actions">
+      <button class="pill">最近 24h</button>
+      <button class="pill primary">+ 导出报告</button>
+    </div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi-card glass" data-glass="frosted">
+      <div class="kpi-head">
+        <div class="kpi-label">活跃用户</div>
+        <div class="kpi-icon">◉</div>
+      </div>
+      <div class="kpi-value-row">
+        <span class="kpi-value" data-kpi-value="1284">0</span>
+        <span class="kpi-unit">人</span>
+      </div>
+      <div class="kpi-delta up">↑ +12.4% vs 上周</div>
+      <div class="kpi-spark" data-kpi-sparkline="12,18,15,22,19,28,32,38"></div>
+    </div>
+
+    <div class="kpi-card glass" data-glass="crystal">
+      <div class="kpi-head">
+        <div class="kpi-label">API 调用</div>
+        <div class="kpi-icon">⚡</div>
+      </div>
+      <div class="kpi-value-row">
+        <span class="kpi-value" data-kpi-value="8492">0</span>
+        <span class="kpi-unit">次/天</span>
+      </div>
+      <div class="kpi-delta up">↑ +5.2% vs 上周</div>
+      <div class="kpi-spark" data-kpi-sparkline="45,52,48,61,58,67,72,75"></div>
+    </div>
+
+    <div class="kpi-card glass" data-glass="mist">
+      <div class="kpi-head">
+        <div class="kpi-label">营收(本月)</div>
+        <div class="kpi-icon">¥</div>
+      </div>
+      <div class="kpi-value-row">
+        <span class="kpi-value" data-kpi-value="382000" data-kpi-prefix="¥" data-kpi-decimals="0">0</span>
+        <span class="kpi-unit"></span>
+      </div>
+      <div class="kpi-delta up">↑ +18.7% vs 上月</div>
+      <div class="kpi-spark" data-kpi-sparkline="20,25,22,30,28,35,42,48"></div>
+    </div>
+
+    <div class="kpi-card glass" data-glass="frosted">
+      <div class="kpi-head">
+        <div class="kpi-label">错误率</div>
+        <div class="kpi-icon">⚠</div>
+      </div>
+      <div class="kpi-value-row">
+        <span class="kpi-value" data-kpi-value="0.12" data-kpi-decimals="2">0</span>
+        <span class="kpi-unit">%</span>
+      </div>
+      <div class="kpi-delta down">↓ -0.04% vs 上周</div>
+      <div class="kpi-spark" data-kpi-sparkline="3,2,4,2,3,1,2,1"></div>
+    </div>
+  </div>
+
+  <div class="dash-row">
+    <div class="card glass" data-glass="crystal">
+      <div class="card-head">
+        <div>
+          <div class="card-title">全球节点状态 · 真地球</div>
+          <div class="card-sub">FBM 大陆 · 三轴自转 · 6 城市 · 4 弧线</div>
+        </div>
+        <span class="card-badge">● LIVE</span>
+      </div>
+      <div class="earth-wrap">
+        <div class="earth-container" id="earthContainer"></div>
+      </div>
+      <div class="earth-stats">
+        <span><span class="earth-stat-dot" style="color:var(--success)"></span>6 区域在线</span>
+        <span>平均延迟 42ms</span>
+        <span>流量 1.2 GB/s</span>
+      </div>
+    </div>
+
+    <div class="card glass" data-glass="mist">
+      <div class="card-head">
+        <div>
+          <div class="card-title">实时数据流</div>
+          <div class="card-sub">最近 30 分钟事件</div>
+        </div>
+        <span class="card-badge">+128 evt/min</span>
+      </div>
+      <div class="activity-list">
+        <div class="activity-item">
+          <div class="activity-dot" style="--c:var(--success)"></div>
+          <div class="activity-content">
+            <div class="activity-msg">新用户注册</div>
+            <div class="activity-time">2 分钟前 · 上海</div>
+          </div>
+          <div class="activity-val mono">+1</div>
+        </div>
+        <div class="activity-item">
+          <div class="activity-dot" style="--c:var(--info)"></div>
+          <div class="activity-content">
+            <div class="activity-msg">API 调用峰值</div>
+            <div class="activity-time">5 分钟前 · 北京</div>
+          </div>
+          <div class="activity-val mono">+128</div>
+        </div>
+        <div class="activity-item">
+          <div class="activity-dot" style="--c:var(--warning)"></div>
+          <div class="activity-content">
+            <div class="activity-msg">模型切换 GPT-4o</div>
+            <div class="activity-time">12 分钟前 · 旧金山</div>
+          </div>
+          <div class="activity-val mono">→</div>
+        </div>
+        <div class="activity-item">
+          <div class="activity-dot" style="--c:var(--success)"></div>
+          <div class="activity-content">
+            <div class="activity-msg">部署完成 v2.5.0</div>
+            <div class="activity-time">18 分钟前 · 新加坡</div>
+          </div>
+          <div class="activity-val mono">✓</div>
+        </div>
+        <div class="activity-item">
+          <div class="activity-dot" style="--c:var(--accent)"></div>
+          <div class="activity-content">
+            <div class="activity-msg">知识库更新</div>
+            <div class="activity-time">24 分钟前 · 伦敦</div>
+          </div>
+          <div class="activity-val mono">+24</div>
+        </div>
+        <div class="activity-item">
+          <div class="activity-dot" style="--c:var(--success)"></div>
+          <div class="activity-content">
+            <div class="activity-msg">数据备份完成</div>
+            <div class="activity-time">28 分钟前 · 东京</div>
+          </div>
+          <div class="activity-val mono">✓</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-footer-row">
+    <div class="mini-card glass" data-glass="frosted">
+      <div class="mini-card-head">
+        <div class="mini-card-title">请求量(7天)</div>
+        <div class="mini-card-icon">▤</div>
+      </div>
+      <div class="bar-chart" id="barChart1"></div>
+      <div class="mini-card-meta mono">
+        <span>合计 38,492</span><span class="dot"></span>
+        <span>峰值 8,492/天</span>
+      </div>
+    </div>
+    <div class="mini-card glass" data-glass="crystal">
+      <div class="mini-card-head">
+        <div class="mini-card-title">模型分布</div>
+        <div class="mini-card-icon">◇</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:60px;font-size:11px;color:var(--text-2);">GPT-4o</div>
+          <div style="flex:1;height:6px;background:var(--accent-soft);border-radius:3px;overflow:hidden;"><div style="width:68%;height:100%;background:var(--accent);border-radius:3px;"></div></div>
+          <div class="mono" style="font-size:11px;">68%</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:60px;font-size:11px;color:var(--text-2);">Claude</div>
+          <div style="flex:1;height:6px;background:var(--accent-soft);border-radius:3px;overflow:hidden;"><div style="width:24%;height:100%;background:var(--accent-2);border-radius:3px;"></div></div>
+          <div class="mono" style="font-size:11px;">24%</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:60px;font-size:11px;color:var(--text-2);">本地模型</div>
+          <div style="flex:1;height:6px;background:var(--accent-soft);border-radius:3px;overflow:hidden;"><div style="width:8%;height:100%;background:var(--accent-3);border-radius:3px;"></div></div>
+          <div class="mono" style="font-size:11px;">8%</div>
+        </div>
+      </div>
+    </div>
+    <div class="mini-card glass" data-glass="mist">
+      <div class="mini-card-head">
+        <div class="mini-card-title">存储用量</div>
+        <div class="mini-card-icon">▣</div>
+      </div>
+      <div class="mini-card-value mono">248.4 <span style="font-size:13px;color:var(--text-2);">/ 500 GB</span></div>
+      <div style="height:6px;background:var(--accent-soft);border-radius:3px;overflow:hidden;margin-top:4px;">
+        <div style="width:49.7%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:3px;"></div>
+      </div>
+      <div class="mini-card-meta mono">
+        <span>已用 49.7%</span><span class="dot"></span>
+        <span>预计 18 天</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== COMPONENTS PANE ============================== -->
+<section class="pane" data-pane="components" role="tabpanel">
+  <div class="comp-header">
+    <h1 class="comp-title">组件库预览</h1>
+    <p class="comp-sub">v2.5:真地球 — FBM noise 片元 shader 6 色阶大陆,4 层球(海洋 + 陆地 + 云 + 大气),三轴自转(频率互质),4 段大圆弧,6 城市 + Sprite 文字标签。</p>
+  </div>
+
+  <div class="comp-grid">
+    <div class="comp-col">
+      <div class="comp-col-head">
+        <div class="comp-col-name">FrostedGlass</div>
+        <div class="comp-col-id">glass/type/frosted</div>
+        <div class="comp-col-desc">磨砂玻璃。最高透明、最低视觉权重。适合次要信息层、工具栏、内嵌提示。</div>
+      </div>
+      <div class="variant glass" data-glass="frosted">
+        <div class="variant-tag">v1 · low opacity</div>
+        <div class="variant-title">极透明</div>
+        <div class="variant-desc">opacity 0.4,blur 30</div>
+        <div class="variant-code"><span>blur(30px) saturate(160%)</span><span class="variant-copy">→</span></div>
+      </div>
+      <div class="variant glass" data-glass="frosted">
+        <div class="variant-tag">v2 · default</div>
+        <div class="variant-title">标准</div>
+        <div class="variant-desc">opacity 0.55,blur 40</div>
+        <div class="variant-code"><span>blur(40px) saturate(180%)</span><span class="variant-copy">→</span></div>
+      </div>
+      <div class="variant glass" data-glass="frosted">
+        <div class="variant-tag">v3 · subtle shadow</div>
+        <div class="variant-title">微阴影</div>
+        <div class="variant-desc">opacity 0.55 + 0 1px 0 inset</div>
+        <div class="variant-code"><span>blur(40px) + inset highlight</span><span class="variant-copy">→</span></div>
+      </div>
+    </div>
+
+    <div class="comp-col">
+      <div class="comp-col-head">
+        <div class="comp-col-name">CrystalGlass</div>
+        <div class="comp-col-id">glass/type/crystal</div>
+        <div class="comp-col-desc">水晶玻璃。中等透明、对比增强、锐利描边。适合主操作面板、强调数据卡片。</div>
+      </div>
+      <div class="variant glass" data-glass="crystal">
+        <div class="variant-tag">v1 · thin border</div>
+        <div class="variant-title">细描边</div>
+        <div class="variant-desc">border 1px accent 0.12</div>
+        <div class="variant-code"><span>border: 1px solid accent-12</span><span class="variant-copy">→</span></div>
+      </div>
+      <div class="variant glass" data-glass="crystal">
+        <div class="variant-tag">v2 · strong border</div>
+        <div class="variant-title">强描边</div>
+        <div class="variant-desc">border 1px accent 0.20</div>
+        <div class="variant-code"><span>border: 1px solid accent-20</span><span class="variant-copy">→</span></div>
+      </div>
+      <div class="variant glass" data-glass="crystal">
+        <div class="variant-tag">v3 · accent glow</div>
+        <div class="variant-title">发光阴影</div>
+        <div class="variant-desc">0 0 32px accent 0.20</div>
+        <div class="variant-code"><span>box-shadow: 0 0 32px accent</span><span class="variant-copy">→</span></div>
+      </div>
+    </div>
+
+    <div class="comp-col">
+      <div class="comp-col-head">
+        <div class="comp-col-name">MistGlass</div>
+        <div class="comp-col-id">glass/type/mist</div>
+        <div class="comp-col-desc">薄雾玻璃。高不透明、强模糊、漂浮感。适合浮层、弹窗、Modal、侧边详情面板。</div>
+      </div>
+      <div class="variant glass" data-glass="mist">
+        <div class="variant-tag">v1 · light shadow</div>
+        <div class="variant-title">轻量漂浮</div>
+        <div class="variant-desc">shadow 0 4 12</div>
+        <div class="variant-code"><span>shadow-sm floating</span><span class="variant-copy">→</span></div>
+      </div>
+      <div class="variant glass" data-glass="mist">
+        <div class="variant-tag">v2 · default</div>
+        <div class="variant-title">标准</div>
+        <div class="variant-desc">shadow 0 24 48</div>
+        <div class="variant-code"><span>shadow-lg floating</span><span class="variant-copy">→</span></div>
+      </div>
+      <div class="variant glass" data-glass="mist">
+        <div class="variant-tag">v3 · dramatic</div>
+        <div class="variant-title">戏剧化</div>
+        <div class="variant-desc">shadow 0 32 80 + glow</div>
+        <div class="variant-code"><span>shadow-xl + glow</span><span class="variant-copy">→</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="interface-block">
+    <div class="interface-title">公开接口 · Public Interface</div>
+    <div class="interface-sub">每个模块只暴露 1-2 个生产方法。所有实现细节(状态、生命周期、DOM 操作)封装在内部。</div>
+    <table class="interface-table">
+      <thead>
+        <tr><th>Module</th><th>Method</th><th>Signature</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>ThemeSwitch</td><td>init()</td><td>() → void</td><td>从 localStorage 读取偏好,应用主题</td></tr>
+        <tr><td>ThemeSwitch</td><td>toggle()</td><td>() → void</td><td>切换 light/dark,带 0.4s 过渡</td></tr>
+        <tr><td>Glass</td><td>setContent()</td><td>(el, html) → void</td><td>替换玻璃容器内容</td></tr>
+        <tr><td>Glass</td><td>setOpacity()</td><td>(el, 0..1) → void</td><td>运行时调整透明度</td></tr>
+        <tr><td>EarthGlobe</td><td>render()</td><td>() → void</td><td>初始化 4 层 WebGL 场景:海洋+陆地+云+大气</td></tr>
+        <tr><td>EarthGlobe</td><td>setRotation()</td><td>(deg) → void</td><td>程序化控制 Y 旋转角度(度)</td></tr>
+        <tr><td>KPICard</td><td>setValue()</td><td>(v) → void</td><td>countup 动画到目标值</td></tr>
+        <tr><td>KPICard</td><td>setSparkline()</td><td>(data) → void</td><td>重绘 SVG 折线</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+</div><!-- /.app -->
+
+<!-- ============================== DEV CONSOLE ============================== -->
+<aside class="dev-console" id="devConsole">
+  <div class="dev-console-head">
+    <div class="dev-console-title">深度模块验证</div>
+    <div class="dev-console-sub">DELETION TEST</div>
+  </div>
+  <div class="dc-modules">
+    <div class="dc-module" data-module="glass">
+      <div class="dc-status-dot"></div>
+      <div class="dc-info">
+        <div class="dc-name">Glass</div>
+        <div class="dc-status">active · 15 instances</div>
+      </div>
+      <button class="dc-btn" data-action="toggle">卸载</button>
+    </div>
+    <div class="dc-module" data-module="earth">
+      <div class="dc-status-dot"></div>
+      <div class="dc-info">
+        <div class="dc-name">EarthGlobe</div>
+        <div class="dc-status">active · 4-layer FBM</div>
+      </div>
+      <button class="dc-btn" data-action="toggle">卸载</button>
+    </div>
+    <div class="dc-module" data-module="kpi">
+      <div class="dc-status-dot"></div>
+      <div class="dc-info">
+        <div class="dc-name">KPICard</div>
+        <div class="dc-status">active · 4 instances</div>
+      </div>
+      <button class="dc-btn" data-action="toggle">卸载</button>
+    </div>
+    <div class="dc-module" data-module="theme">
+      <div class="dc-status-dot"></div>
+      <div class="dc-info">
+        <div class="dc-name">ThemeSwitch</div>
+        <div class="dc-status">active</div>
+      </div>
+      <button class="dc-btn" data-action="toggle">卸载</button>
+    </div>
+  </div>
+  <button class="dc-reset" id="dcReset">全部恢复 · reset all</button>
+  <div class="dc-foot">点击「卸载」可移除该模块的所有副作用;视图层不需要任何修改。</div>
+</aside>
+
+<div class="toast" id="toast"></div>
+
+<!-- ================================================================
+     THREE.JS — for the EarthGlobe module
+     ================================================================ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+
+<script>
+/* ================================================================
+   Deep Module 1/4 · ThemeSwitch
+   Public surface: init() / toggle()
+   ================================================================ */
+const ThemeSwitch = (() => {
+  const KEY = 'aurora-theme';
+  const btn = document.getElementById('themeSwitch');
+  let installed = true;
+  let current = 'light';
+
+  function apply(theme) {
+    if (!installed) return;
+    current = theme;
+    document.documentElement.setAttribute('data-theme', theme);
+    try { localStorage.setItem(KEY, theme); } catch (e) {}
+  }
+
+  return {
+    init() {
+      let stored = 'light';
+      try { stored = localStorage.getItem(KEY) || 'light'; } catch (e) {}
+      apply(stored);
+      btn.addEventListener('click', () => ThemeSwitch.toggle());
+    },
+    toggle() {
+      apply(current === 'light' ? 'dark' : 'light');
+    },
+    _setInstalled(v) { installed = v; }
+  };
+})();
+
+/* ================================================================
+   Deep Module 2/4 · Glass
+   Public surface: setContent(el, html) / setOpacity(el, n)
+   ================================================================ */
+const Glass = (() => {
+  let installed = true;
+  const TYPES = {
+    frosted: { blur: 'blur(40px) saturate(180%)' },
+    crystal: { blur: 'blur(20px) saturate(200%) contrast(120%)' },
+    mist:    { blur: 'blur(60px) saturate(150%)' }
+  };
+
+  function applyTo(el) {
+    if (!installed) return;
+    const type = el.dataset.glass;
+    if (!type || !TYPES[type]) return;
+    el.style.backdropFilter = TYPES[type].blur;
+    el.style.webkitBackdropFilter = TYPES[type].blur;
+  }
+  function applyAll() {
+    document.querySelectorAll('.glass').forEach(applyTo);
+  }
+
+  return {
+    setContent(el, html) { if (el) el.innerHTML = html; },
+    setOpacity(el, n) {
+      if (!el) return;
+      el.style.background = `rgba(255,255,255,${n})`;
+    },
+    _init() { applyAll(); },
+    _setInstalled(v) {
+      installed = v;
+      if (!v) {
+        document.querySelectorAll('.glass').forEach(el => {
+          el.style.backdropFilter = 'none';
+          el.style.webkitBackdropFilter = 'none';
+          el.style.background = 'var(--bg)';
+          el.style.boxShadow = 'none';
+        });
+      } else {
+        document.querySelectorAll('.glass').forEach(el => {
+          el.style.background = '';
+          el.style.boxShadow = '';
+        });
+        applyAll();
+      }
+    }
+  };
+})();
+
+/* ================================================================
+   Deep Module 3/4 · EarthGlobe   ★ v2.5 真地球重做
+   Public surface: render() / setRotation(deg)
+
+   4-layer earth:
+     L1 ocean  r=1.00    MeshBasicMaterial deep blue
+     L2 land   r=1.001   ShaderMaterial · FBM noise 6 色阶
+     L3 clouds r=1.02    MeshBasicMaterial 程序化云图,自转 1.25x
+     L4 atmo   r=1.08    ShaderMaterial Fresnel + 时间脉动
+
+   三轴自转(频率互质):
+     Y 主 0.0008 rad/frame
+     X 漂 sin(now * 0.0001) * 0.0008
+     Z 漂 cos(now * 0.00007) * 0.05
+
+   6 城市(每城 3 层 + Sprite 文字标签)
+   4 弧线(大圆,平滑插值 + 弧高 lift)
+   ================================================================ */
+const EarthGlobe = (() => {
+
+  // ---- 6 cities ----
+  const CITIES = [
+    { name: '上海',   lat:  31.23, lng:  121.47, label: 'SHA' },
+    { name: '北京',   lat:  39.90, lng:  116.41, label: 'BJS' },
+    { name: '旧金山', lat:  37.77, lng: -122.42, label: 'SFO' },
+    { name: '伦敦',   lat:  51.51, lng:   -0.13, label: 'LON' },
+    { name: '东京',   lat:  35.68, lng:  139.69, label: 'TYO' },
+    { name: '新加坡', lat:   1.35, lng:  103.82, label: 'SIN' }
+  ];
+
+  // ---- 4 arcs(战略连线) ----
+  const ARCS = [
+    { from: '上海',   to: '伦敦'   },  // 跨欧亚
+    { from: '北京',   to: '旧金山' },  // 跨太平洋
+    { from: '东京',   to: '新加坡' },  // 东亚区域
+    { from: '伦敦',   to: '新加坡' }   // 跨大西洋 + 印度洋
+  ];
+
+  // ============== Shaders ==============
+
+  // L2 大陆 shader · FBM noise 6 色阶(deepOcean / shallow / coast / lowland / highland / ice)
+  const earthVS = `
+    varying vec3 vNormal;
+    varying vec3 vPos;
+    void main() {
+      vNormal = normalize(normalMatrix * normal);
+      vPos = position;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `;
+
+  const earthFS = `
+    varying vec3 vNormal;
+    varying vec3 vPos;
+    uniform float time;
+    uniform vec3 lightDir;
+    uniform float uAccent;
+
+    // ---- Hash + value noise + FBM (5 octaves) ----
+    float hash(vec3 p) {
+      p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+      p += dot(p, p.yxz + 33.33);
+      return fract((p.x + p.y) * p.z);
+    }
+    float noise(vec3 x) {
+      vec3 p = floor(x);
+      vec3 f = fract(x);
+      f = f*f*(3.0-2.0*f);
+      return mix(mix(mix(hash(p+vec3(0,0,0)), hash(p+vec3(1,0,0)), f.x),
+                     mix(hash(p+vec3(0,1,0)), hash(p+vec3(1,1,0)), f.x), f.y),
+                 mix(mix(hash(p+vec3(0,0,1)), hash(p+vec3(1,0,1)), f.x),
+                     mix(hash(p+vec3(0,1,1)), hash(p+vec3(1,1,1)), f.x), f.y), f.z);
+    }
+    float fbm(vec3 p) {
+      float v = 0.0;
+      float a = 0.5;
+      for (int i = 0; i < 5; i++) {
+        v += a * noise(p);
+        p *= 2.0;
+        a *= 0.5;
+      }
+      return v;
+    }
+
+    void main() {
+      vec3 dir = normalize(vPos);
+      float n  = fbm(dir * 3.0);
+      float n2 = fbm(dir * 7.0 + 11.0);
+      float land = smoothstep(0.50, 0.58, n + 0.06 * n2);
+
+      // 6 color tiers · 蓝紫调(Aurora 蓝紫 #818cf8)
+      vec3 deepOcean   = vec3(0.05, 0.15, 0.30);   // 深海
+      vec3 shallow     = vec3(0.10, 0.25, 0.42);   // 浅海
+      vec3 coast       = vec3(0.22, 0.38, 0.45);   // 海岸
+      vec3 lowland     = vec3(0.36, 0.50, 0.45);   // 低地(带紫调)
+      vec3 highland    = vec3(0.62, 0.58, 0.52);   // 高地(沙石)
+      vec3 ice         = vec3(0.92, 0.94, 0.96);   // 极冰
+
+      vec3 color;
+      if (land < 0.02) {
+        // 深海 + 浅海
+        float d = fbm(dir * 5.0);
+        color = mix(deepOcean, shallow, smoothstep(0.0, 0.5, d));
+      } else if (land < 0.10) {
+        // 浅海 → 海岸
+        color = mix(shallow, coast, land / 0.10);
+      } else if (land < 0.30) {
+        // 海岸 → 低地
+        color = mix(coast, lowland, (land - 0.10) / 0.20);
+      } else if (land < 0.70) {
+        // 低地 → 高地
+        color = mix(lowland, highland, (land - 0.30) / 0.40);
+      } else {
+        color = highland;
+      }
+      // 极地冰盖
+      float lat = abs(dir.y);
+      color = mix(color, ice, smoothstep(0.78, 0.92, lat));
+
+      // 方向光(报告强制)
+      float diff = max(0.0, dot(vNormal, lightDir));
+      float ambient = 0.35;
+      color *= (ambient + 0.75 * diff);
+
+      // Fresnel 边光(蓝紫调)
+      float rim = 1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0)));
+      rim = pow(rim, 1.5);
+      color += rim * vec3(0.50, 0.55, 0.97) * 0.22;
+
+      gl_FragColor = vec4(color, 1.0);
+    }
+  `;
+
+  // L4 大气 shader · Fresnel + 时间脉动
+  const atmoVS = `
+    varying vec3 vNormal;
+    void main() {
+      vNormal = normalize(normalMatrix * normal);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `;
+  const atmoFS = `
+    varying vec3 vNormal;
+    uniform float uTime;
+    uniform vec3 uColor;
+    void main() {
+      float intensity = pow(0.72 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.2);
+      float pulse = 0.85 + 0.15 * sin(uTime * 0.7);
+      gl_FragColor = vec4(uColor, 1.0) * intensity * pulse;
+    }
+  `;
+
+  // ============== Helpers ==============
+
+  function latLngToVec3(lat, lng, r) {
+    const phi   = (90 - lat) * Math.PI / 180;
+    const theta = (lng + 180) * Math.PI / 180;
+    return new THREE.Vector3(
+      -r * Math.sin(phi) * Math.cos(theta),
+       r * Math.cos(phi),
+       r * Math.sin(phi) * Math.sin(theta)
+    );
+  }
+
+  // 程序化云纹理(noise → 白点斑块)
+  function makeCloudTexture() {
+    const c = document.createElement('canvas');
+    c.width = 512; c.height = 256;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, 512, 256);
+    const data = ctx.getImageData(0, 0, 512, 256);
+    for (let y = 0; y < 256; y++) {
+      for (let x = 0; x < 512; x++) {
+        // 简单 hash + smooth
+        const n =
+          0.5 + 0.5 * Math.sin(x * 0.04 + Math.cos(y * 0.05)) *
+                   Math.cos(x * 0.02 - y * 0.03 + Math.sin(x * 0.01));
+        const v = Math.max(0, n - 0.45) * 4;
+        const i = (y * 512 + x) * 4;
+        data.data[i]     = 255;
+        data.data[i + 1] = 255;
+        data.data[i + 2] = 255;
+        data.data[i + 3] = Math.min(255, v * 255);
+      }
+    }
+    ctx.putImageData(data, 0, 0);
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = THREE.RepeatWrapping;
+    return tex;
+  }
+
+  // Sprite 城市文字标签
+  function makeLabel(text) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128; canvas.height = 32;
+    const ctx = canvas.getContext('2d');
+    // 背景胶囊
+    ctx.fillStyle = 'rgba(129,140,248,0.18)';
+    ctx.beginPath();
+    ctx.roundRect(8, 6, 112, 20, 10);
+    ctx.fill();
+    // 描边
+    ctx.strokeStyle = 'rgba(165,180,252,0.55)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(8, 6, 112, 20, 10);
+    ctx.stroke();
+    // 文字
+    ctx.font = '600 12px JetBrains Mono, monospace';
+    ctx.fillStyle = 'rgba(245,245,247,0.95)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 64, 16);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.needsUpdate = true;
+    return new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+  }
+
+  // 弧线几何(大圆 + 弧高 lift)
+  function makeArc(a, b, lift = 0.20, r = 1.01) {
+    const va = latLngToVec3(a.lat, a.lng, r);
+    const vb = latLngToVec3(b.lat, b.lng, r);
+    const pts = [];
+    const segs = Math.max(24, Math.floor(va.distanceTo(vb) * 30));
+    for (let i = 0; i <= segs; i++) {
+      const t = i / segs;
+      const v = new THREE.Vector3().lerpVectors(va, vb, t)
+        .normalize()
+        .multiplyScalar(r + Math.sin(t * Math.PI) * lift);
+      pts.push(v);
+    }
+    const geom = new THREE.BufferGeometry().setFromPoints(pts);
+    const mat = new THREE.LineBasicMaterial({
+      color: 0x818cf8, transparent: true, opacity: 0.55
+    });
+    return new THREE.Line(geom, mat);
+  }
+
+  // ============== Instance ==============
+
+  class Instance {
+    constructor(container) {
+      this.container = container;
+      this.rotation = 0;
+      this.userRotX = 0;
+      this.userRotY = 0;
+      this.rotationVel = { x: 0.0001, y: 0.0008 };
+      this.autoRotate = true;
+      this.isDragging = false;
+      this.lastMouse = { x: 0, y: 0 };
+      this.frameId = null;
+      this.scene = null;
+      this.camera = null;
+      this.renderer = null;
+      this.earth = null;          // 旋转容器(Y 主自转)
+      this.driftGroup = null;     // 三轴漂移容器
+      this.cloudGroup = null;     // 云层容器(独立自转)
+      this.atmo = null;
+      this.clouds = null;
+      this.cityMarkers = [];
+      this.arcLines = [];
+      this._resizeObserver = null;
+    }
+
+    render() {
+      const w = this.container.clientWidth;
+      const h = this.container.clientHeight;
+
+      this.scene = new THREE.Scene();
+      this.camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 1000);
+      this.camera.position.set(0, 0, 3.2);
+
+      this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      this.renderer.setSize(w, h);
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      this.renderer.setClearColor(0x000000, 0);
+      this.container.appendChild(this.renderer.domElement);
+
+      // =========== L1 海洋 ===========
+      const ocean = new THREE.Mesh(
+        new THREE.SphereGeometry(1.0, 64, 48),
+        new THREE.MeshBasicMaterial({ color: 0x0a1f3d })
+      );
+      this.scene.add(ocean);
+
+      // =========== L2 陆地(FBM 6 色阶) ===========
+      // driftGroup 承载 三轴漂移(X/Z)· earth(inside)承载 Y 主自转
+      this.driftGroup = new THREE.Group();
+      this.scene.add(this.driftGroup);
+
+      this.earth = new THREE.Group();
+      this.driftGroup.add(this.earth);
+
+      const earthMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(1.001, 64, 48),
+        new THREE.ShaderMaterial({
+          vertexShader: earthVS,
+          fragmentShader: earthFS,
+          uniforms: {
+            time:      { value: 0 },
+            lightDir:  { value: new THREE.Vector3(1, 0.5, 0.8).normalize() },
+            uAccent:   { value: 0 }
+          }
+        })
+      );
+      this.earth.add(earthMesh);
+
+      // =========== L3 云 ===========
+      this.cloudGroup = new THREE.Group();
+      this.driftGroup.add(this.cloudGroup);
+
+      this.clouds = new THREE.Mesh(
+        new THREE.SphereGeometry(1.02, 64, 48),
+        new THREE.MeshBasicMaterial({
+          map: makeCloudTexture(),
+          transparent: true,
+          opacity: 0.42,
+          depthWrite: false
+        })
+      );
+      this.cloudGroup.add(this.clouds);
+
+      // =========== L4 大气(Fresnel + 时间脉动) ===========
+      this.atmo = new THREE.Mesh(
+        new THREE.SphereGeometry(1.08, 64, 48),
+        new THREE.ShaderMaterial({
+          vertexShader: atmoVS,
+          fragmentShader: atmoFS,
+          uniforms: {
+            uTime:  { value: 0 },
+            uColor: { value: new THREE.Color(0x818cf8) }
+          },
+          side: THREE.BackSide,
+          blending: THREE.AdditiveBlending,
+          transparent: true,
+          depthWrite: false
+        })
+      );
+      this.scene.add(this.atmo);
+
+      // =========== 城市(6 个 × 3 层 + Sprite 标签) ===========
+      CITIES.forEach((c) => {
+        const pos = latLngToVec3(c.lat, c.lng, 1.005);
+
+        // 1) 实心点
+        const dot = new THREE.Mesh(
+          new THREE.SphereGeometry(0.014, 12, 12),
+          new THREE.MeshBasicMaterial({ color: 0xffffff })
+        );
+        dot.position.copy(pos);
+        this.earth.add(dot);
+
+        // 2) 静态光圈
+        const ring = new THREE.Mesh(
+          new THREE.RingGeometry(0.020, 0.028, 32),
+          new THREE.MeshBasicMaterial({
+            color: 0x818cf8, transparent: true,
+            opacity: 0.7, side: THREE.DoubleSide, depthWrite: false
+          })
+        );
+        ring.position.copy(pos);
+        ring.lookAt(0, 0, 0);
+        this.earth.add(ring);
+
+        // 3) 脉冲环(动态)
+        const pulse = new THREE.Mesh(
+          new THREE.RingGeometry(0.024, 0.030, 32),
+          new THREE.MeshBasicMaterial({
+            color: 0xa5b4fc, transparent: true,
+            opacity: 0.0, side: THREE.DoubleSide, depthWrite: false
+          })
+        );
+        pulse.position.copy(pos);
+        pulse.lookAt(0, 0, 0);
+        this.earth.add(pulse);
+
+        // 4) Sprite 文字标签
+        const sprite = makeLabel(c.label);
+        sprite.position.copy(pos.clone().multiplyScalar(1.12));
+        sprite.scale.set(0.22, 0.055, 1);
+        this.earth.add(sprite);
+
+        this.cityMarkers.push({ dot, ring, pulse, sprite, base: pos.clone() });
+      });
+
+      // =========== 弧线(4 段,大圆 + 弧高) ===========
+      const cityByName = Object.fromEntries(CITIES.map(c => [c.name, c]));
+      ARCS.forEach(({ from, to }) => {
+        const line = makeArc(cityByName[from], cityByName[to], 0.22, 1.012);
+        this.earth.add(line);
+        this.arcLines.push(line);
+      });
+
+      // =========== 拖动交互(双轴自由,X 不锁) ===========
+      const canvas = this.renderer.domElement;
+      const onDown = (x, y) => {
+        this.isDragging = true;
+        this.autoRotate = false;
+        this.lastMouse.x = x;
+        this.lastMouse.y = y;
+      };
+      const onMove = (x, y) => {
+        if (!this.isDragging) return;
+        const dx = x - this.lastMouse.x;
+        const dy = y - this.lastMouse.y;
+        // 双轴更新
+        this.userRotY += dx * 0.005;
+        this.userRotX = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, this.userRotX + dy * 0.005));
+        // 记录线速度(惯性)
+        this.rotationVel.y = dx * 0.0005;
+        this.rotationVel.x = dy * 0.0005;
+        this.lastMouse.x = x;
+        this.lastMouse.y = y;
+      };
+      const onUp = () => { this.isDragging = false; };
+
+      canvas.addEventListener('mousedown', e => onDown(e.clientX, e.clientY));
+      window.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
+      window.addEventListener('mouseup', onUp);
+
+      canvas.addEventListener('touchstart', e => {
+        if (e.touches.length === 1) onDown(e.touches[0].clientX, e.touches[0].clientY);
+      });
+      canvas.addEventListener('touchmove', e => {
+        if (e.touches.length === 1) onMove(e.touches[0].clientX, e.touches[0].clientY);
+      });
+      canvas.addEventListener('touchend', onUp);
+
+      // =========== Resize ===========
+      const ro = new ResizeObserver(() => this._onResize());
+      ro.observe(this.container);
+      this._resizeObserver = ro;
+
+      this._animate();
+    }
+
+    _onResize() {
+      if (!this.renderer || !this.container) return;
+      const w = this.container.clientWidth;
+      const h = this.container.clientHeight;
+      this.camera.aspect = w / h;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize(w, h);
+    }
+
+    _animate() {
+      this.frameId = requestAnimationFrame(() => this._animate());
+      if (!this.earth) return;
+
+      const now = performance.now();
+
+      // =========== 三轴自转(强制规范,频率互质) ===========
+      // Y 主自转(快,~0.0008 rad/帧)
+      // X 极慢漂移 sin(now * 0.0001) * 0.0008
+      // Z 更慢漂移 cos(now * 0.00007) * 0.05
+
+      if (!this.isDragging) {
+        // 惯性衰减
+        this.rotationVel.y *= 0.992;
+        this.rotationVel.x *= 0.992;
+        // 持续 Y 主自转
+        this.userRotY += this.rotationVel.y + 0.0008;
+        this.userRotX += this.rotationVel.x;
+      }
+      this.earth.rotation.y = this.userRotY + this.rotation;
+      this.earth.rotation.x = this.userRotX;
+      this.driftGroup.rotation.x = Math.sin(now * 0.0001) * 0.08;
+      this.driftGroup.rotation.z = Math.cos(now * 0.00007) * 0.05;
+
+      // =========== 云层(自转 1.25x) ===========
+      this.cloudGroup.rotation.y += 0.0010;
+
+      // =========== 大气脉动 ===========
+      if (this.atmo) this.atmo.material.uniforms.uTime.value = now * 0.001;
+
+      // =========== 脉冲环 ===========
+      const t = now * 0.002;
+      this.cityMarkers.forEach((m, i) => {
+        const phase = (t + i * 0.35) % 2.5;
+        const s = 1 + phase * 0.5;
+        m.pulse.scale.set(s, s, s);
+        m.pulse.material.opacity = Math.max(0, 0.55 - phase * 0.22);
+      });
+
+      // shader 时间(暂未用,可扩展)
+      this.earth.children.forEach(ch => {
+        if (ch.material && ch.material.uniforms && ch.material.uniforms.time) {
+          ch.material.uniforms.time.value = now * 0.0005;
+        }
+      });
+
+      this.renderer.render(this.scene, this.camera);
+    }
+
+    setRotation(deg) {
+      this.rotation = deg * Math.PI / 180;
+    }
+
+    destroy() {
+      if (this.frameId) cancelAnimationFrame(this.frameId);
+      if (this._resizeObserver) this._resizeObserver.disconnect();
+      if (this.renderer) {
+        this.renderer.dispose();
+        if (this.renderer.forceContextLoss) this.renderer.forceContextLoss();
+        const c = this.renderer.domElement;
+        if (c && c.parentNode) c.parentNode.removeChild(c);
+      }
+      // 释放几何/纹理
+      this.scene && this.scene.traverse(o => {
+        if (o.geometry) o.geometry.dispose && o.geometry.dispose();
+        if (o.material) {
+          if (Array.isArray(o.material)) o.material.forEach(m => m.dispose && m.dispose());
+          else if (o.material.dispose) o.material.dispose();
+          if (o.material.map) o.material.map.dispose && o.material.map.dispose();
+        }
+      });
+      this.scene = null;
+      this.earth = null;
+      this.driftGroup = null;
+      this.cloudGroup = null;
+      this.atmo = null;
+      this.clouds = null;
+      this.cityMarkers = [];
+      this.arcLines = [];
+      this.frameId = null;
+    }
+  }
+
+  // ============== Public surface (2 methods) ==============
+
+  let instance = null;
+
+  return {
+    render() {
+      const container = document.getElementById('earthContainer');
+      if (!container || instance) return;
+      container.innerHTML = '';
+      instance = new Instance(container);
+      instance.render();
+    },
+    setRotation(deg) {
+      if (instance) instance.setRotation(deg);
+    },
+    // ---- test hooks ----
+    _destroy() {
+      if (instance) {
+        instance.destroy();
+        instance = null;
+      }
+      const container = document.getElementById('earthContainer');
+      if (container) {
+        container.innerHTML = `
+          <div class="earth-fallback">
+            <div class="fb-circle"></div>
+            <div>EarthGlobe · MODULE UNINSTALLED</div>
+            <div style="color:var(--text-2);font-size:10px;margin-top:4px;">调用 .render() 重新装载</div>
+          </div>
+        `;
+      }
+    },
+    _reinstantiate() {
+      const container = document.getElementById('earthContainer');
+      if (!container) return;
+      container.innerHTML = '';
+      const inst = new Instance(container);
+      inst.render();
+      instance = inst;
+    }
+  };
+})();
+
+/* ================================================================
+   Deep Module 4/4 · KPICard
+   Public surface: setValue(el, v) / setSparkline(el, data)
+   ================================================================ */
+const KPICard = (() => {
+  let installed = true;
+
+  function formatValue(current, target, decimals, prefix) {
+    const v = decimals != null ? current.toFixed(decimals) : Math.round(current).toLocaleString('en-US');
+    return (prefix || '') + v;
+  }
+
+  function buildSparklineSVG(data) {
+    if (!data || data.length < 2) return '';
+    const w = 200, h = 32, padY = 4;
+    const max = Math.max(...data);
+    const min = Math.min(...data);
+    const range = max - min || 1;
+    const stepX = w / (data.length - 1);
+    const points = data.map((v, i) => {
+      const x = i * stepX;
+      const y = h - padY - ((v - min) / range) * (h - padY * 2);
+      return [x, y];
+    });
+    const linePath = points.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+    const areaPath = linePath + ` L${w},${h} L0,${h} Z`;
+    const last = points[points.length - 1];
+    const gradId = 'sg-' + Math.random().toString(36).slice(2, 9);
+    return `
+      <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path class="spark-baseline" d="M0,${h - 1} L${w},${h - 1}"/>
+        <path class="spark-area" d="${areaPath}" fill="url(#${gradId})"/>
+        <path class="spark-line" d="${linePath}"/>
+        <circle class="spark-dot" cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2"/>
+      </svg>
+    `;
+  }
+
+  function setSparklineTo(el, data) {
+    if (!el || !data) return;
+    el.innerHTML = buildSparklineSVG(data);
+  }
+
+  function setValueTo(el, target) {
+    if (!el) return;
+    const decimals = el.dataset.kpiDecimals != null ? parseInt(el.dataset.kpiDecimals) : null;
+    const prefix = el.dataset.kpiPrefix || '';
+    if (!installed) {
+      el.textContent = formatValue(target, target, decimals, prefix);
+      return;
+    }
+    const from = 0;
+    const duration = 900;
+    const start = performance.now();
+    const ease = t => 1 - Math.pow(1 - t, 3);
+    function step(now) {
+      const t = Math.min(1, (now - start) / duration);
+      const v = from + (target - from) * ease(t);
+      el.textContent = formatValue(v, target, decimals, prefix);
+      if (t < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function initAll() {
+    document.querySelectorAll('[data-kpi-value]').forEach(el => {
+      const v = parseFloat(el.dataset.kpiValue);
+      setValueTo(el, v);
+    });
+    document.querySelectorAll('[data-kpi-sparkline]').forEach(el => {
+      const data = el.dataset.kpiSparkline.split(',').map(Number);
+      setSparklineTo(el, data);
+    });
+  }
+
+  return {
+    setValue(el, v) { setValueTo(el, v); },
+    setSparkline(el, data) { setSparklineTo(el, data); },
+    _init() { initAll(); },
+    _setInstalled(v) {
+      installed = v;
+      if (!v) {
+        document.querySelectorAll('[data-kpi-value]').forEach(el => {
+          const target = parseFloat(el.dataset.kpiValue);
+          const decimals = el.dataset.kpiDecimals != null ? parseInt(el.dataset.kpiDecimals) : null;
+          const prefix = el.dataset.kpiPrefix || '';
+          el.textContent = formatValue(target, target, decimals, prefix);
+        });
+        document.querySelectorAll('[data-kpi-sparkline]').forEach(el => {
+          el.innerHTML = '<svg viewBox="0 0 200 32"><path d="M0,16 L200,16" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,2"/></svg>';
+        });
+      } else {
+        initAll();
+      }
+    }
+  };
+})();
+
+/* ================================================================
+   App: Tab switching, Dev Console, Toast
+   ================================================================ */
+const App = (() => {
+
+  function initTabs() {
+    const tabs = document.querySelectorAll('.tab');
+    const panes = document.querySelectorAll('.pane');
+    tabs.forEach(t => {
+      t.addEventListener('click', () => {
+        const target = t.dataset.tab;
+        tabs.forEach(x => x.classList.toggle('active', x === t));
+        panes.forEach(p => p.classList.toggle('active', p.dataset.pane === target));
+        if (target === 'dashboard') {
+          setTimeout(() => EarthGlobe.render(), 60);
+        }
+      });
+    });
+  }
+
+  function initDevConsole() {
+    const state = { glass: true, earth: true, kpi: true, theme: true };
+    const counts = {
+      glass: document.querySelectorAll('.glass').length,
+      earth: 1,
+      kpi:   document.querySelectorAll('[data-kpi-value]').length
+    };
+    const labels = {
+      glass: { name: 'Glass',        on: `active · ${counts.glass} instances`, off: 'disabled · fallback' },
+      earth: { name: 'EarthGlobe',   on: 'active · 4-layer FBM',               off: 'disabled · fallback' },
+      kpi:   { name: 'KPICard',      on: `active · ${counts.kpi} instances`,   off: 'disabled · static' },
+      theme: { name: 'ThemeSwitch',  on: 'active',                              off: 'disabled' }
+    };
+
+    function refreshUI() {
+      document.querySelectorAll('.dc-module').forEach(row => {
+        const mod = row.dataset.module;
+        const on = state[mod];
+        row.classList.toggle('disabled', !on);
+        const btn = row.querySelector('.dc-btn');
+        const status = row.querySelector('.dc-status');
+        btn.textContent = on ? '卸载' : '恢复';
+        status.textContent = on ? labels[mod].on : labels[mod].off;
+      });
+    }
+
+    function setModule(mod, on) {
+      state[mod] = on;
+      if (mod === 'glass') Glass._setInstalled(on);
+      else if (mod === 'earth') {
+        if (on) EarthGlobe._reinstantiate();
+        else EarthGlobe._destroy();
+      }
+      else if (mod === 'kpi') KPICard._setInstalled(on);
+      else if (mod === 'theme') {
+        ThemeSwitch._setInstalled(on);
+        if (on) ThemeSwitch.toggle();
+      }
+      refreshUI();
+      showToast(`${labels[mod].name} · ${on ? '已恢复' : '已卸载'}`);
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => t.classList.remove('show'), 1800);
+    }
+
+    document.querySelectorAll('.dc-module').forEach(row => {
+      const mod = row.dataset.module;
+      const btn = row.querySelector('.dc-btn');
+      btn.addEventListener('click', () => setModule(mod, !state[mod]));
+    });
+
+    document.getElementById('dcReset').addEventListener('click', () => {
+      Object.keys(state).forEach(k => { if (!state[k]) setModule(k, true); });
+      showToast('全部模块已恢复');
+    });
+
+    refreshUI();
+    return { showToast };
+  }
+
+  function initBarChart() {
+    const data = [38, 52, 41, 67, 58, 72, 84, 92];
+    const max = Math.max(...data);
+    const el = document.getElementById('barChart1');
+    if (!el) return;
+    el.innerHTML = data.map((v, i) => {
+      const h = Math.max(4, (v / max) * 60);
+      return `<div class="bar" style="height:${h}px" data-v="${v}"></div>`;
+    }).join('');
+  }
+
+  return {
+    init() {
+      initTabs();
+      initBarChart();
+      const dc = initDevConsole();
+      ThemeSwitch.init();
+      Glass._init();
+      KPICard._init();
+      setTimeout(() => dc.showToast('v2.5 · 4 模块已装载 · FBM 真地球 · 点卸载测试'), 800);
+    }
+  };
+})();
+
+document.addEventListener('DOMContentLoaded', () => App.init());
+</script>
+</body>
+</html>
