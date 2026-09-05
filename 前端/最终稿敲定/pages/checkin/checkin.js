@@ -1,4 +1,5 @@
 const app = getApp();
+const user = require('../../utils/user.js');
 
 const todayStr = () => {
   const d = new Date();
@@ -38,7 +39,8 @@ Page({
     note: '',
     checking: false,
     history: [],
-    calendar: []
+    calendar: [],
+    userInfo: { nickname: '我', avatar: '' }
   },
 
   onLoad() {
@@ -58,7 +60,14 @@ Page({
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 0 });
     }
+    // 同步用户资料(头像/昵称)— 跨页切换保持最新
+    this.setData({ userInfo: user.getUserInfo() });
     this.loadAll();
+  },
+
+  // nav 头像点击 → 去设置页编辑资料
+  goSettings() {
+    wx.navigateTo({ url: '/pages/settings/settings' });
   },
 
   async loadAll() {
@@ -77,7 +86,7 @@ Page({
   },
 
   loadHistory() {
-    app.request({ url: '/checkins?days=30' })
+    app.request({ url: '/checkins/?days=30' })
       .then(r => {
         const items = r.items || [];
         const checkedDates = new Set(items.map(it => it.date));
@@ -110,7 +119,7 @@ Page({
     if (this.data.checking || this.data.todayChecked) return;
     this.setData({ checking: true });
     app.request({
-      url: '/checkins',
+      url: '/checkins/',
       method: 'POST',
       data: { note: this.data.note || null, auto: false }
     }).then(r => {
@@ -136,6 +145,7 @@ Page({
         }
       }
       this.loadAll();
+      app.bumpDataVersion();
     }).catch(err => {
       this.setData({ checking: false });
       wx.showToast({ title: '打卡失败: ' + (err.response?.data?.detail || err.message), icon: 'none' });

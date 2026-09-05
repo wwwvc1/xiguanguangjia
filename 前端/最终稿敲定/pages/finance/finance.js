@@ -44,7 +44,7 @@ Page({
 
     // 加载月度交易列表
     app.request({
-      url: `/transactions?year=${currentYear}&month=${currentMonth}`
+      url: `/transactions/?year=${currentYear}&month=${currentMonth}`
     }).then(records => {
       this.setData({
         records: records.map(r => ({
@@ -104,7 +104,7 @@ Page({
     const time = now.toISOString().slice(0, 19).replace('T', ' ');
 
     app.request({
-      url: '/transactions',
+      url: '/transactions/',
       method: 'POST',
       data: {
         category: formData.category,
@@ -117,6 +117,7 @@ Page({
       this.loadData();
       this.setData({ showAdd: false });
       wx.showToast({ title: '已添加', icon: 'success' });
+      app.bumpDataVersion();
     }).catch(err => {
       console.error('添加失败:', err);
       wx.showToast({ title: '添加失败', icon: 'none' });

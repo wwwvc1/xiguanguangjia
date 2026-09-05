@@ -717,11 +717,11 @@ def get_dashboard_stats(admin: dict = Depends(get_current_admin)):
             cursor.execute("SELECT id, name FROM llm_models WHERE is_system_default = 1 LIMIT 1")
             default = cursor.fetchone()
 
-            # 知识库
-            cursor.execute("SELECT COUNT(*) AS c FROM knowledge_documents")
-            kb_docs = cursor.fetchone()["c"]
-            cursor.execute("SELECT COALESCE(SUM(chunk_count), 0) AS c FROM knowledge_documents")
-            kb_chunks = cursor.fetchone()["c"]
+            # 知识库(同时含静态 + 上传,以 Chroma 为权威源)
+            from utils.ai_rag import get_rag_engine
+            chroma_docs = get_rag_engine().list_documents()
+            kb_docs = len(chroma_docs)
+            kb_chunks = sum(d.get("chunk_count", 0) for d in chroma_docs)
 
             # 日志
             cursor.execute("SELECT COUNT(*) AS c FROM operation_logs WHERE created_at >= %s", (seven_days_ago,))

@@ -1,4 +1,5 @@
 const app = getApp();
+const user = require('../../utils/user.js');
 
 const ALL_SECTIONS = [
   { key: 'finance', name: '今日结余' },
@@ -28,7 +29,9 @@ Page({
     topInsight: '',
     allInsights: [],
     lastDataVer: -1,
-    streak: 0
+    streak: 0,
+    userInfo: { nickname: '我', avatar: '' },
+    todayDateLabel: ''
   },
 
   onLoad() {
@@ -57,6 +60,16 @@ Page({
     }
     // 自动打卡(每天进首页时触发,后端去重)
     this.maybeAutoCheckin();
+    // 同步用户资料(头像/昵称)
+    const dateLabel = (() => {
+      const d = new Date();
+      const weekdays = ['周日','周一','周二','周三','周四','周五','周六'];
+      return `${d.getMonth() + 1}月${d.getDate()}日 · ${weekdays[d.getDay()]}`;
+    })();
+    this.setData({
+      userInfo: user.getUserInfo(),
+      todayDateLabel: dateLabel
+    });
     // 数据版本号变化 → 重新拉数据(由其他页面 CRUD 触发)
     const currentVer = app.globalData.dataVersion || 0;
     if (this.data.lastDataVer !== currentVer) {
@@ -77,12 +90,13 @@ Page({
       // 标记今天已发(立即标记,即使请求失败也不重复尝试)
       wx.setStorageSync('auto_checkin_day', todayStr);
       app.request({
-        url: '/checkins',
+        url: '/checkins/',
         method: 'POST',
         data: { auto: true }
       }).then(r => {
         if (r && r.streak !== undefined) {
           this.setData({ streak: r.streak });
+          app.bumpDataVersion();
         }
       }).catch(() => {
         // 静默失败(不打扰用户)
@@ -102,8 +116,8 @@ Page({
       const today = new Date();
       const dateStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
 
-      const todos = await app.request({ url: `/todos?done=false&date=${dateStr}` });
-      const completedToday = await app.request({ url: `/todos?done=true&date=${dateStr}` });
+      const todos = await app.request({ url: `/todos/?done=false&date=${dateStr}` });
+      const completedToday = await app.request({ url: `/todos/?done=true&date=${dateStr}` });
 
       const totalToday = (todos || []).length + (completedToday || []).length;
       const completionRate = totalToday > 0
@@ -118,7 +132,17 @@ Page({
         todayNet: dailyStats.net
       });
 
-      const meals = await app.request({ url: '/meals' });
+      // 主动拉 streak(不依赖 maybeAutoCheckin 的副作用,确保首页 streak 始终是最新的)
+      try {
+        const streak = await app.request({ url: '/checkins/streak' });
+        if (streak && typeof streak.streak === 'number') {
+          this.setData({ streak: streak.streak });
+        }
+      } catch (e) {
+        console.warn('加载 streak 失败:', e);
+      }
+
+      const meals = await app.request({ url: '/meals/' });
       const todayCalories = (meals || [])
         .filter(m => m.date === dateStr)
         .reduce((sum, m) => sum + (Number(m.total_calories) || 0), 0);
@@ -253,6 +277,7 @@ Page({
       data: { home_layout: this.data.layout }
     }).then(() => {
       wx.showToast({ title: '已保存', icon: 'success' });
+      app.bumpDataVersion();
     }).catch(() => {
       wx.showToast({ title: '保存失败', icon: 'none' });
     });
@@ -270,6 +295,8 @@ Page({
       url: `/todos/${id}`,
       method: 'PUT',
       data: { done: !todo.done }
+    }).then(() => {
+      app.bumpDataVersion();
     }).catch(err => {
       console.error('更新待办失败:', err);
       this.setData({ todos: this.data.todos });

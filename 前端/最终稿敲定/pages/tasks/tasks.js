@@ -50,12 +50,12 @@ Page({
 
   loadData() {
     // 加载全部未完成待办
-    app.request({ url: '/todos?done=false' })
+    app.request({ url: '/todos/?done=false' })
       .then(todoList => this.setData({ todoList }))
       .catch(() => this.setData({ todoList: [] }));
 
     // 加载目标
-    app.request({ url: '/goals' })
+    app.request({ url: '/goals/' })
       .then(goalList => this.setData({ goalList }))
       .catch(() => this.setData({ goalList: [] }));
 
@@ -63,7 +63,7 @@ Page({
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth() + 1;
-    app.request({ url: `/transactions?year=${year}&month=${month}` })
+    app.request({ url: `/transactions/?year=${year}&month=${month}` })
       .then(records => {
         const financeList = (records || []).map(r => ({
           ...r,
@@ -177,7 +177,7 @@ Page({
       }
       promise = isEdit
         ? app.request({ url: `/todos/${editId}`, method: 'PUT', data: { text: formData.text.trim() } })
-        : app.request({ url: '/todos', method: 'POST', data: { text: formData.text.trim() } });
+        : app.request({ url: '/todos/', method: 'POST', data: { text: formData.text.trim() } });
     } else if (activeTab === 'goal') {
       if (!formData.name || !formData.name.trim()) {
         wx.showToast({ title: '请输入目标名称', icon: 'none' });
@@ -189,7 +189,7 @@ Page({
       };
       promise = isEdit
         ? app.request({ url: `/goals/${editId}`, method: 'PUT', data: payload })
-        : app.request({ url: '/goals', method: 'POST', data: payload });
+        : app.request({ url: '/goals/', method: 'POST', data: payload });
     } else if (activeTab === 'finance') {
       if (!formData.category || !formData.category.trim()) {
         wx.showToast({ title: '请输入分类', icon: 'none' });
@@ -206,7 +206,7 @@ Page({
       };
       promise = isEdit
         ? app.request({ url: `/transactions/${editId}`, method: 'PUT', data: payload })
-        : app.request({ url: '/transactions', method: 'POST', data: payload });
+        : app.request({ url: '/transactions/', method: 'POST', data: payload });
     }
 
     if (!promise) return;
@@ -215,6 +215,7 @@ Page({
       this.loadData();
       this.setData({ showAdd: false });
       wx.showToast({ title: isEdit ? '已更新' : '已添加', icon: 'success' });
+      app.bumpDataVersion();
     }).catch((err) => {
       console.error('保存失败:', err);
       wx.showToast({ title: '保存失败', icon: 'none' });
@@ -230,7 +231,7 @@ Page({
   toggleTodo(e) {
     const id = e.currentTarget.dataset.id;
     app.request({ url: `/todos/${id}`, method: 'PUT', data: { done: true } })
-      .then(() => this.loadData())
+      .then(() => { this.loadData(); app.bumpDataVersion(); })
       .catch(() => wx.showToast({ title: '更新失败', icon: 'none' }));
   },
 

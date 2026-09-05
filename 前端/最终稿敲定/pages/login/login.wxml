@@ -16,14 +16,54 @@
       <text class="app-desc">管理你的每一个好习惯</text>
     </view>
 
-    <!-- 登录按钮 -->
-    <view class="login-actions">
+    <!-- 登录方式 tab -->
+    <view class="login-tabs">
+      <view class="tab-item {{loginMode === 'wechat' ? 'active' : ''}}" bindtap="switchMode" data-mode="wechat">微信登录</view>
+      <view class="tab-item {{loginMode === 'password' ? 'active' : ''}}" bindtap="switchMode" data-mode="password">账号密码</view>
+    </view>
+
+    <!-- 微信登录 -->
+    <view class="login-actions" wx:if="{{loginMode === 'wechat'}}">
       <button class="wechat-login-btn" bindtap="onWechatLogin" loading="{{isLoading}}">
         <text wx:if="{{!isLoading}}">微信一键登录</text>
         <text wx:if="{{isLoading}}">登录中...</text>
       </button>
-
       <text class="login-hint">登录即表示你同意《用户协议》和《隐私政策》</text>
+    </view>
+
+    <!-- 账号密码登录/注册 -->
+    <view class="login-actions" wx:if="{{loginMode === 'password'}}">
+      <!-- 注册模式额外显示昵称 -->
+      <view class="input-group" wx:if="{{isRegisterMode}}">
+        <text class="input-label">昵称(可选)</text>
+        <input class="text-input" placeholder="留空则用用户名" maxlength="32"
+               value="{{form.nickname}}" bindinput="onInput" data-field="nickname" />
+      </view>
+
+      <view class="input-group">
+        <text class="input-label">{{isRegisterMode ? '设置账号' : '账号'}}</text>
+        <input class="text-input" placeholder="3-32 位字母/数字/下划线" maxlength="32"
+               value="{{form.username}}" bindinput="onInput" data-field="username" />
+      </view>
+
+      <view class="input-group">
+        <text class="input-label">{{isRegisterMode ? '设置密码' : '密码'}}</text>
+        <input class="text-input" password="true" placeholder="至少 6 位" maxlength="64"
+               value="{{form.password}}" bindinput="onInput" data-field="password" />
+      </view>
+
+      <button class="wechat-login-btn" bindtap="onPasswordSubmit" loading="{{isLoading}}">
+        <text wx:if="{{!isLoading}}">{{isRegisterMode ? '注册并登录' : '登录'}}</text>
+        <text wx:if="{{isLoading}}">提交中...</text>
+      </button>
+
+      <view class="login-bottom-row">
+        <text class="bottom-link" bindtap="toggleRegisterMode">
+          {{isRegisterMode ? '已有账号?返回登录' : '还没账号?去注册'}}
+        </text>
+      </view>
+
+      <text class="login-hint">账号密码登录适合开发测试或多账号切换;微信登录适合正式用户</text>
     </view>
   </view>
 </view>

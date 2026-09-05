@@ -2,6 +2,93 @@
  * 设置 settings 页面(I 方案)
  * ============================================================ */
 
+/* ===== 用户资料(头像 + 昵称) ===== */
+.user-profile{
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  padding: 32rpx 24rpx;
+}
+.user-avatar-wrap{
+  position: relative;
+  flex-shrink: 0;
+  width: 132rpx;
+  height: 132rpx;
+}
+.user-avatar{
+  width: 132rpx;
+  height: 132rpx;
+  border-radius: 50%;
+  background: linear-gradient(140deg, var(--agar-soft-2), var(--bone));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Georgia','Times New Roman',serif;
+  font-style: italic;
+  font-size: 52rpx;
+  font-weight: 700;
+  color: var(--agar);
+  border: 2rpx solid var(--bone);
+  box-shadow: 0 6rpx 16rpx rgba(20,42,32,0.12);
+  overflow: hidden;
+}
+.user-avatar-img{
+  width: 100%;
+  height: 100%;
+}
+.user-avatar-placeholder{
+  line-height: 1;
+}
+.user-avatar-edit{
+  position: absolute;
+  right: -4rpx;
+  bottom: -4rpx;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22rpx;
+  font-weight: 700;
+  border: 2rpx solid var(--paper);
+  box-shadow: 0 2rpx 6rpx rgba(20,42,32,0.20);
+}
+.user-info{
+  flex: 1;
+  min-width: 0;
+}
+.user-name{
+  font-family: 'Georgia','Times New Roman','Noto Serif CJK SC',serif;
+  font-size: 44rpx;
+  font-weight: 600;
+  font-style: italic;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  margin-bottom: 6rpx;
+  display: block;
+}
+.user-id{
+  font-size: 22rpx;
+  color: var(--ink-3);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.user-edit{
+  flex-shrink: 0;
+  padding: 12rpx 22rpx;
+  border-radius: 999rpx;
+  background: rgba(20,42,32,0.06);
+  color: var(--ink-2);
+  font-size: 22rpx;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border: 1rpx solid var(--line);
+}
+
 /* AI 头像缩略图 */
 .icon-pit.avatar-mini{
   overflow: hidden;

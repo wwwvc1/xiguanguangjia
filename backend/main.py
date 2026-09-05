@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
-from routers import auth, todos, goals, transactions, meals, reminders, admin, ai_professional, ai_general, ai_generate, ai_agent, user_settings, export, achievements, stats, reports, checkins
+from routers import auth, todos, goals, transactions, meals, reminders, admin, ai_professional, ai_general, ai_generate, ai_agent, user_settings, user_profile, export, achievements, stats, reports, checkins
 from routers import admin_auth, admin_llm_models, user_llm_models, admin_knowledge, admin_logs, admin_achievements, admin_dashboard
 # 导入工具
 from config import settings
@@ -23,7 +23,11 @@ async def lifespan(app: FastAPI):
     print("[DB] 连接池已关闭")
 
 # 创建应用
-app = FastAPI(title="习惯管家 API", lifespan=lifespan)
+app = FastAPI(
+    title="习惯管家 API",
+    lifespan=lifespan,
+    redirect_slashes=False,  # /api/todos 不再自动 307 到 /api/todos/,路径必须精确匹配
+)
 
 # CORS 中间件（让小程序能跨域调用）
 app.add_middleware(
@@ -50,6 +54,7 @@ app.include_router(ai_general.router)
 app.include_router(ai_generate.router)
 app.include_router(ai_agent.router)
 app.include_router(user_settings.router)
+app.include_router(user_profile.router)
 app.include_router(export.router)
 app.include_router(achievements.router)
 app.include_router(checkins.router)

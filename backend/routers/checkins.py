@@ -61,7 +61,7 @@ def _calc_streak(user_id: int) -> int:
     return streak
 
 
-@router.post("")
+@router.post("/")
 async def do_checkin(payload: CheckinCreate, current_user: int = Depends(get_current_user)):
     """当天打卡(一天一次,重复打返回已有记录)
 
@@ -156,7 +156,7 @@ async def today_status(current_user: int = Depends(get_current_user)):
             }
 
 
-@router.get("")
+@router.get("/")
 async def list_recent(days: int = Query(30, ge=1, le=365), current_user: int = Depends(get_current_user)):
     """列出最近 N 天的打卡记录"""
     since = (date.today() - timedelta(days=days-1)).strftime("%Y-%m-%d")

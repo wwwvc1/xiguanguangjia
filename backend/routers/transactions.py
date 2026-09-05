@@ -28,6 +28,7 @@ async def list_transactions(
             base_sql += " ORDER BY time DESC"
             await cur.execute(base_sql, tuple(params))
             rows = await cur.fetchall()
+            print(f"[DEBUG /transactions/] user={current_user} year={year} month={month} SQL={base_sql} params={tuple(params)} -> {len(rows)} rows")
             for row in rows:
                 row["amount"] = float(row["amount"])
             return rows

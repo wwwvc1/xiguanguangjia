@@ -55,7 +55,13 @@ App({
     navHeight: 88,
     tabBarHeight: 120,
     apiBase: API_BASE,
-    token: null
+    token: null,
+
+    // 用户资料(头像 / 昵称)— 启动时从 storage 恢复,后端就绪后用真实接口同步
+    userInfo: {
+      nickname: '我',
+      avatar: ''  // 头像 base64 或 url,空字符串 = 默认
+    }
   },
   onLaunch() {
     const sys = wx.getSystemInfoSync();
@@ -71,6 +77,35 @@ App({
       // 没有 token，跳转登录页
       wx.redirectTo({ url: '/pages/login/login' });
     }
+    // 恢复用户资料(头像 / 昵称)— 即使未登录也保留(降级为默认)
+    this._restoreUserInfo();
+  },
+  // 内部:从 storage 恢复 userInfo 到 globalData
+  _restoreUserInfo() {
+    try {
+      const stored = wx.getStorageSync('userInfo');
+      if (stored && typeof stored === 'object') {
+        this.globalData.userInfo = {
+          nickname: stored.nickname || '我',
+          avatar: stored.avatar || ''
+        };
+      } else {
+        // 没有就放默认值
+        wx.setStorageSync('userInfo', this.globalData.userInfo);
+      }
+    } catch (e) {
+      // 静默失败,保留默认
+    }
+  },
+  // 全局更新 userInfo(设置页保存后调用,其他页 onShow 可重读)
+  setUserInfo(partial) {
+    this.globalData.userInfo = {
+      ...this.globalData.userInfo,
+      ...partial
+    };
+    try {
+      wx.setStorageSync('userInfo', this.globalData.userInfo);
+    } catch (e) { /* storage 满时静默失败 */ }
   },
   // 全局数据版本号:任何 CRUD 后自增,首页 onShow 检测到变化就重新拉数据
   bumpDataVersion() {

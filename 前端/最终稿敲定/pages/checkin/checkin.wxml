@@ -8,7 +8,10 @@
         <text class="nav-meta">DAILY CHECK-IN</text>
         <text class="nav-title serif">Mark <text class="serif-italic">Today.</text></text>
       </view>
-      <view style="width: 36px;"></view>
+      <view class="nav-user-avatar" bindtap="goSettings">
+        <image wx:if="{{userInfo.avatar}}" src="{{userInfo.avatar}}" class="nav-user-img" mode="aspectFill" />
+        <text wx:else class="nav-user-letter">{{userInfo.nickname[0] || '我'}}</text>
+      </view>
     </view>
   </view>
 

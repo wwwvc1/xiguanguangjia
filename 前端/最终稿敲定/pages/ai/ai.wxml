@@ -32,7 +32,7 @@
     scroll-with-animation="{{!isLoading}}"
     enhanced
     show-scrollbar="{{true}}"
-    style="height: calc(100vh - {{navHeight}}px - 290rpx);"
+    style="height: calc(100vh - {{navHeight}}px - 320rpx - {{inputHeight}}rpx);"
   >
     <!-- 空状态 -->
     <view wx:if="{{messages.length === 0}}" class="chat-empty">
@@ -138,10 +138,13 @@
         placeholder="输入你的问题..."
         value="{{inputValue}}"
         bindinput="onInputChange"
+        bindlinechange="onLineChange"
         maxlength="500"
         confirm-type="send"
         bindconfirm="sendMessage"
         show-confirm-bar="{{false}}"
+        auto-height
+        style="height: {{inputHeight}}rpx;"
       />
       <view class="send-btn {{inputValue.trim() ? 'active' : ''}}" bindtap="sendMessage" wx:if="{{!isLoading}}">
         <text>发送</text>

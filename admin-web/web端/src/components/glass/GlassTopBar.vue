@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
- * GlassTopBar — 顶部条 (面包屑 + 主题切换 + 用户菜单占位)
+ * GlassTopBar — 顶部条 (面包屑 + 主题切换 + 弹窗设置 + 用户菜单)
  */
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
 import { useAuthStore } from '@/stores/auth'
@@ -29,6 +30,20 @@ const onLogout = () => {
   auth.logout()
   router.replace({ name: 'Login' })
 }
+
+// 弹窗设置面板
+const showSettings = ref(false)
+const settingsRef = ref<HTMLElement | null>(null)
+function toggleSettings() { showSettings.value = !showSettings.value }
+function closeSettings() { showSettings.value = false }
+function onClickOutside(e: MouseEvent) {
+  if (!showSettings.value) return
+  if (settingsRef.value && !settingsRef.value.contains(e.target as Node)) {
+    showSettings.value = false
+  }
+}
+onMounted(() => document.addEventListener('mousedown', onClickOutside))
+onBeforeUnmount(() => document.removeEventListener('mousedown', onClickOutside))
 </script>
 
 <template>
@@ -45,6 +60,54 @@ const onLogout = () => {
       <button class="icon-btn" :title="`主题: ${nextThemeLabel()}`" @click="theme.toggle">
         <span class="ic">{{ themeIcon() }}</span>
       </button>
+
+      <!-- 弹窗设置 -->
+      <div ref="settingsRef" class="settings-wrap">
+        <button class="icon-btn" :title="'弹窗透明度 / 颜色'" @click="toggleSettings">
+          <span class="ic">⚙</span>
+        </button>
+        <div v-if="showSettings" class="settings-popover">
+          <div class="set-title">弹窗外观</div>
+
+          <div class="set-row">
+            <label>不透明度</label>
+            <input
+              type="range" min="0.4" max="1" step="0.02"
+              :value="theme.modal.opacity"
+              @input="(e) => theme.setModal({ opacity: Number((e.target as HTMLInputElement).value) })"
+            />
+            <span class="set-val">{{ Math.round(theme.modal.opacity * 100) }}%</span>
+          </div>
+
+          <div class="set-row">
+            <label>蒙层</label>
+            <input
+              type="range" min="0" max="0.9" step="0.05"
+              :value="theme.modal.maskOpacity"
+              @input="(e) => theme.setModal({ maskOpacity: Number((e.target as HTMLInputElement).value) })"
+            />
+            <span class="set-val">{{ Math.round(theme.modal.maskOpacity * 100) }}%</span>
+          </div>
+
+          <div class="set-row">
+            <label>主题色</label>
+            <div class="tint-row">
+              <button
+                v-for="c in [null, '#7c5cff', '#142a20', '#8E3D2A', '#D8C9A5', '#1f6feb']"
+                :key="c ?? 'auto'"
+                class="tint-swatch"
+                :class="{ active: theme.modal.tint === c }"
+                :style="c ? { background: c } : { background: 'linear-gradient(135deg, #fff, #142a20)' }"
+                :title="c ?? '跟随主题'"
+                @click="theme.setModal({ tint: c })"
+              />
+            </div>
+          </div>
+
+          <button class="set-reset" @click="theme.resetModal">恢复默认</button>
+        </div>
+      </div>
+
       <button class="icon-btn" title="搜索">⌕</button>
       <button class="icon-btn" title="通知">
         <span>◔</span>
@@ -131,4 +194,60 @@ const onLogout = () => {
   .name { display: none; }
   .crumb-section { display: none; }
 }
+
+/* 弹窗设置 popover */
+.settings-wrap { position: relative; }
+.settings-popover {
+  position: absolute; top: calc(100% + 8px); right: 0;
+  width: 280px;
+  background: var(--c-paper, #fff);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 12px;
+  z-index: 200;
+}
+.set-title {
+  font-size: 12px; font-weight: 600;
+  color: var(--c-ink); letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding-bottom: 4px; border-bottom: 1px solid var(--c-line);
+}
+.set-row {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 12px; color: var(--c-ink-2);
+}
+.set-row label { width: 56px; flex-shrink: 0; }
+.set-row input[type="range"] {
+  flex: 1; min-width: 0; accent-color: var(--accent-1);
+}
+.set-val {
+  font-family: var(--font-mono);
+  font-size: 11px; color: var(--c-ink-3);
+  width: 36px; text-align: right;
+}
+.tint-row { display: flex; gap: 6px; flex: 1; }
+.tint-swatch {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid transparent; cursor: pointer;
+  transition: transform var(--t-fast), border-color var(--t-fast);
+  flex-shrink: 0;
+}
+.tint-swatch:hover { transform: scale(1.12); }
+.tint-swatch.active {
+  border-color: var(--c-ink);
+  transform: scale(1.12);
+}
+.set-reset {
+  margin-top: 4px;
+  padding: 6px 10px;
+  background: var(--glass-2-bg);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-sm);
+  font-size: 12px; color: var(--c-ink-2);
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+.set-reset:hover { background: var(--glass-1-bg); color: var(--c-ink); }
 </style>

@@ -297,18 +297,19 @@
 .chat-input{
   flex: 1;
   width: 100%;
-  height: 64rpx;
-  min-height: 40rpx;
-  max-height: 160rpx;
-  padding: 8rpx 16rpx;
+  min-height: 80rpx;
+  max-height: 280rpx;
+  padding: 16rpx 16rpx;
   border: none;
   outline: none;
   resize: none;
   font-size: 30rpx;
   color: var(--ink);
-  line-height: 1.5;
+  line-height: 44rpx;
   background: transparent;
   box-sizing: border-box;
+  font-family: inherit;
+  /* auto-height 模式下,style.height 由 JS 动态控制 */
 }
 .chat-input::placeholder{ color: var(--ink-3); }
 

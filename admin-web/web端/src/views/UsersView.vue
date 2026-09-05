@@ -91,6 +91,20 @@ watch(() => [filters.is_active, filters.is_admin], () => {
 
 onMounted(load)
 
+// ────────────── 头像辅助 ──────────────
+/** 把后端 avatar 字段变成 <img> 可用的 src:
+ *  - 已是 data: URL 或 http(s) → 原样
+ *  - 裸 base64 → 拼 data:image/<mime>;base64,
+ *  - 空/无效 → undefined,组件降级显示首字母
+ */
+function avatarSrc(u: { avatar?: string | null } | null | undefined): string | undefined {
+  const a = u?.avatar
+  if (!a) return undefined
+  if (a.startsWith('data:') || a.startsWith('http')) return a
+  const mime = a.startsWith('/9j/') ? 'jpeg' : a.startsWith('iVBOR') ? 'png' : 'png'
+  return `data:image/${mime};base64,${a}`
+}
+
 // ────────────── 新建/编辑用户 ──────────────
 interface UserFormState {
   username: string
@@ -349,7 +363,8 @@ function adminFilter(v: string): boolean | undefined {
                 <td class="mono">#{{ u.id }}</td>
                 <td>
                   <div class="user-cell">
-                    <span class="avatar">{{ (u.nickname || u.username || '?').slice(0, 1) }}</span>
+                    <img v-if="avatarSrc(u)" :src="avatarSrc(u)" class="avatar avatar-img" alt="" />
+                    <span v-else class="avatar">{{ (u.nickname || u.username || '?').slice(0, 1) }}</span>
                     <div class="user-meta">
                       <div class="name">{{ u.nickname || u.username || '—' }}</div>
                       <div class="sub">@{{ u.username || '未设置' }}</div>
@@ -583,6 +598,12 @@ function adminFilter(v: string): boolean | undefined {
   color: #fff;
   display: grid; place-items: center;
   font-size: 12px; font-weight: 600;
+  flex-shrink: 0;
+}
+.avatar.avatar-img {
+  object-fit: cover;
+  background: var(--glass-2-bg);
+  border: 1px solid var(--c-line);
 }
 .user-meta .name { font-size: 13px; font-weight: 600; color: var(--c-ink); }
 .user-meta .sub { font-size: 11px; color: var(--c-ink-3); }

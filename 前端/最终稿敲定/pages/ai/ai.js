@@ -62,7 +62,9 @@ Page({
     modelList: [],
     activeModelId: null,
     activeModelName: '系统默认',
-    showModelPicker: false
+    showModelPicker: false,
+    // 输入框高度(rpx),根据行数动态变化,默认 80rpx(2 行 + padding)
+    inputHeight: 80
   },
 
   onLoad() {
@@ -118,6 +120,19 @@ Page({
 
   onInputChange(e) {
     this.setData({ inputValue: e.detail.value });
+  },
+
+  // 输入框行数变化 → 动态调整高度
+  // 行高 44rpx,最少 2 行(80rpx = 16 padding + 64 content),最多 6 行(280rpx)
+  onLineChange(e) {
+    const lineCount = e.detail.lineCount || 1;
+    const minH = 80;   // 2 行 + padding
+    const maxH = 280;  // 6 行 + padding
+    const lineH = 44;
+    const target = Math.min(maxH, Math.max(minH, 16 + lineCount * lineH));
+    if (Math.abs(target - this.data.inputHeight) > 2) {
+      this.setData({ inputHeight: target });
+    }
   },
 
   switchTab(e) {

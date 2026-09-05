@@ -112,27 +112,36 @@ class RAGEngine:
         return "\n\n".join(f"[参考]\n{chunk}" for chunk in chunks)
 
 
-def _load_static_kb(engine: RAGEngine) -> int:
-    """首次启动:把 knowledge_base/*.md 加载进向量库"""
+def _load_static_kb(engine: RAGEngine, existing_doc_ids: set[str]) -> tuple[int, int]:
+    """启动时:把 knowledge_base/*.md 加载进向量库(已存在的 doc_id 跳过,保留 web 编辑后的最新内容)
+
+    Returns: (loaded_count, skipped_count)
+    """
     kb_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "knowledge_base")
     if not os.path.isdir(kb_dir):
-        return 0
-    total_chunks = 0
+        return 0, 0
+    loaded = 0
+    skipped = 0
     for filename in os.listdir(kb_dir):
         if not filename.endswith(".md"):
+            continue
+        doc_id = f"static_{filename}"
+        if doc_id in existing_doc_ids:
+            skipped += 1
+            print(f"  [static KB] {filename}: 跳过(已存在)")
             continue
         filepath = os.path.join(kb_dir, filename)
         try:
             n = engine.add_document(
                 file_path=filepath,
-                doc_id=f"static_{filename}",  # 静态 doc 用文件名做 id
+                doc_id=doc_id,
                 filename=filename
             )
-            total_chunks += n
+            loaded += 1
             print(f"  [static KB] {filename}: {n} chunks")
         except Exception as e:
             print(f"  [static KB] {filename} failed: {e}")
-    return total_chunks
+    return loaded, skipped
 
 
 def init_rag_engine() -> RAGEngine:
@@ -141,14 +150,11 @@ def init_rag_engine() -> RAGEngine:
     persist_dir = settings.CHROMA_DB_PATH
     engine = RAGEngine(persist_dir=persist_dir)
 
-    # 首次启动:静态 KB 还没入库才加载
-    existing = engine.list_documents()
-    if not existing:
-        print("[RAG] 首次启动,加载静态知识库...")
-        n = _load_static_kb(engine)
-        print(f"[RAG] 静态知识库加载完成,共 {n} chunks")
-    else:
-        print(f"[RAG] 已有 {len(existing)} 个文档,跳过静态加载")
+    # 始终扫一次 KB 目录:新增的 .md 自动加载,已有 .md(web 编辑过)跳过
+    existing_doc_ids = {d["doc_id"] for d in engine.list_documents()}
+    print(f"[RAG] 已有 {len(existing_doc_ids)} 个向量文档,扫描静态 KB...")
+    loaded, skipped = _load_static_kb(engine, existing_doc_ids)
+    print(f"[RAG] 静态知识库扫描完成,新增 {loaded} 份,跳过 {skipped} 份")
 
     _rag_engine = engine
     print(f"[RAG] 引擎就绪,持久化路径: {persist_dir}")

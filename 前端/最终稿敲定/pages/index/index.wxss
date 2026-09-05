@@ -2,6 +2,35 @@
  * 首页 index 特有样式(基于 I 方案)
  * ============================================================ */
 
+/* ===== 用户招呼(顶部小型条) ===== */
+.greeting{
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+  padding: 0 4rpx;
+}
+.greeting-hi{
+  font-size: 30rpx;
+  color: var(--ink-2);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+.greeting-name{
+  font-family: 'Georgia','Times New Roman','Noto Serif CJK SC',serif;
+  font-style: italic;
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 36rpx;
+  letter-spacing: -0.01em;
+}
+.greeting-date{
+  font-size: 22rpx;
+  color: var(--ink-3);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
 /* ===== 连续打卡 hero(放大版,沉香绿渐变 + 米骨散光,移到页面底部) ===== */
 .streak-hero{
   margin: 32rpx 0 0;

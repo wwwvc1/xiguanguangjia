@@ -41,6 +41,15 @@ const activeTab = ref<'basic' | 'data' | 'ai-chats'>('basic')
 // 关闭抽屉
 function close() { emit('update:open', false) }
 
+// 头像 src(data: URL 或 base64 → 拼接)
+function avatarSrc(u: { avatar?: string | null } | null | undefined): string | undefined {
+  const a = u?.avatar
+  if (!a) return undefined
+  if (a.startsWith('data:') || a.startsWith('http')) return a
+  const mime = a.startsWith('/9j/') ? 'jpeg' : a.startsWith('iVBOR') ? 'png' : 'png'
+  return `data:image/${mime};base64,${a}`
+}
+
 // ────────────── 数据汇总 ──────────────
 const summary = ref<DataSummary | null>(null)
 const summaryLoading = ref(false)
@@ -184,7 +193,8 @@ const totalDataPoints = computed(() => {
         <aside class="drawer glass-2">
           <header class="d-header">
             <div class="d-id">
-              <span class="avatar">{{ (user.nickname || user.username || '?').slice(0, 1) }}</span>
+              <img v-if="avatarSrc(user)" :src="avatarSrc(user)" class="avatar avatar-img" alt="" />
+              <span v-else class="avatar">{{ (user.nickname || user.username || '?').slice(0, 1) }}</span>
               <div class="d-id-text">
                 <h3>{{ user.nickname || user.username || `用户 #${user.id}` }}</h3>
                 <p class="sub">@{{ user.username || '未设置' }} · #{{ user.id }}</p>
@@ -401,6 +411,12 @@ const totalDataPoints = computed(() => {
   color: #fff;
   display: grid; place-items: center;
   font-size: 16px; font-weight: 600;
+  flex-shrink: 0;
+}
+.avatar.avatar-img {
+  object-fit: cover;
+  background: var(--glass-2-bg);
+  border: 1px solid var(--c-line);
 }
 .d-id-text h3 { font-size: 15px; font-weight: 600; color: var(--c-ink); }
 .d-id-text .sub { font-size: 12px; color: var(--c-ink-3); }

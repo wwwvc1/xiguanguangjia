@@ -255,3 +255,33 @@
   color: var(--ink-3);
   font-style: italic;
 }
+
+/* ===== nav 头像(右上角) ===== */
+.nav-user-avatar{
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: linear-gradient(140deg, var(--agar-soft-2), var(--bone));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Georgia','Times New Roman',serif;
+  font-style: italic;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--agar);
+  border: 1.5rpx solid var(--bone);
+  box-shadow: 0 2rpx 6rpx rgba(20,42,32,0.10);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.nav-user-avatar:active{
+  transform: scale(0.92);
+}
+.nav-user-img{
+  width: 100%;
+  height: 100%;
+}
+.nav-user-letter{
+  line-height: 1;
+}

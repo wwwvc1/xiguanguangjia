@@ -27,6 +27,7 @@ except Exception as _rag_err:
 
 from utils.ai_tools import TOOLS
 from utils.ai_tool_executor import ToolExecutor
+from utils.ai_logging import log_user_message, log_assistant_message, log_tool_message
 
 
 SYSTEM_PROMPT = """你是「习惯管家」AI 助手,可以帮用户管理待办、目标、收支、饮食、提醒。
@@ -38,8 +39,9 @@ SYSTEM_PROMPT = """你是「习惯管家」AI 助手,可以帮用户管理待办
 
 
 class AgentExecutor:
-    def __init__(self, user_id: int, model: Optional[str] = None, model_id: Optional[int] = None):
+    def __init__(self, user_id: int, model: Optional[str] = None, model_id: Optional[int] = None, session_id: Optional[str] = None):
         self.user_id = user_id
+        self.session_id = session_id or f"agent_{user_id}"  # 用于 ai_chat_logs 关联
         # 通过 llm_factory 拿 client(支持用户自定义模型 / 系统默认)
         try:
             self.client, model_record = get_llm_client_for_user(user_id, model_id)
@@ -126,6 +128,8 @@ class AgentExecutor:
           - {"type": "error", "message": "..."}
         """
         messages = self._build_initial_messages(user_input, history)
+        # 记 user 消息
+        log_user_message(self.user_id, self.session_id, user_input, model=self.model)
         all_tool_calls = []  # 用于最终 done 事件
         sources = []
         # 收集 RAG chunks 作为 sources
@@ -156,7 +160,7 @@ class AgentExecutor:
                 if msg.tool_calls:
                     # OpenAI SDK 0.27+ 用 .model_dump() 才不会丢字段
                     try:
-                        assistant_msg["tool_calls"] = [
+                        tc_list = [
                             {
                                 "id": tc.id,
                                 "type": "function",
@@ -167,8 +171,16 @@ class AgentExecutor:
                             }
                             for tc in msg.tool_calls
                         ]
+                        assistant_msg["tool_calls"] = tc_list
+                        # 写 assistant 消息(含 tool_calls)
+                        log_assistant_message(self.user_id, self.session_id, msg.content or "",
+                                              model=self.model, tool_calls=tc_list)
                     except Exception:
-                        pass
+                        # 序列化失败,降级为不带 tool_calls
+                        log_assistant_message(self.user_id, self.session_id, msg.content or "", model=self.model)
+                else:
+                    # 普通文字回复
+                    log_assistant_message(self.user_id, self.session_id, msg.content or "", model=self.model)
                 messages.append(assistant_msg)
 
                 # 没有 tool_calls → 进入最终流式输出
@@ -226,12 +238,15 @@ class AgentExecutor:
                     }
 
                     # 加回 messages(role=tool),让 LLM 看到结果
+                    tool_result_text = self._serialize_tool_result(result)
                     messages.append({
                         "role": "tool",
                         "tool_call_id": tc.id,
                         "name": name,
-                        "content": self._serialize_tool_result(result)
+                        "content": tool_result_text
                     })
+                    # 记 tool 消息
+                    log_tool_message(self.user_id, self.session_id, tool_result_text, tc.id, model=self.model)
 
                 # 进入下一轮迭代
 

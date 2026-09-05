@@ -1,4 +1,5 @@
 const app = getApp();
+const user = require('../../utils/user.js');
 
 const TYPE_META = {
   finance: { icon: '💰', label: '收支提醒' },
@@ -56,7 +57,12 @@ Page({
     typeLabels: Object.fromEntries(TYPE_OPTIONS.map(t => [t, TYPE_META[t].label])),
     weekdays: ['一', '二', '三', '四', '五', '六', '日'],
     wdActive: [true, true, true, true, true, true, true],
-    editId: null
+    editId: null,
+
+    // 用户资料
+    userInfo: { nickname: '我', avatar: '' },
+    showNicknameEditor: false,
+    editingNickname: ''
   },
 
   onLoad() {
@@ -80,6 +86,77 @@ Page({
     this.loadAchSummary();
     this.loadAiModels();
     this.setData({ aiAvatar: wx.getStorageSync('ai_avatar') || '' });
+    // 同步用户资料(头像 + 昵称)— 从 globalData 读,跨页切换不会丢
+    this.setData({ userInfo: user.getUserInfo() });
+  },
+
+  // ===== 用户资料 =====
+
+  // 头像操作菜单(从相册选 / 拍照 / 恢复默认)
+  onUserAvatarActions() {
+    const has = !!this.data.userInfo.avatar;
+    const list = has
+      ? ['从相册/拍照 重新选择', '恢复默认头像']
+      : ['从相册/拍照 选择头像'];
+    wx.showActionSheet({
+      itemList: list,
+      success: (res) => {
+        const tap = res.tapIndex;
+        if (has && tap === 1) {
+          this.onResetUserAvatar();
+        } else {
+          this.onChooseUserAvatar();
+        }
+      }
+    });
+  },
+
+  onChooseUserAvatar() {
+    user.chooseImage()
+      .then(({ base64 }) => user.updateAvatar(base64))
+      .then(({ info }) => {
+        this.setData({ userInfo: info });
+        wx.showToast({ title: '头像已更新', icon: 'success' });
+      })
+      .catch((err) => {
+        if (err && err.message && err.message !== '用户取消选择') {
+          wx.showToast({ title: err.message || '头像更新失败', icon: 'none' });
+        }
+      });
+  },
+
+  onResetUserAvatar() {
+    const info = user.resetUserInfo();
+    this.setData({ userInfo: info });
+    wx.showToast({ title: '已恢复默认', icon: 'success' });
+  },
+
+  // 昵称编辑(打开输入弹窗)
+  onEditNickname() {
+    this.setData({
+      editingNickname: this.data.userInfo.nickname,
+      showNicknameEditor: true
+    });
+  },
+
+  onNicknameInput(e) {
+    this.setData({ editingNickname: e.detail.value });
+  },
+
+  onSaveNickname() {
+    const nickname = (this.data.editingNickname || '').trim();
+    user.updateNickname(nickname)
+      .then(({ info }) => {
+        this.setData({ userInfo: info, showNicknameEditor: false });
+        wx.showToast({ title: '昵称已更新', icon: 'success' });
+      })
+      .catch((err) => {
+        wx.showToast({ title: err.message || '更新失败', icon: 'none' });
+      });
+  },
+
+  onCancelNickname() {
+    this.setData({ showNicknameEditor: false });
   },
 
   loadAchSummary() {
@@ -239,6 +316,7 @@ Page({
     }).then(() => {
       this.setData({ calorieGoal: val });
       wx.showToast({ title: '已保存', icon: 'success' });
+      app.bumpDataVersion();
     }).catch(() => {
       wx.showToast({ title: '保存失败', icon: 'none' });
       this.loadSettings();
@@ -246,7 +324,7 @@ Page({
   },
 
   loadReminders() {
-    app.request({ url: '/reminders' })
+    app.request({ url: '/reminders/' })
       .then(list => {
         // 限长:只保留最近 20 条,避免 setData 累积过大
         this.setData({ reminders: (list || []).slice(0, 20).map(enrich) });
@@ -258,7 +336,7 @@ Page({
   onToggle(e) {
     const { id, enabled } = e.currentTarget.dataset;
     app.request({ url: `/reminders/${id}`, method: 'PUT', data: { enabled: !enabled } })
-      .then(() => this.loadReminders())
+      .then(() => { this.loadReminders(); app.bumpDataVersion(); })
       .catch(() => wx.showToast({ title: '更新失败', icon: 'none' }));
   },
 
@@ -275,6 +353,7 @@ Page({
             .then(() => {
               this.loadReminders();
               wx.showToast({ title: '已删除', icon: 'success' });
+              app.bumpDataVersion();
             })
             .catch(() => wx.showToast({ title: '删除失败', icon: 'none' }));
         }
@@ -361,16 +440,18 @@ Page({
         this.loadReminders();
         this.setData({ showEdit: false });
         wx.showToast({ title: '已更新', icon: 'success' });
+        app.bumpDataVersion();
       }).catch(() => wx.showToast({ title: '更新失败', icon: 'none' }));
     } else {
       app.request({
-        url: '/reminders',
+        url: '/reminders/',
         method: 'POST',
         data: { type: formData.type, time: timeStr, enabled: true, weekdays: formData.weekdays }
       }).then(() => {
         this.loadReminders();
         this.setData({ showAdd: false });
         wx.showToast({ title: '已添加', icon: 'success' });
+        app.bumpDataVersion();
       }).catch(() => wx.showToast({ title: '添加失败', icon: 'none' }));
     }
   },
@@ -432,13 +513,22 @@ Page({
   onLogout() {
     wx.showModal({
       title: '确认退出',
-      content: '退出后需重新登录',
+      content: '退出后需重新登录,当前账号数据仍保留在云端',
       confirmColor: '#8DA9C4',
       success: (res) => {
         if (res.confirm) {
+          // 清空 globalData
           app.globalData.token = null;
+          app.globalData.userId = null;
+          app.globalData.nickname = null;
+          app.globalData.avatar = null;
+          app.globalData.dataVersion = 0;
+          // 清空 storage
           wx.removeStorageSync('token');
           wx.removeStorageSync('userInfo');
+          wx.removeStorageSync('auto_checkin_day');
+          wx.removeStorageSync('active_model_id');
+          // 跳回登录页
           wx.reLaunch({ url: '/pages/login/login' });
         }
       }

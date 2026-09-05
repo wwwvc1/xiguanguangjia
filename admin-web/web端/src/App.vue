@@ -52,6 +52,10 @@ onMounted(() => {
   --glass-1-shadow: 0 8px 32px rgba(15, 26, 20, 0.10);
 
   --glass-2-bg: rgba(255, 255, 255, 0.75);
+
+  /* 弹窗背景:不透明(避免透到背后页面),0~1 数字可调 */
+  --modal-bg: rgba(255, 255, 255, 0.96);
+  --modal-mask: rgba(0, 0, 0, 0.5);
   --glass-2-border: rgba(255, 255, 255, 0.85);
   --glass-2-shadow: 0 4px 16px rgba(15, 26, 20, 0.08);
 
@@ -103,6 +107,10 @@ onMounted(() => {
   --glass-1-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
 
   --glass-2-bg: rgba(20, 22, 30, 0.55);
+
+  /* 弹窗背景(深色模式) */
+  --modal-bg: rgba(15, 18, 26, 0.96);
+  --modal-mask: rgba(0, 0, 0, 0.6);
   --glass-2-border: rgba(255, 255, 255, 0.08);
   --glass-2-shadow: 0 4px 16px rgba(0, 0, 0, 0.40);
 
@@ -113,7 +121,7 @@ onMounted(() => {
 
 /* ===== Reset ===== */
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body, #app { height: 100%; }
+html, body, #app { height: 100%;background: var(--c-paper); }
 body {
   font-family: var(--font-sans);
   background: var(--c-paper);

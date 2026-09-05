@@ -44,13 +44,13 @@ Page({
   },
   loadData() {
     const today = todayStr();
-    app.request({ url: `/todos?done=false&date=${today}` }).then(todos => {
+    app.request({ url: `/todos/?done=false&date=${today}` }).then(todos => {
       this.setData({ todos });
     }).catch(() => { this.setData({ todos: [] }); });
-    app.request({ url: '/todos?done=true' }).then(todos => {
+    app.request({ url: '/todos/?done=true' }).then(todos => {
       this.setData({ completedTodos: todos });
     }).catch(() => { this.setData({ completedTodos: [] }); });
-    app.request({ url: '/goals' }).then(goals => {
+    app.request({ url: '/goals/' }).then(goals => {
       this.setData({ goals });
     }).catch(() => { this.setData({ goals: [] }); });
   },
@@ -144,7 +144,7 @@ Page({
     if (!text.trim()) { wx.showToast({ title: '请输入待办内容', icon: 'none' }); return; }
     if (startDate > endDate) { wx.showToast({ title: '开始日期不能晚于结束日期', icon: 'none' }); return; }
 
-    const url = startDate === endDate ? '/todos' : '/todos/batch';
+    const url = startDate === endDate ? '/todos/' : '/todos/batch';
     const data = startDate === endDate
       ? { text: text.trim(), due_date: startDate }
       : { text: text.trim(), start_date: startDate, end_date: endDate };
@@ -180,7 +180,7 @@ Page({
       return;
     }
     app.request({
-      url: '/goals',
+      url: '/goals/',
       method: 'POST',
       data: {
         name: name.trim(),

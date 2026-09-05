@@ -134,7 +134,7 @@ def _infer_intent(actions: list) -> str:
 # 主端点
 # ============================================================
 
-@router.post("")
+@router.post("/")
 def agent(req: AgentRequest, current_user: int = Depends(get_current_user)):
     if not req.message.strip():
         raise HTTPException(400, "请输入消息")

@@ -19,6 +19,12 @@
   <scroll-view class="page-content" scroll-y>
     <view style="height: 20rpx;"></view>
 
+    <!-- 用户招呼(小型) -->
+    <view class="greeting">
+      <text class="greeting-hi">Hi, <text class="greeting-name serif">{{userInfo.nickname}}</text></text>
+      <text class="greeting-date">{{todayDateLabel}}</text>
+    </view>
+
     <!-- 数据卡片(常驻,放大版) -->
     <view class="data-cards">
       <view class="data-card" bindtap="showTodayDetail">

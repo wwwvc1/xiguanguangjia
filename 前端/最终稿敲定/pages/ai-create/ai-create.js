@@ -90,7 +90,7 @@ Page({
   callAgent(message, currentMessages) {
     const self = this;
     wx.request({
-      url: app.globalData.apiBase + '/ai/agent',
+      url: app.globalData.apiBase + '/ai/agent/',
       method: 'POST',
       header: {
         'Content-Type': 'application/json',
@@ -208,6 +208,7 @@ Page({
         }
         if (data.actions && data.actions.length) {
           newMsgs.push({ id: nextMsgId(), role: 'actions', actions: data.actions });
+          app.bumpDataVersion();
         }
         this.setData({ messages: newMsgs, isGenerating: false });
         this.scrollToBottom();

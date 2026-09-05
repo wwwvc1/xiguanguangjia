@@ -8,6 +8,27 @@
   <scroll-view class="page-content" scroll-y>
     <view style="height: 20rpx;"></view>
 
+    <!-- 用户资料(头像 + 昵称) -->
+    <view class="setting-group">
+      <text class="setting-group-title">我的资料</text>
+      <view class="setting-items bump">
+        <view class="user-profile">
+          <view class="user-avatar-wrap" bindtap="onUserAvatarActions">
+            <view class="user-avatar">
+              <image wx:if="{{userInfo.avatar}}" src="{{userInfo.avatar}}" class="user-avatar-img" mode="aspectFill" />
+              <text wx:else class="user-avatar-placeholder">{{userInfo.nickname[0] || '我'}}</text>
+            </view>
+            <view class="user-avatar-edit">↻</view>
+          </view>
+          <view class="user-info">
+            <view class="user-name serif">{{userInfo.nickname}}</view>
+            <view class="user-id">ID: {{userInfo.nickname === '我' ? '—' : (userInfo.nickname.length > 0 ? userInfo.nickname.length : '—')}}</view>
+          </view>
+          <view class="user-edit" bindtap="onEditNickname">编辑昵称</view>
+        </view>
+      </view>
+    </view>
+
     <view class="setting-group">
       <text class="setting-group-title">健康目标</text>
       <view class="setting-items bump">
@@ -234,6 +255,28 @@
       <view class="modal-actions">
         <view class="modal-btn cancel-btn bump-sm" bindtap="onCancel">取消</view>
         <view class="modal-btn confirm-btn" bindtap="onSave">保存</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 昵称编辑弹窗 -->
+  <view class="modal-mask" wx:if="{{showNicknameEditor}}" bindtap="onCancelNickname">
+    <view class="modal-content bump" catchtap="stopPropagation">
+      <text class="modal-title">修改昵称</text>
+      <view class="form-input">
+        <input
+          class="modal-input"
+          value="{{editingNickname}}"
+          bindinput="onNicknameInput"
+          placeholder="请输入新昵称"
+          maxlength="20"
+          focus="{{showNicknameEditor}}"
+        />
+      </view>
+      <view style="font-size: 22rpx; color: var(--ink-3); margin-top: 12rpx; text-align: center;">最多 20 个字符</view>
+      <view class="modal-actions">
+        <view class="modal-btn cancel-btn bump-sm" bindtap="onCancelNickname">取消</view>
+        <view class="modal-btn confirm-btn" bindtap="onSaveNickname">保存</view>
       </view>
     </view>
   </view>

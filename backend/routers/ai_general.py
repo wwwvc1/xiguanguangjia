@@ -4,6 +4,7 @@ from openai import OpenAI, AuthenticationError, APITimeoutError, RateLimitError,
 from config import settings
 from utils.deps import get_current_user
 from utils.llm_factory import get_llm_client_for_user
+from utils.ai_logging import log_user_message, log_assistant_message
 from models.ai_chat import ChatRequest, ChatResponse
 import json
 
@@ -13,10 +14,13 @@ _chat_history: dict[str, list[dict]] = {}
 
 @router.post("/general", response_model=ChatResponse)
 def general_chat(req: ChatRequest, current_user: int = Depends(get_current_user)):
-    """通用聊天接口（流式响应,支持自定义 model_id）"""
+    """通用聊天接口(流式响应,支持自定义 model_id)"""
     session_key = str(current_user)
     if session_key not in _chat_history:
         _chat_history[session_key] = []
+
+    # 进入端点:先记一条 user 消息
+    log_user_message(current_user, session_key, req.message)
 
     history = _chat_history[session_key][-10:]
     messages = [
@@ -59,6 +63,8 @@ def general_chat(req: ChatRequest, current_user: int = Depends(get_current_user)
             usage = getattr(last_chunk, 'usage', None)
             if usage:
                 print(f"[AI-General] Token消耗: 输入={usage.prompt_tokens}, 输出={usage.completion_tokens}, 总计={usage.total_tokens}")
+            # 流结束:记 assistant 完整回复
+            log_assistant_message(current_user, session_key, full_reply, model=model_name)
             yield f"data: {json.dumps({'type': 'done', 'reply': full_reply, 'sources': []}, ensure_ascii=False)}\n\n"
 
         return StreamingResponse(generate(), media_type="text/event-stream")

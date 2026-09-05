@@ -72,7 +72,7 @@ Page({
   loadData() {
     // 并行加载：饮食列表 + 用户设置
     Promise.all([
-      app.request({ url: '/meals' }).catch(() => []),
+      app.request({ url: '/meals/' }).catch(() => []),
       app.request({ url: '/user/settings' }).catch(() => null)
     ]).then(([meals, settings]) => {
       const display = buildDisplayMeals(meals);
@@ -135,12 +135,13 @@ Page({
 
     const promise = existing && existing.id
       ? app.request({ url: `/meals/${existing.id}`, method: 'PUT', data: payload })
-      : app.request({ url: '/meals', method: 'POST', data: payload });
+      : app.request({ url: '/meals/', method: 'POST', data: payload });
 
     promise.then(() => {
       this.loadData();
       this.setData({ showAdd: false });
       wx.showToast({ title: '已添加', icon: 'success' });
+      app.bumpDataVersion();
     }).catch(err => {
       console.error('添加失败:', err);
       wx.showToast({ title: '添加失败', icon: 'none' });
@@ -164,7 +165,7 @@ Page({
         if (remaining.length === 0) {
           // 餐次内已无食物，删除整条 meal
           app.request({ url: `/meals/${meal.id}`, method: 'DELETE' })
-            .then(() => { this.loadData(); wx.showToast({ title: '已删除', icon: 'success' }); })
+            .then(() => { this.loadData(); wx.showToast({ title: '已删除', icon: 'success' }); app.bumpDataVersion(); })
             .catch(() => wx.showToast({ title: '删除失败', icon: 'none' }));
         } else {
           const payload = {
@@ -174,7 +175,7 @@ Page({
             items: remaining
           };
           app.request({ url: `/meals/${meal.id}`, method: 'PUT', data: payload })
-            .then(() => { this.loadData(); wx.showToast({ title: '已删除', icon: 'success' }); })
+            .then(() => { this.loadData(); wx.showToast({ title: '已删除', icon: 'success' }); app.bumpDataVersion(); })
             .catch(() => wx.showToast({ title: '删除失败', icon: 'none' }));
         }
       }

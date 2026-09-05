@@ -24,6 +24,8 @@ import {
   reindexDocument,
   previewDocument,
   testKnowledgeSearch,
+  getDocumentContent,
+  updateDocumentContent,
   type KnowledgeDoc,
   type KnowledgePreview,
   type KnowledgeSearchHit
@@ -34,6 +36,7 @@ import { formatNumber, formatRelativeTime, truncate } from '@/utils/format'
 const loading = ref(true)
 const error = ref<string | null>(null)
 const docs = ref<KnowledgeDoc[]>([])
+const filterSource = ref<'all' | 'static' | 'uploaded'>('all')
 const filterStatus = ref<'all' | 'indexed' | 'pending' | 'failed'>('all')
 const fileInput = ref<HTMLInputElement | null>(null)
 const uploadProgress = ref<number | null>(null)
@@ -43,6 +46,13 @@ const reindexingId = ref<number | null>(null)
 const previewOpen = ref(false)
 const previewData = ref<KnowledgePreview | null>(null)
 const previewLoading = ref(false)
+
+// 编辑 modal(支持静态 + 上传)
+const editOpen = ref(false)
+const editDoc = ref<KnowledgeDoc | null>(null)
+const editContent = ref('')
+const editLoading = ref(false)
+const editSaving = ref(false)
 
 // 搜索面板
 const searchQuery = ref('')
@@ -63,7 +73,10 @@ async function loadDocs() {
   loading.value = true
   error.value = null
   try {
-    docs.value = await listDocuments()
+    const params: { source?: 'static' | 'uploaded'; status?: 'indexed' | 'pending' | 'failed' } = {}
+    if (filterSource.value !== 'all') params.source = filterSource.value
+    if (filterStatus.value !== 'all') params.status = filterStatus.value
+    docs.value = await listDocuments(params)
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : '加载文档失败'
   } finally {
@@ -73,10 +86,7 @@ async function loadDocs() {
 onMounted(loadDocs)
 
 // ─────────── derived ───────────
-const filteredDocs = computed(() => {
-  if (filterStatus.value === 'all') return docs.value
-  return docs.value.filter((d) => d.status === filterStatus.value)
-})
+const filteredDocs = computed(() => docs.value)
 
 const stats = computed(() => {
   const total = docs.value.length
@@ -95,6 +105,13 @@ function similarity(distance: number | null | undefined): number {
 
 function statusLabel(s: string): string {
   return ({ indexed: '已索引', pending: '索引中', failed: '失败' } as Record<string, string>)[s] ?? s
+}
+
+function formatSize(bytes: number | null | undefined): string {
+  if (!bytes || bytes <= 0) return '—'
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`
 }
 
 // ─────────── handlers ───────────
@@ -157,6 +174,44 @@ async function onPreview(d: KnowledgeDoc) {
     previewOpen.value = false
   } finally {
     previewLoading.value = false
+  }
+}
+
+// 编辑
+async function openEdit(d: KnowledgeDoc) {
+  editDoc.value = d
+  editContent.value = ''
+  editOpen.value = true
+  editLoading.value = true
+  try {
+    const r = await getDocumentContent(d.id)
+    editContent.value = r.content
+  } catch (err: unknown) {
+    error.value = err instanceof Error ? err.message : '加载内容失败'
+    editOpen.value = false
+  } finally {
+    editLoading.value = false
+  }
+}
+
+async function saveEdit() {
+  if (!editContent.value.trim()) {
+    error.value = '内容不能为空'
+    return
+  }
+  editSaving.value = true
+  try {
+    const r = await updateDocumentContent(editDoc.value!.id, editContent.value)
+    error.value = `✅ ${r.message},新生成 ${r.chunk_count} 个 chunks`
+    editOpen.value = false
+    await loadDocs()
+    setTimeout(() => {
+      if (error.value?.startsWith('✅')) error.value = null
+    }, 4000)
+  } catch (err: unknown) {
+    error.value = err instanceof Error ? err.message : '保存失败'
+  } finally {
+    editSaving.value = false
   }
 }
 
@@ -289,12 +344,21 @@ watch(searchQuery, (v) => {
           <div class="left-tools">
             <div class="seg">
               <button
+                v-for="f in (['all', 'static', 'uploaded'] as const)"
+                :key="f"
+                class="seg-btn"
+                :class="{ active: filterSource === f }"
+                @click="filterSource = f; loadDocs()"
+              >{{ f === 'all' ? '全部来源' : f === 'static' ? '静态' : '上传' }}</button>
+            </div>
+            <div class="seg">
+              <button
                 v-for="f in (['all', 'indexed', 'pending', 'failed'] as const)"
                 :key="f"
                 class="seg-btn"
                 :class="{ active: filterStatus === f }"
-                @click="filterStatus = f"
-              >{{ f === 'all' ? '全部' : statusLabel(f) }}</button>
+                @click="filterStatus = f; loadDocs()"
+              >{{ f === 'all' ? '全部状态' : statusLabel(f) }}</button>
             </div>
             <span class="muted count">显示 {{ filteredDocs.length }} 份</span>
           </div>
@@ -315,22 +379,29 @@ watch(searchQuery, (v) => {
           <table v-else class="t">
             <thead>
               <tr>
+                <th>来源</th>
                 <th>文件名</th>
                 <th>状态</th>
                 <th>Chunk 数</th>
-                <th>上传时间</th>
+                <th>大小</th>
+                <th>更新时间</th>
                 <th>操作</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="d in filteredDocs" :key="d.id">
                 <td>
+                  <span class="tag" :class="d.source === 'static' ? 'tag-static' : 'tag-uploaded'">
+                    {{ d.source === 'static' ? '📌 静态' : '📤 上传' }}
+                  </span>
+                </td>
+                <td>
                   <div class="file-cell">
                     <span class="file-icon">◊</span>
                     <div>
                       <div class="file-name">{{ d.filename }}</div>
                       <div v-if="d.error_msg" class="err-line">{{ d.error_msg }}</div>
-                      <div v-else class="muted sm">#{{ d.id }} · 上传者 {{ d.uploaded_by }}</div>
+                      <div v-else class="muted sm">{{ d.id }}<span v-if="d.uploaded_by"> · 上传者 #{{ d.uploaded_by }}</span></div>
                     </div>
                   </div>
                 </td>
@@ -341,19 +412,21 @@ watch(searchQuery, (v) => {
                   </span>
                 </td>
                 <td class="mono">{{ d.chunk_count || 0 }}</td>
+                <td class="mono sm">{{ formatSize(d.size_bytes) }}</td>
                 <td>
-                  <div>{{ d.created_at ? formatRelativeTime(d.created_at) : '—' }}</div>
-                  <div class="muted sm">{{ d.created_at ? d.created_at.slice(0, 10) : '' }}</div>
+                  <div>{{ d.updated_at ? formatRelativeTime(d.updated_at) : '—' }}</div>
+                  <div class="muted sm">{{ d.updated_at ? d.updated_at.slice(0, 10) : '' }}</div>
                 </td>
                 <td>
                   <div class="ops">
                     <button class="op-btn" @click="onPreview(d)">预览</button>
+                    <button v-if="d.editable" class="op-btn" @click="openEdit(d)">编辑</button>
                     <button
                       class="op-btn"
                       :disabled="reindexingId === d.id"
                       @click="onReindex(d)"
                     >{{ reindexingId === d.id ? '重索中…' : '重索引' }}</button>
-                    <button class="op-btn danger" @click="onDelete(d)">删除</button>
+                    <button v-if="d.deletable" class="op-btn danger" @click="onDelete(d)">删除</button>
                   </div>
                 </td>
               </tr>
@@ -373,6 +446,42 @@ watch(searchQuery, (v) => {
       <div v-if="previewLoading" class="loading pad">加载中…</div>
       <pre v-else-if="previewData" class="preview-text">{{ previewData.content }}</pre>
       <div v-if="previewData?.truncated" class="muted sm tip">(已截断,仅显示前 {{ previewData.content.length }} 字符)</div>
+    </GlassModal>
+
+    <!-- 编辑 modal -->
+    <GlassModal
+      :open="editOpen"
+      :title="`编辑 - ${editDoc?.filename ?? ''}`"
+      width="860px"
+      @update:open="(v) => (editOpen = v)"
+    >
+      <div v-if="editDoc" class="edit-alert">
+        <span class="ic">ⓘ</span>
+        <span v-if="editDoc.source === 'static'">
+          静态 KB(git 跟踪)。保存后会写回 backend/knowledge_base/&lt;{{ editDoc.filename }}&gt; 并重新入库。
+        </span>
+        <span v-else>
+          上传的 KB。保存后会写回 uploads/ 目录并重新入库。
+        </span>
+      </div>
+      <div v-if="editLoading" class="loading pad">加载中…</div>
+      <textarea
+        v-else
+        v-model="editContent"
+        class="edit-textarea"
+        spellcheck="false"
+        :placeholder="'# 在这里编辑 Markdown / 纯文本…'"
+      />
+      <div class="edit-foot">
+        <span class="muted sm">字符数: {{ editContent.length }}</span>
+        <span class="muted sm">文件大小: {{ formatSize(editDoc?.size_bytes) }}</span>
+        <div class="edit-foot-actions">
+          <button class="ghost-btn" @click="editOpen = false" :disabled="editSaving">取消</button>
+          <button class="primary-btn" @click="saveEdit" :disabled="editSaving || editLoading">
+            {{ editSaving ? '保存中…' : '保存并重新索引' }}
+          </button>
+        </div>
+      </div>
     </GlassModal>
 
     <ConfirmDialog
@@ -508,6 +617,8 @@ watch(searchQuery, (v) => {
 .tag-indexed { background: rgba(52, 211, 153, 0.15); color: var(--accent-2); }
 .tag-pending { background: rgba(124, 92, 255, 0.15); color: var(--accent-1); }
 .tag-failed { background: rgba(248, 113, 113, 0.15); color: var(--state-error); }
+.tag-static { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
+.tag-uploaded { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
 .spin { display: inline-block; animation: spin 1.2s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -521,6 +632,38 @@ watch(searchQuery, (v) => {
 .op-btn:hover:not(:disabled) { background: var(--glass-2-bg); color: var(--c-ink); }
 .op-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .op-btn.danger:hover:not(:disabled) { background: rgba(248, 113, 113, 0.12); color: var(--state-error); border-color: var(--state-error); }
+
+/* edit modal */
+.edit-alert {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-radius: var(--r-sm);
+  background: rgba(124, 92, 255, 0.08);
+  border: 1px solid rgba(124, 92, 255, 0.25);
+  font-size: 12px; color: var(--c-ink-2);
+  margin-bottom: 12px;
+}
+.edit-alert .ic { color: var(--accent-1); font-size: 14px; }
+.edit-textarea {
+  width: 100%;
+  min-height: 480px;
+  padding: 14px;
+  font-family: 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+  font-size: 13px; line-height: 1.6;
+  color: var(--c-ink);
+  background: var(--glass-1-bg);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-sm);
+  outline: none;
+  resize: vertical;
+  box-sizing: border-box;
+  transition: border-color var(--t-fast);
+}
+.edit-textarea:focus { border-color: var(--accent-1); }
+.edit-foot {
+  display: flex; align-items: center; gap: 16px;
+  margin-top: 10px; font-size: 11px;
+}
+.edit-foot-actions { margin-left: auto; display: flex; gap: 8px; }
 
 /* preview */
 .preview-text {

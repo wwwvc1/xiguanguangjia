@@ -27,7 +27,7 @@ Page({
   },
 
   loadList() {
-    const url = this.data.filter === 'all' ? '/reports' : `/reports?type=${this.data.filter}`;
+    const url = this.data.filter === 'all' ? '/reports/' : `/reports/?type=${this.data.filter}`;
     app.request({ url }).then(list => {
       this.setData({ reports: list || [] });
     }).catch(() => this.setData({ reports: [] }));

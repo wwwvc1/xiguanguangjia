@@ -39,17 +39,24 @@ const close = () => emit('update:open', false)
 <style scoped>
 .mask {
   position: fixed; inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--modal-mask, rgba(0, 0, 0, 0.5));
   display: grid; place-items: center;
   z-index: 100;
   padding: 16px;
 }
 .dialog {
+  /* 弹窗背景 — 不透明,看不到底层页面。
+     改透明度:在 App.vue 调 --modal-bg(0~1)。
+     想要完全实色:`background: #fff;` 或 `var(--c-paper)` */
+  background: var(--modal-bg, rgba(255, 255, 255, 0.96));
   border-radius: var(--r-lg);
   max-width: 92vw;
   max-height: 88vh;
   display: flex; flex-direction: column;
   overflow: hidden;
+  box-shadow: 0 24px 64px -16px rgba(15, 26, 20, 0.35),
+              0 4px 12px rgba(15, 26, 20, 0.08);
+  border: 1px solid var(--c-line);
 }
 .dlg-header {
   display: flex; justify-content: space-between; align-items: center;
