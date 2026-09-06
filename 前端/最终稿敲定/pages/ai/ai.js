@@ -303,7 +303,10 @@ Page({
   // 更新 AI 消息内容(含 toolChain 渲染)
   _updateAiMessage(msgId, content, toolChain, sources) {
     // 单条内容上限 4000 字符,防止 AI 长回复把单条消息撑得太大
-    const safeContent = (content || '').slice(0, 4000);
+    const raw = (content || '');
+    const safeContent = raw.length > 4000
+      ? raw.slice(0, 4000) + '\n\n...(回复已截断,完整版请看历史记录)'
+      : raw;
     const messages = this.data.messages.map(m => {
       if (m.id !== msgId) return m;
       const update = { ...m, content: safeContent };
@@ -317,13 +320,14 @@ Page({
       }
       return update;
     });
-    this.setData({ messages, scrollIntoView: '' });
-    this.setData({ scrollIntoView: 'chat-bottom' });
+    this.setData({ messages, scrollIntoView: 'chat-bottom' });
   },
 
   _scrollToBottom() {
-    this.setData({ scrollIntoView: '' });
-    this.setData({ scrollIntoView: 'chat-bottom' });
+    // 用 setTimeout 让 DOM 先更新完,再触发 scroll-into-view
+    setTimeout(() => {
+      this.setData({ scrollIntoView: 'chat-bottom' });
+    }, 50);
   },
 
   _handleError(err, aiMsgId) {

@@ -51,10 +51,12 @@ CREATE TABLE IF NOT EXISTS todos (
     user_id INT NOT NULL,
     text VARCHAR(255) NOT NULL,
     done BOOLEAN DEFAULT FALSE,
+    due_date DATETIME NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    INDEX idx_user_id (user_id)
+    INDEX idx_user_id (user_id),
+    INDEX idx_due_date (due_date)
 );
 
 -- 6. goals 表（目标）

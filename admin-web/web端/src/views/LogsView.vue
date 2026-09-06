@@ -14,6 +14,7 @@ import GlassCard from '@/components/glass/GlassCard.vue'
 import GlassInput from '@/components/form/GlassInput.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { listLogs, listLogActions, exportLogs, type LogEntry } from '@/api/logs'
+import { logAiApi } from '@/api/insights'
 import { formatDate, formatRelativeTime } from '@/utils/format'
 
 // ─────────── 状态 ───────────
@@ -119,6 +120,27 @@ function showDetail(row: LogEntry) {
   detailOpen.value = true
 }
 
+// AI 解读
+const aiOpen = ref(false)
+const aiLoading = ref(false)
+const aiInsight = ref('')
+const aiPreview = ref<{ by_action: any[]; by_hour: any[]; recent_logs: any[] } | null>(null)
+async function onAiSummary() {
+  aiOpen.value = true
+  aiLoading.value = true
+  aiInsight.value = ''
+  aiPreview.value = null
+  try {
+    const r = await logAiApi.run(50)
+    aiInsight.value = r.ai_insight || ''
+    aiPreview.value = r.preview
+  } catch (e: any) {
+    aiInsight.value = `AI 调用失败: ${e?.response?.data?.detail || e?.message || e}`
+  } finally {
+    aiLoading.value = false
+  }
+}
+
 // 工具
 function statusTone(s: string) {
   if (s === 'failed') return 'tag-failed'
@@ -145,6 +167,9 @@ function statusTone(s: string) {
           <div class="header-actions">
             <button class="ghost-btn" @click="load" :disabled="loading">
               <span class="ic">↻</span>{{ loading ? '刷新中' : '刷新' }}
+            </button>
+            <button class="primary-btn" @click="onAiSummary" :disabled="aiLoading">
+              <span class="ic">✨</span>AI 解读
             </button>
             <button class="primary-btn" @click="onExport">
               <span class="ic">↓</span>导出 CSV
@@ -258,6 +283,23 @@ function statusTone(s: string) {
             <button class="link" @click="detailOpen = false">✕</button>
           </div>
           <pre class="json-block">{{ JSON.stringify(detailEntry, null, 2) }}</pre>
+        </div>
+      </div>
+
+      <!-- AI 解读 modal -->
+      <div v-if="aiOpen" class="modal-mask" @click.self="aiOpen = false">
+        <div class="modal">
+          <div class="modal-head">
+            <h3 class="serif">✨ AI 解读(系统默认模型 · 基于最近 50 条日志)</h3>
+            <button class="link" @click="aiOpen = false">✕</button>
+          </div>
+          <div class="modal-body">
+            <div v-if="aiLoading" class="loading pad">AI 思考中…</div>
+            <pre v-else class="json-block">{{ aiInsight }}</pre>
+            <div v-if="aiPreview" style="margin-top: 12px; font-size: 11px; color: var(--c-ink-3)">
+              依据:近 7 天 {{ aiPreview.by_action.length }} 种 action · {{ aiPreview.recent_logs.length }} 条明细
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -399,6 +441,7 @@ function statusTone(s: string) {
   display: flex; justify-content: space-between; align-items: center;
   padding: 16px 20px; border-bottom: 1px solid var(--c-line);
 }
+.modal-body { padding: 20px; }
 .json-block {
   padding: 16px 20px;
   margin: 0;

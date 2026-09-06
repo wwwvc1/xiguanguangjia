@@ -36,7 +36,10 @@ function request(options) {
           wx.redirectTo({ url: '/pages/login/login' });
           reject(new Error('未授权'));
         } else {
-          reject(new Error(data.detail || data.message || '请求失败'));
+          const err = new Error(data.detail || data.message || `请求失败 (${res.statusCode})`);
+          err.statusCode = res.statusCode;
+          err.detail = data.detail || data.message;
+          reject(err);
         }
       },
       fail: (err) => {

@@ -125,3 +125,23 @@ export function getLLMUsage(days = 7): Promise<LLMUsageStats> {
     .get<LLMUsageStats>('/admin/dashboard/llm-usage', { params: { days } })
     .then((r) => r.data)
 }
+
+export interface LLMTokenStats {
+  days: number
+  total: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
+  by_model: {
+    model: string
+    calls: number
+    prompt_tokens: number
+    completion_tokens: number
+    total_tokens: number
+    avg_tokens_per_call: number
+  }[]
+  by_day: { date: string; model: string; total_tokens: number }[]
+}
+
+export function getLLMTokenUsage(days = 30): Promise<LLMTokenStats> {
+  return http
+    .get<LLMTokenStats>('/admin/dashboard/llm-tokens', { params: { days } })
+    .then((r) => r.data)
+}

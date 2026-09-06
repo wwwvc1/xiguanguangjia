@@ -31,6 +31,7 @@ import {
   type DashboardStats, type AdminMe,
   type AdminLogEntry, type RetentionResponse, type LLMUsageResponse
 } from '@/api/dashboard'
+import { insightsApi, type InsightOverview } from '@/api/insights'
 
 // ────────────────────────── 状态 ──────────────────────────
 const router = useRouter()
@@ -38,6 +39,7 @@ const theme = useThemeStore()
 const auth = useAuthStore()
 
 const stats = ref<DashboardStats | null>(null)
+const overview = ref<InsightOverview | null>(null)  // 数据资产用(兼容旧 stats)
 const me = ref<AdminMe | null>(null)
 const logs = ref<AdminLogEntry[]>([])
 const retention = ref<RetentionResponse | null>(null)
@@ -91,18 +93,18 @@ function bindCityStagger(el: unknown) {
   }
 }
 
-// 数据资产列表
+// 数据资产列表(优先用 overview,fallback 到 stats.data)
 const dataItems = computed(() => {
-  if (!stats.value) return []
-  const d = stats.value.data
+  const d = overview.value?.data_totals || stats.value?.data
+  if (!d) return []
   return [
-    { key: 'todos',         icon: '✓', label: '待办', value: d.todos },
-    { key: 'goals',         icon: '◎', label: '目标', value: d.goals },
-    { key: 'transactions',  icon: '¥', label: '收支', value: d.transactions },
-    { key: 'meals',         icon: '◔', label: '饮食', value: d.meals },
-    { key: 'reminders',     icon: '◐', label: '提醒', value: d.reminders },
-    { key: 'achievements',  icon: '★', label: '成就', value: d.achievements },
-    { key: 'reports',       icon: '⎙', label: '报告', value: d.reports }
+    { key: 'todos',         icon: '✓', label: '待办', value: d.todos ?? 0 },
+    { key: 'goals',         icon: '◎', label: '目标', value: d.goals ?? 0 },
+    { key: 'transactions',  icon: '¥', label: '收支', value: d.transactions ?? 0 },
+    { key: 'meals',         icon: '◔', label: '饮食', value: d.meals ?? 0 },
+    { key: 'reminders',     icon: '◐', label: '提醒', value: d.reminders ?? 0 },
+    { key: 'achievements',  icon: '★', label: '成就', value: d.achievements ?? 0 },
+    { key: 'reports',       icon: '⎙', label: '报告', value: d.reports ?? 0 }
   ]
 })
 
@@ -111,14 +113,17 @@ async function loadAll() {
   loading.value = true
   error.value = null
   try {
-    const [s, m, l, r, u] = await Promise.allSettled([
+    // 并行拉所有,就算 stats 失败 overview 也能兜住
+    const [s, m, l, r, u, ov] = await Promise.allSettled([
       fetchStats(),
       fetchMe(),
       fetchRecentLogs(20),
       fetchRetention(retentionDays.value),
-      fetchLLMUsage(7)
+      fetchLLMUsage(7),
+      insightsApi.overview()
     ])
     if (s.status === 'fulfilled') stats.value = s.value
+    if (ov.status === 'fulfilled') overview.value = ov.value
     if (m.status === 'fulfilled') me.value = m.value
     if (l.status === 'fulfilled') logs.value = l.value
     if (r.status === 'fulfilled') retention.value = r.value
@@ -381,16 +386,36 @@ function endY(data: number[], height: number): number {
             </div>
           </GlassCard>
 
-          <!-- 全球 8 层 Canvas 2D 地球(主区中央主视觉) -->
+          <!-- 装饰区(原地球组件已移除,改放运营提示,避免 three.js + CDN 慢加载) -->
+          <GlassCard type="outer" class="panel-card" style="padding: 20px;">
+            <div class="panel-head">
+              <div>
+                <h3 class="serif">运营提示</h3>
+                <p class="muted">建议优先关注的指标</p>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; padding: 8px 4px;">
+              <div class="hint-row">
+                <span class="hint-icon">🔥</span>
+                <span>点击下方「数据资产分布」任意卡片,查看真实数据 + 用户名</span>
+              </div>
+              <div class="hint-row">
+                <span class="hint-icon">✨</span>
+                <span>在「数据洞察」页可点散点图,跳到该用户的待办列表</span>
+              </div>
+              <div class="hint-row">
+                <span class="hint-icon">🤖</span>
+                <span>在「系统日志」/「AI 模型」页可调 AI 解读与 token 用量</span>
+              </div>
+            </div>
+          </GlassCard>
+
+          <!-- 全球节点 360°(Three.js 地球) -->
           <GlassCard type="outer" class="panel-card earth-card" style="padding: 0; overflow: hidden;">
             <div class="panel-head" style="padding: 16px 20px 12px;">
               <div>
                 <h3 class="serif">全球节点 360°</h3>
-                <p class="muted">8 城 / 6 弧线 / 3 轴自转(0.0008/0.0001/0.00007 互质频率)</p>
-              </div>
-              <div class="seg">
-                <span class="seg-tag">纯 Canvas 2D</span>
-                <span class="seg-tag">0 外部依赖</span>
+                <p class="muted">8 城 / 6 弧线 / 3 轴自转</p>
               </div>
             </div>
             <div class="earth-wrap" style="height: 480px; border-top: 1px solid rgba(255,255,255,0.06);">
@@ -451,9 +476,10 @@ function endY(data: number[], height: number): number {
               </div>
             </div>
             <div class="data-grid">
-              <div
+              <router-link
                 v-for="(item, idx) in dataItems"
                 :key="item.key"
+                :to="{ name: 'DataAsset', params: { type: item.key } }"
                 class="data-item"
               >
                 <div
@@ -468,7 +494,8 @@ function endY(data: number[], height: number): number {
                     <CountupText :value="item.value" />
                   </div>
                 </div>
-              </div>
+                <div class="data-go">→</div>
+              </router-link>
             </div>
           </GlassCard>
         </section>
@@ -920,7 +947,26 @@ function endY(data: number[], height: number): number {
   background: var(--glass-1-bg);
   border-radius: var(--r-sm);
   border: 1px solid var(--c-line);
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  position: relative;
+  transition: transform var(--t-fast), background var(--t-fast);
 }
+.data-item:hover {
+  background: var(--glass-2-bg);
+  transform: translateY(-1px);
+}
+.data-item:hover .data-go { opacity: 1; }
+.data-go {
+  margin-left: auto;
+  color: var(--c-ink-3);
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity var(--t-fast);
+}
+.hint-row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--c-ink-2); }
+.hint-icon { font-size: 18px; }
 .data-icon {
   width: 32px; height: 32px;
   display: grid; place-items: center;

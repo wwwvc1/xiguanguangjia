@@ -1,59 +1,42 @@
 <script setup lang="ts">
 /**
- * InsightsView — 数据洞察 v2 (Phase 5)
+ * InsightsView — 数据洞察(真实数据版)
  *
- * 4 张图表,纯前端 mock + SVG:
-  - 散点图:用户打卡天数 vs 完成率(强正相关)
-  - 柱状图:24 时段打卡人数(晚 8-10 点高峰)
-  - 折线图:30 日活跃用户 + 7 日移动平均
-  - 热力图:周一-周日 × 0-23 时段,密度
+ * 4 张图全部从后端 /api/admin/insights/* 拿真实数据:
+ *   - 散点图:用户活跃天数 vs 完成率(可点)
+ *   - 折线图:每日活跃用户(checkin)
+ *   - 柱状图:24 时段打卡
+ *   - 热力图:周×小时
  *
- * 每个图表自动解读 (insight) — 基于派生统计
+ * 顶部"AI 运营建议"按钮 → 系统默认模型解读
  */
-import { ref, computed } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import GlassNav from '@/components/glass/GlassNav.vue'
 import GlassTopBar from '@/components/glass/GlassTopBar.vue'
 import GlassCard from '@/components/glass/GlassCard.vue'
+import { insightsApi, type ScatterPoint, type TrendPoint, type HourlyPoint, type HeatmapCell, type InsightOverview } from '@/api/insights'
+import { formatNumber } from '@/utils/format'
 
-// ────────────────────────── Mock 数据生成器 ──────────────────────────
-/** Mulberry32 — 确定性 PRNG,刷新页面数据稳定 */
-function mulberry32(seed: number) {
-  let a = seed
-  return () => {
-    a = (a + 0x6d2b79f5) | 0
-    let t = a
-    t = Math.imul(t ^ (t >>> 15), t | 1)
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
-    return (((t ^ t >>> 14) >>> 0) / 4294967296)
-  }
-}
+const router = useRouter()
 
-const rng = mulberry32(20251231)
+// ─────────── state ───────────
+const loading = ref(false)
+const overview = ref<InsightOverview | null>(null)
+const scatter = ref<ScatterPoint[]>([])
+const trend = ref<TrendPoint[]>([])
+const hourly = ref<HourlyPoint[]>([])
+const heatmap = ref<HeatmapCell[]>([])
 
-function gauss(mean = 0, std = 1): number {
-  // Box-Muller
-  const u1 = Math.max(rng(), 1e-9)
-  const u2 = rng()
-  return mean + std * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2)
-}
+const aiOpen = ref(false)
+const aiLoading = ref(false)
+const aiAdvice = ref('')
 
-// ────────────────────────── 1. 散点图数据 ──────────────────────────
-interface ScatterPoint { days: number; completion: number }
-const scatter = computed<ScatterPoint[]>(() => {
-  const pts: ScatterPoint[] = []
-  const N = 220
-  for (let i = 0; i < N; i++) {
-    const days = Math.round(rng() * 365)
-    // 高频用户完成率更高,带高斯噪声
-    const completion = 28 + days * 0.18 + gauss(0, 12)
-    pts.push({ days, completion: Math.max(3, Math.min(98, completion)) })
-  }
-  return pts
-})
-
-// 线性回归 (y = slope*x + intercept)
+// ─────────── derived ───────────
+// 散点回归
 const regression = computed(() => {
   const data = scatter.value
+  if (data.length < 2) return { slope: 0, intercept: 0, r2: 0 }
   const n = data.length
   const mx = data.reduce((s, p) => s + p.days, 0) / n
   const my = data.reduce((s, p) => s + p.completion, 0) / n
@@ -62,301 +45,129 @@ const regression = computed(() => {
     num += (p.days - mx) * (p.completion - my)
     den += (p.days - mx) ** 2
   }
-  const slope = num / den
+  const slope = den === 0 ? 0 : num / den
   const intercept = my - slope * mx
   // R²
   const ssTot = data.reduce((s, p) => s + (p.completion - my) ** 2, 0)
-  const ssRes = data.reduce((s, p) => {
-    const yp = slope * p.days + intercept
-    return s + (p.completion - yp) ** 2
-  }, 0)
-  const r2 = 1 - ssRes / ssTot
-  return { slope, intercept, r2, mx, my }
+  const ssRes = data.reduce((s, p) => s + (p.completion - (slope * p.days + intercept)) ** 2, 0)
+  const r2 = ssTot === 0 ? 0 : 1 - ssRes / ssTot
+  return { slope, intercept, r2 }
 })
 
-// 区间均值 — 用于洞察
-const bucketStats = computed(() => {
-  const buckets: Record<string, { sum: number; count: number }> = {
-    '低频(<30天)': { sum: 0, count: 0 },
-    '中频(30-200天)': { sum: 0, count: 0 },
-    '高频(>200天)': { sum: 0, count: 0 }
+// ─────────── load ───────────
+async function loadAll() {
+  loading.value = true
+  try {
+    const [ov, sc, tr, hr, hm] = await Promise.all([
+      insightsApi.overview(),
+      insightsApi.scatter(30),
+      insightsApi.trend(30),
+      insightsApi.hourly(),
+      insightsApi.heatmap()
+    ])
+    overview.value = ov
+    scatter.value = sc.points
+    trend.value = tr.series
+    hourly.value = hr.buckets
+    heatmap.value = hm.cells
+  } catch (e) {
+    console.error('加载数据洞察失败:', e)
+  } finally {
+    loading.value = false
   }
-  for (const p of scatter.value) {
-    const key = p.days < 30 ? '低频(<30天)' : p.days <= 200 ? '中频(30-200天)' : '高频(>200天)'
-    buckets[key].sum += p.completion
-    buckets[key].count += 1
-  }
-  return Object.entries(buckets).map(([k, v]) => ({
-    label: k,
-    avg: v.count > 0 ? v.sum / v.count : 0,
-    count: v.count
-  }))
-})
-
-const scatterInsight = computed(() => {
-  const r2 = regression.value.r2
-  const high = bucketStats.value[2]
-  const low = bucketStats.value[0]
-  return `打卡天数与完成率呈强正相关(R² = ${r2.toFixed(2)})。高频用户(${high.count} 人)平均完成率 ${high.avg.toFixed(0)}%,低频(${low.count} 人)仅 ${low.avg.toFixed(0)}%。建议引导新用户养成前 2 周的连续打卡习惯。`
-})
-
-// ────────────────────────── 2. 柱状图数据 ──────────────────────────
-interface HourBar { hour: number; count: number }
-const bars = computed<HourBar[]>(() => {
-  const arr: HourBar[] = []
-  for (let h = 0; h < 24; h++) {
-    let base = 35
-    if (h >= 7 && h <= 9) base += 70      // 早高峰
-    if (h >= 12 && h <= 14) base += 35     // 午高峰
-    if (h >= 17 && h <= 19) base += 50     // 下班
-    if (h >= 20 && h <= 22) base += 170    // 晚高峰(主要)
-    if (h >= 0 && h <= 5) base -= 25       // 凌晨低谷
-    base += gauss(0, 18)
-    arr.push({ hour: h, count: Math.max(5, Math.round(base)) })
-  }
-  return arr
-})
-
-const peakHour = computed(() => {
-  const max = bars.value.reduce((m, b) => (b.count > m.count ? b : m), { hour: 0, count: 0 })
-  return max
-})
-
-const totalCount = computed(() => bars.value.reduce((s, b) => s + b.count, 0))
-const peakShare = computed(() => {
-  // 20-22 这 3 小时占比
-  const peakSlice = bars.value.slice(20, 23).reduce((s, b) => s + b.count, 0)
-  return peakSlice / totalCount.value
-})
-
-const barInsight = computed(() => {
-  const peak = peakHour.value
-  const slice3 = bars.value.slice(20, 23).reduce((s, b) => s + b.count, 0)
-  const share = (slice3 / totalCount.value * 100).toFixed(0)
-  return `晚间 ${peak.hour - 1}-${peak.hour + 1} 点为绝对高峰(${peak.count} 次/小时),20-22 点 3 小时合计占全天打卡 ${share}%。建议 AI 推送与提醒任务集中在 19:30-21:00 触发。`
-})
-
-// ────────────────────────── 3. 折线图数据 ──────────────────────────
-const dauRaw = computed<number[]>(() => {
-  const arr: number[] = []
-  for (let i = 0; i < 30; i++) {
-    const trend = 800 + i * 12                          // 缓增
-    const wave = Math.sin(i * 0.45) * 80                // 周期
-    const weekend = (i % 7 === 5 || i % 7 === 6) ? -120 : 0  // 周末回落
-    const v = trend + wave + weekend + gauss(0, 60)
-    arr.push(Math.max(400, Math.round(v)))
-  }
-  return arr
-})
-
-const dauMA = computed<number[]>(() => {
-  // 7 日移动平均(中心对齐:取 i-3..i+3)
-  const raw = dauRaw.value
-  return raw.map((_, i) => {
-    const start = Math.max(0, i - 3)
-    const end = Math.min(raw.length, i + 4)
-    const slice = raw.slice(start, end)
-    return Math.round(slice.reduce((s, v) => s + v, 0) / slice.length)
-  })
-})
-
-const dauDates = computed<string[]>(() => {
-  const arr: string[] = []
-  const now = new Date()
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(now.getTime() - i * 24 * 3600 * 1000)
-    arr.push(`${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
-  }
-  return arr
-})
-
-const dauDelta = computed(() => {
-  const ma = dauMA.value
-  if (ma.length < 14) return 0
-  const recent = ma.slice(-7).reduce((s, v) => s + v, 0) / 7
-  const prior = ma.slice(-14, -7).reduce((s, v) => s + v, 0) / 7
-  return ((recent - prior) / prior) * 100
-})
-
-const lineInsight = computed(() => {
-  const ma = dauMA.value
-  const avg = Math.round(ma.reduce((s, v) => s + v, 0) / ma.length)
-  const peak = Math.max(...ma)
-  const delta = dauDelta.value
-  const sign = delta >= 0 ? '+' : ''
-  return `近 30 日 DAU 7 日均值 ${avg} 人,峰值 ${peak} 人,周环比 ${sign}${delta.toFixed(1)}%。可见周末回落 + 工作日恢复的稳定节律,趋势线整体温和上行。`
-})
-
-// ────────────────────────── 4. 热力图数据 ──────────────────────────
-const heatmap = computed<number[][]>(() => {
-  const matrix: number[][] = []
-  for (let d = 0; d < 7; d++) {
-    const row: number[] = []
-    for (let h = 0; h < 24; h++) {
-      let v = 8
-      if (h >= 7 && h <= 9) v += 60
-      if (h >= 12 && h <= 13) v += 30
-      if (h >= 18 && h <= 19) v += 50
-      if (h >= 20 && h <= 22) v += 100
-      // 工作日 vs 周末
-      const isWeekend = d === 5 || d === 6
-      if (!isWeekend) {
-        if (h >= 19 && h <= 22) v += 60
-      } else {
-        v -= Math.round(v * 0.4)
-        if (h >= 10 && h <= 12) v += 30
-      }
-      v += gauss(0, 15)
-      row.push(Math.max(0, Math.round(v)))
-    }
-    matrix.push(row)
-  }
-  return matrix
-})
-
-const heatmapMax = computed(() => {
-  let max = 1
-  for (const row of heatmap.value) for (const v of row) if (v > max) max = v
-  return max
-})
-
-const dayLabels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-
-const peakCell = computed(() => {
-  let best = { d: 0, h: 0, v: 0 }
-  for (let d = 0; d < 7; d++) {
-    for (let h = 0; h < 24; h++) {
-      if (heatmap.value[d][h] > best.v) best = { d, h, v: heatmap.value[d][h] }
-    }
-  }
-  return best
-})
-
-const heatmapInsight = computed(() => {
-  const p = peakCell.value
-  const weekdaySum = heatmap.value.slice(0, 5).reduce((s, r) => s + r.reduce((a, b) => a + b, 0), 0)
-  const weekendSum = heatmap.value.slice(5).reduce((s, r) => s + r.reduce((a, b) => a + b, 0), 0)
-  const ratio = (weekdaySum / 5) / Math.max(weekendSum / 2, 1)
-  return `${dayLabels[p.d]} ${String(p.h).padStart(2, '0')}:00 段打卡密度最高(${p.v})。工作日打卡强度为周末的 ${ratio.toFixed(1)}×,核心时段集中在 20-22 点,周末向 10-12 点轻度迁移。`
-})
-
-// ────────────────────────── 视图切换 ──────────────────────────
-const viewMode = ref<'all' | 'scatter' | 'bar' | 'line' | 'heatmap'>('all')
-
-// ────────────────────────── SVG 工具 ──────────────────────────
-const scatterW = { w: 560, h: 280 }
-const scatterPad = { top: 20, right: 16, bottom: 28, left: 40 }
-
-function scatterX(d: number): number {
-  const inner = scatterW.w - scatterPad.left - scatterPad.right
-  return scatterPad.left + (d / 365) * inner
-}
-function scatterY(c: number): number {
-  const inner = scatterW.h - scatterPad.top - scatterPad.bottom
-  return scatterPad.top + (1 - c / 100) * inner
 }
 
-// 折线 path
-function linePath(data: number[], width: number, height: number, padding: { top: number; right: number; bottom: number; left: number }): string {
-  if (!data.length) return ''
-  const min = Math.min(...data)
-  const max = Math.max(...data)
-  const range = max - min || 1
-  const innerW = width - padding.left - padding.right
-  const innerH = height - padding.top - padding.bottom
-  const stepX = innerW / (data.length - 1 || 1)
-  return data.map((v, i) => {
-    const x = padding.left + i * stepX
-    const y = padding.top + (1 - (v - min) / range) * innerH
-    return `${i === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`
-  }).join(' ')
+async function onAiSummary() {
+  aiOpen.value = true
+  aiLoading.value = true
+  aiAdvice.value = ''
+  try {
+    const r = await insightsApi.aiSummary()
+    aiAdvice.value = r.ai_advice || '暂无建议'
+  } catch (e: any) {
+    aiAdvice.value = `AI 调用失败: ${e?.response?.data?.detail || e?.message || e}`
+  } finally {
+    aiLoading.value = false
+  }
 }
 
-function areaPath(data: number[], width: number, height: number, padding: { top: number; right: number; bottom: number; left: number }): string {
-  if (!data.length) return ''
-  const top = linePath(data, width, height, padding)
-  const innerW = width - padding.left - padding.right
-  const innerH = height - padding.top - padding.bottom
-  const min = Math.min(...data)
-  const max = Math.max(...data)
-  const range = max - min || 1
-  void innerH
-  void range
-  const baseY = padding.top + innerH
-  return `${top} L ${padding.left + innerW} ${baseY} L ${padding.left} ${baseY} Z`
+function onScatterClick(p: ScatterPoint) {
+  // 跳到该用户的 todo 数据视图(沿用 DataAssetView 复用)
+  router.push({ name: 'DataAsset', params: { type: 'todos' }, query: { user_id: p.user_id } })
 }
 
-function endPoint(data: number[], width: number, height: number, padding: { top: number; right: number; bottom: number; left: number }): { x: number; y: number } {
-  if (!data.length) return { x: 0, y: 0 }
-  const min = Math.min(...data)
-  const max = Math.max(...data)
-  const range = max - min || 1
-  const innerW = width - padding.left - padding.right
-  const innerH = height - padding.top - padding.bottom
+// ─────────── chart helpers ───────────
+const HEATMAP_DOWS = ['日', '一', '二', '三', '四', '五', '六']
+
+const scatterChart = computed(() => {
+  const data = scatter.value
+  if (!data.length) return null
+  const W = 600, H = 320, pad = 40
+  const xs = data.map((d) => d.days)
+  const ys = data.map((d) => d.completion)
+  const xMax = Math.max(...xs, 1)
+  const yMax = 100
+  const xScale = (x: number) => pad + (x / xMax) * (W - pad * 2)
+  const yScale = (y: number) => H - pad - (y / yMax) * (H - pad * 2)
+  const reg = regression.value
   return {
-    x: padding.left + innerW,
-    y: padding.top + (1 - (data[data.length - 1] - min) / range) * innerH
+    W, H, pad, xMax, yMax,
+    points: data.map((p) => ({ ...p, cx: xScale(p.days), cy: yScale(p.completion) })),
+    line: {
+      x1: xScale(0), y1: yScale(reg.intercept),
+      x2: xScale(xMax), y2: yScale(reg.slope * xMax + reg.intercept)
+    },
+    xScale, yScale
   }
-}
+})
 
-const lineW = { w: 560, h: 240 }
-const linePad = { top: 16, right: 16, bottom: 28, left: 40 }
-const rawLineD = computed(() => linePath(dauRaw.value, lineW.w, lineW.h, linePad))
-const maLineD = computed(() => linePath(dauMA.value, lineW.w, lineW.h, linePad))
-const maAreaD = computed(() => areaPath(dauMA.value, lineW.w, lineW.h, linePad))
-const maEnd = computed(() => endPoint(dauMA.value, lineW.w, lineW.h, linePad))
+const trendChart = computed(() => {
+  const data = trend.value
+  if (!data.length) return null
+  const W = 600, H = 240, pad = 36
+  const xs = data.map((_, i) => i)
+  const ys = data.map((d) => d.value)
+  const yMax = Math.max(...ys, 5) * 1.1
+  const xScale = (x: number) => pad + (x / Math.max(xs.length - 1, 1)) * (W - pad * 2)
+  const yScale = (y: number) => H - pad - (y / yMax) * (H - pad * 2)
+  const path = data.map((d, i) => `${i === 0 ? 'M' : 'L'} ${xScale(i)} ${yScale(d.value)}`).join(' ')
+  return { W, H, pad, yMax, data, path, xScale, yScale }
+})
 
-// 柱状图
-const barW = { w: 560, h: 240 }
-const barPad = { top: 16, right: 16, bottom: 28, left: 36 }
-const barMax = computed(() => Math.max(...bars.value.map((b) => b.count)))
-function barX(i: number): number {
-  const innerW = barW.w - barPad.left - barPad.right
-  const slotW = innerW / 24
-  return barPad.left + i * slotW + slotW * 0.15
-}
-function barWidth(): number {
-  const innerW = barW.w - barPad.left - barPad.right
-  return (innerW / 24) * 0.7
-}
-function barY(v: number): number {
-  const innerH = barW.h - barPad.top - barPad.bottom
-  return barPad.top + (1 - v / barMax.value) * innerH
-}
-function barHeight(v: number): number {
-  const innerH = barW.h - barPad.top - barPad.bottom
-  return (v / barMax.value) * innerH
-}
+const hourlyChart = computed(() => {
+  const data = hourly.value
+  if (!data.length) return null
+  const W = 600, H = 220, pad = 30
+  const yMax = Math.max(...data.map((d) => d.value), 1)
+  const bw = (W - pad * 2) / data.length
+  const yScale = (y: number) => H - pad - (y / yMax) * (H - pad * 2)
+  return { W, H, pad, yMax, data, bw, yScale }
+})
 
-// 热力图
-const heatW = { w: 720, h: 280 }
-const heatPad = { top: 20, right: 16, bottom: 28, left: 40 }
-function heatCellX(d: number): number {
-  const innerW = heatW.w - heatPad.left - heatPad.right
-  const cellW = innerW / 7
-  return heatPad.left + d * cellW
-}
-function heatCellY(h: number): number {
-  const innerH = heatW.h - heatPad.top - heatPad.bottom
-  const cellH = innerH / 24
-  return heatPad.top + (23 - h) * cellH
-}
-function heatCellSize(): { w: number; h: number } {
-  const innerW = heatW.w - heatPad.left - heatPad.right
-  const innerH = heatW.h - heatPad.top - heatPad.bottom
-  return { w: innerW / 7 - 2, h: innerH / 24 - 1 }
-}
-function heatColor(v: number): string {
-  const t = v / heatmapMax.value
-  if (v === 0) return 'rgba(124, 92, 255, 0.04)'
-  if (t < 0.25) return `rgba(124, 92, 255, ${0.15 + t * 0.6})`
-  if (t < 0.6) return `rgba(124, 92, 255, ${0.4 + t * 0.4})`
-  return `rgba(52, 211, 153, ${0.5 + t * 0.4})`
-}
+const heatmapChart = computed(() => {
+  const data = heatmap.value
+  if (!data.length) return null
+  const W = 560, H = 200, pad = 30
+  const cellW = (W - pad * 2) / 24
+  const cellH = (H - pad * 2) / 7
+  const vMax = Math.max(...data.map((d) => d.value), 1)
+  const map = new Map(data.map((d) => [`${d.dow}-${d.hour}`, d.value]))
+  // 扁平化 7×24 = 168 个格子,单层 v-for
+  const cells: { dow: number; hour: number; value: number; x: number; y: number }[] = []
+  for (let di = 0; di < 7; di++) {
+    for (let h = 0; h < 24; h++) {
+      cells.push({
+        dow: di, hour: h,
+        value: map.get(`${di}-${h}`) || 0,
+        x: pad + h * cellW,
+        y: pad + di * cellH
+      })
+    }
+  }
+  return { W, H, pad, cellW, cellH, vMax, cells }
+})
 
-// 数值格式化
-const fmtPct = (n: number) => `${n.toFixed(0)}%`
-const fmtNum = (n: number) => n.toLocaleString('zh-CN')
+onMounted(loadAll)
 </script>
 
 <template>
@@ -370,315 +181,171 @@ const fmtNum = (n: number) => n.toLocaleString('zh-CN')
           <div>
             <h2 class="serif">数据洞察</h2>
             <p class="muted">
-              4 张可视化 · 纯前端 mock · 自动派生结论 — 接入后端后可直接替换 data source
+              全部数据来自真实业务表 · {{ overview ? `共 ${overview.total_users} 个用户` : '加载中…' }}
             </p>
           </div>
-          <div class="seg">
-            <button
-              v-for="m in [
-                { key: 'all', label: '全部' },
-                { key: 'scatter', label: '散点' },
-                { key: 'bar', label: '时段' },
-                { key: 'line', label: 'DAU' },
-                { key: 'heatmap', label: '热力' }
-              ]"
-              :key="m.key"
-              class="seg-btn"
-              :class="{ active: viewMode === m.key }"
-              @click="viewMode = m.key as any"
-            >{{ m.label }}</button>
+          <div class="header-actions">
+            <button class="ghost-btn" @click="loadAll" :disabled="loading">
+              <span class="ic">↻</span>{{ loading ? '刷新中' : '刷新' }}
+            </button>
+            <button class="primary-btn" @click="onAiSummary" :disabled="aiLoading">
+              <span class="ic">✨</span>AI 运营建议
+            </button>
           </div>
         </header>
 
-        <div class="charts-grid">
-          <!-- ─────────── 散点图 ─────────── -->
-          <GlassCard
-            v-if="viewMode === 'all' || viewMode === 'scatter'"
-            type="outer"
-            class="chart-card"
-          >
-            <div class="chart-head">
-              <div>
-                <h3 class="serif">打卡天数 vs 完成率</h3>
-                <p class="muted">{{ scatter.length }} 位用户 · 强正相关</p>
-              </div>
-              <div class="kpi-mini">
-                <span class="kpi-num serif">r² = {{ regression.r2.toFixed(2) }}</span>
-                <span class="kpi-sub">拟合度</span>
-              </div>
-            </div>
-
-            <div class="chart-svg-wrap">
-              <svg :viewBox="`0 0 ${scatterW.w} ${scatterW.h}`" preserveAspectRatio="xMidYMid meet" class="chart-svg">
-                <!-- 网格 -->
-                <g class="grid">
-                  <line
-                    v-for="y in [0, 25, 50, 75, 100]"
-                    :key="y"
-                    :x1="scatterPad.left" :x2="scatterW.w - scatterPad.right"
-                    :y1="scatterY(y)" :y2="scatterY(y)"
-                    stroke="var(--c-line)" stroke-dasharray="2 4"
-                  />
-                  <line
-                    v-for="x in [0, 60, 120, 180, 240, 300, 365]"
-                    :key="`gx-${x}`"
-                    :x1="scatterX(x)" :x2="scatterX(x)"
-                    :y1="scatterPad.top" :y2="scatterW.h - scatterPad.bottom"
-                    stroke="var(--c-line)" stroke-dasharray="2 4"
-                  />
-                </g>
-                <!-- 回归线 -->
-                <line
-                  :x1="scatterX(0)" :y1="scatterY(regression.intercept)"
-                  :x2="scatterX(365)"
-                  :y2="scatterY(regression.slope * 365 + regression.intercept)"
-                  stroke="var(--accent-1)" stroke-width="1.6" stroke-dasharray="4 4"
-                />
-                <!-- 数据点 -->
-                <circle
-                      v-for="(p, i) in scatter" :key="i"
-                      :cx="scatterX(p.days)" :cy="scatterY(p.completion)"
-                      r="3.5"
-                      fill="var(--accent-2)"
-                      fill-opacity="0.45"
-                    >
-                      <title>打卡 {{ p.days }} 天 · 完成率 {{ p.completion.toFixed(0) }}%</title>
-                    </circle>
-                <!-- Y 轴标签 -->
-                <g class="axis-labels">
-                  <text v-for="y in [0, 25, 50, 75, 100]" :key="`yl-${y}`"
-                        :x="scatterPad.left - 6" :y="scatterY(y) + 4"
-                        text-anchor="end" class="axis-text">{{ y }}%</text>
-                  <text v-for="x in [0, 60, 120, 180, 240, 300, 365]" :key="`xl-${x}`"
-                        :x="scatterX(x)" :y="scatterW.h - 8"
-                        text-anchor="middle" class="axis-text">{{ x }}</text>
-                </g>
-              </svg>
-            </div>
-
-            <div class="insight">
-              <span class="insight-mark">◐</span>
-              <span>{{ scatterInsight }}</span>
+        <!-- 总览 KPI(从 overview 拿) -->
+        <div class="kpi-row" v-if="overview">
+          <GlassCard type="middle" class="kpi">
+            <div class="k-label">注册用户</div>
+            <div class="k-value mono">{{ overview.total_users }}</div>
+          </GlassCard>
+          <GlassCard type="middle" class="kpi">
+            <div class="k-label">7 日活跃</div>
+            <div class="k-value mono" style="color: var(--accent-2)">
+              {{ overview.dau_7d }}
             </div>
           </GlassCard>
-
-          <!-- ─────────── 柱状图 ─────────── -->
-          <GlassCard
-            v-if="viewMode === 'all' || viewMode === 'bar'"
-            type="outer"
-            class="chart-card"
-          >
-            <div class="chart-head">
-              <div>
-                <h3 class="serif">24 小时打卡分布</h3>
-                <p class="muted">总打卡 {{ fmtNum(totalCount) }} 次 · 晚间高峰</p>
-              </div>
-              <div class="kpi-mini">
-                <span class="kpi-num serif">{{ peakHour.hour }}:00</span>
-                <span class="kpi-sub">峰值小时</span>
-              </div>
-            </div>
-
-            <div class="chart-svg-wrap">
-              <svg :viewBox="`0 0 ${barW.w} ${barW.h}`" preserveAspectRatio="xMidYMid meet" class="chart-svg">
-                <!-- 网格 -->
-                <g class="grid">
-                  <line
-                    v-for="t in 5"
-                    :key="t"
-                    :x1="barPad.left" :x2="barW.w - barPad.right"
-                    :y1="barPad.top + ((barW.h - barPad.top - barPad.bottom) / 4) * (t - 1)"
-                    :y2="barPad.top + ((barW.h - barPad.top - barPad.bottom) / 4) * (t - 1)"
-                    stroke="var(--c-line)" stroke-dasharray="2 4"
-                  />
-                </g>
-                <!-- 柱 -->
-                <rect
-                  v-for="(b, i) in bars" :key="i"
-                  :x="barX(i)" :y="barY(b.count)"
-                  :width="barWidth()" :height="barHeight(b.count)"
-                  :fill="b.hour >= 20 && b.hour <= 22 ? 'var(--accent-2)' : 'var(--accent-1)'"
-                  :fill-opacity="b.hour >= 20 && b.hour <= 22 ? 0.9 : 0.55"
-                  rx="2"
-                >
-                  <title>{{ b.hour }}:00 · {{ b.count }} 次</title>
-                </rect>
-                <!-- Y 轴标签 -->
-                <text
-                  v-for="t in 5"
-                  :key="`yl-${t}`"
-                  :x="barPad.left - 6"
-                  :y="barPad.top + ((barW.h - barPad.top - barPad.bottom) / 4) * (t - 1) + 4"
-                  text-anchor="end" class="axis-text"
-                >{{ Math.round((barMax / 4) * (t - 1)) }}</text>
-                <!-- X 轴标签(每 4 小时一标) -->
-                <text
-                  v-for="h in [0, 4, 8, 12, 16, 20]"
-                  :key="`xl-${h}`"
-                  :x="barPad.left + (h / 24) * (barW.w - barPad.left - barPad.right)"
-                  :y="barW.h - 8"
-                  text-anchor="middle" class="axis-text"
-                >{{ h }}</text>
-              </svg>
-            </div>
-
-            <div class="insight">
-              <span class="insight-mark">◐</span>
-              <span>{{ barInsight }}</span>
-            </div>
+          <GlassCard type="middle" class="kpi">
+            <div class="k-label">活跃率</div>
+            <div class="k-value mono">{{ overview.active_rate_7d }}%</div>
           </GlassCard>
-
-          <!-- ─────────── 折线图 ─────────── -->
-          <GlassCard
-            v-if="viewMode === 'all' || viewMode === 'line'"
-            type="outer"
-            class="chart-card"
-          >
-            <div class="chart-head">
-              <div>
-                <h3 class="serif">DAU 趋势</h3>
-                <p class="muted">近 30 日 · 7 日移动平均</p>
-              </div>
-              <div class="kpi-mini">
-                <span class="kpi-num serif">{{ dauDelta >= 0 ? '+' : '' }}{{ dauDelta.toFixed(1) }}%</span>
-                <span class="kpi-sub">周环比</span>
-              </div>
-            </div>
-
-            <div class="chart-svg-wrap">
-              <svg :viewBox="`0 0 ${lineW.w} ${lineW.h}`" preserveAspectRatio="xMidYMid meet" class="chart-svg">
-                <!-- 网格 -->
-                <g class="grid">
-                  <line
-                    v-for="t in 4"
-                    :key="t"
-                    :x1="linePad.left" :x2="lineW.w - linePad.right"
-                    :y1="linePad.top + ((lineW.h - linePad.top - linePad.bottom) / 3) * (t - 1)"
-                    :y2="linePad.top + ((lineW.h - linePad.top - linePad.bottom) / 3) * (t - 1)"
-                    stroke="var(--c-line)" stroke-dasharray="2 4"
-                  />
-                </g>
-                <!-- MA 面积 -->
-                <path :d="maAreaD" fill="var(--accent-1)" fill-opacity="0.10" />
-                <!-- 原始 DAU -->
-                <path
-                  :d="rawLineD"
-                  stroke="var(--accent-3)" stroke-width="1.2"
-                  fill="none" stroke-linecap="round" stroke-linejoin="round"
-                  stroke-opacity="0.55"
-                />
-                <!-- 7 日 MA -->
-                <path
-                  :d="maLineD"
-                  stroke="var(--accent-1)" stroke-width="2"
-                  fill="none" stroke-linecap="round" stroke-linejoin="round"
-                />
-                <!-- 末端点 -->
-                <circle :cx="maEnd.x" :cy="maEnd.y" r="3.5" fill="var(--accent-1)" />
-                <!-- X 轴标签 -->
-                <text
-                  v-for="i in [0, 7, 14, 21, 29]"
-                  :key="`xl-${i}`"
-                  :x="linePad.left + (i / 29) * (lineW.w - linePad.left - linePad.right)"
-                  :y="lineW.h - 8"
-                  text-anchor="middle" class="axis-text"
-                >{{ dauDates[i] }}</text>
-              </svg>
-            </div>
-
-            <div class="legend-row">
-              <span class="lg-item">
-                <span class="lg-line" style="background: var(--accent-3); opacity: 0.6;" />
-                <span>DAU 日值</span>
-              </span>
-              <span class="lg-item">
-                <span class="lg-line" style="background: var(--accent-1);" />
-                <span>7 日 MA</span>
-              </span>
-            </div>
-
-            <div class="insight">
-              <span class="insight-mark">◐</span>
-              <span>{{ lineInsight }}</span>
-            </div>
+          <GlassCard type="middle" class="kpi">
+            <div class="k-label">近 30 天新增</div>
+            <div class="k-value mono">{{ overview.new_users_30d }}</div>
           </GlassCard>
-
-          <!-- ─────────── 热力图 ─────────── -->
-          <GlassCard
-            v-if="viewMode === 'all' || viewMode === 'heatmap'"
-            type="outer"
-            class="chart-card chart-card-wide"
-          >
-            <div class="chart-head">
-              <div>
-                <h3 class="serif">打卡密度热力</h3>
-                <p class="muted">周一-周日 × 0-23 时段 · 越亮越密</p>
-              </div>
-              <div class="kpi-mini">
-                <span class="kpi-num serif">{{ dayLabels[peakCell.d] }} {{ String(peakCell.h).padStart(2, '0') }}:00</span>
-                <span class="kpi-sub">峰值单元格</span>
-              </div>
-            </div>
-
-            <div class="chart-svg-wrap">
-              <svg :viewBox="`0 0 ${heatW.w} ${heatW.h}`" preserveAspectRatio="xMidYMid meet" class="chart-svg">
-                <!-- 单元格 -->
-                <g>
-                  <template v-for="(row, d) in heatmap" :key="`row-${d}`">
-                    <rect
-                      v-for="(v, h) in row"
-                      :key="`cell-${d}-${h}`"
-                      :x="heatCellX(d) + 1"
-                      :y="heatCellY(h)"
-                      :width="heatCellSize().w"
-                      :height="heatCellSize().h"
-                      :fill="heatColor(v)"
-                      :stroke="v === peakCell.v && d === peakCell.d && h === peakCell.h ? 'var(--accent-1)' : 'transparent'"
-                      :stroke-width="v === peakCell.v && d === peakCell.d && h === peakCell.h ? 1.5 : 0"
-                      rx="2"
-                    >
-                      <title>{{ dayLabels[d] }} {{ String(h).padStart(2, '0') }}:00 · {{ v }} 次</title>
-                    </rect>
-                  </template>
-                </g>
-                <!-- Y 轴:0/6/12/18/23 -->
-                <text
-                  v-for="h in [0, 6, 12, 18, 23]"
-                  :key="`yl-${h}`"
-                  :x="heatPad.left - 6"
-                  :y="heatCellY(h) + heatCellSize().h / 2 + 4"
-                  text-anchor="end" class="axis-text"
-                >{{ String(h).padStart(2, '0') }}</text>
-                <!-- X 轴:周一-周日 -->
-                <text
-                  v-for="(label, d) in dayLabels"
-                  :key="`xl-${d}`"
-                  :x="heatCellX(d) + heatCellSize().w / 2 + 1"
-                  :y="heatW.h - 8"
-                  text-anchor="middle" class="axis-text"
-                >{{ label }}</text>
-              </svg>
-            </div>
-
-            <div class="legend-row">
-              <span class="muted">密度</span>
-              <div class="heat-legend">
-                <div class="heat-cell" style="background: rgba(124, 92, 255, 0.10);" />
-                <div class="heat-cell" style="background: rgba(124, 92, 255, 0.30);" />
-                <div class="heat-cell" style="background: rgba(124, 92, 255, 0.55);" />
-                <div class="heat-cell" style="background: rgba(124, 92, 255, 0.85);" />
-                <div class="heat-cell" style="background: rgba(52, 211, 153, 0.85);" />
-              </div>
-              <span class="muted">高</span>
-            </div>
-
-            <div class="insight">
-              <span class="insight-mark">◐</span>
-              <span>{{ heatmapInsight }}</span>
+          <GlassCard type="middle" class="kpi">
+            <div class="k-label">7 日 AI 调用</div>
+            <div class="k-value mono" style="color: var(--accent-1)">
+              {{ overview.data_totals.ai_calls || 0 }}
             </div>
           </GlassCard>
         </div>
+
+        <!-- 4 张图 -->
+        <div class="chart-grid">
+          <GlassCard type="middle" class="chart-card">
+            <div class="chart-head">
+              <h3 class="serif">① 散点:用户活跃天数 vs 完成率</h3>
+              <span class="muted sm">基于最近 30 天真实数据 · 点可下钻</span>
+            </div>
+            <div v-if="!scatterChart" class="loading pad">加载中…</div>
+            <svg v-else :viewBox="`0 0 ${scatterChart.W} ${scatterChart.H}`" class="svg-chart">
+              <line :x1="scatterChart.pad" :y1="scatterChart.H - scatterChart.pad" :x2="scatterChart.W - scatterChart.pad" :y2="scatterChart.H - scatterChart.pad" stroke="var(--c-line)" />
+              <line :x1="scatterChart.pad" :y1="scatterChart.pad" :x2="scatterChart.pad" :y2="scatterChart.H - scatterChart.pad" stroke="var(--c-line)" />
+              <line :x1="scatterChart.line.x1" :y1="scatterChart.line.y1" :x2="scatterChart.line.x2" :y2="scatterChart.line.y2" stroke="var(--accent-1)" stroke-dasharray="4 3" />
+              <circle
+                v-for="(p, i) in scatterChart.points" :key="i"
+                :cx="p.cx" :cy="p.cy" r="3"
+                fill="var(--accent-2)" opacity="0.7"
+                @click="onScatterClick(p)" style="cursor: pointer"
+              >
+                <title>{{ p.username }} · 活跃 {{ p.days }} 天 · 完成率 {{ p.completion }}%</title>
+              </circle>
+              <text v-for="i in 5" :key="`y${i}`"
+                :x="scatterChart.pad - 6" :y="scatterChart.H - scatterChart.pad - (i - 1) * (scatterChart.H - scatterChart.pad * 2) / 4"
+                font-size="9" fill="var(--c-ink-3)" text-anchor="end">
+                {{ Math.round((i - 1) * 25) }}%
+              </text>
+              <text v-for="i in 5" :key="`x${i}`"
+                :x="scatterChart.pad + (i - 1) * (scatterChart.W - scatterChart.pad * 2) / 4"
+                :y="scatterChart.H - scatterChart.pad + 14"
+                font-size="9" fill="var(--c-ink-3)" text-anchor="middle">
+                {{ Math.round((i - 1) * scatterChart.xMax / 4) }}d
+              </text>
+            </svg>
+            <div class="muted sm insight">
+              回归斜率 <span class="mono">{{ regression.slope.toFixed(2) }}</span> / 100% 完成率 · R² = <span class="mono">{{ regression.r2.toFixed(3) }}</span>
+            </div>
+          </GlassCard>
+
+          <GlassCard type="middle" class="chart-card">
+            <div class="chart-head">
+              <h3 class="serif">② 折线:30 日活跃用户(checkin)</h3>
+              <span class="muted sm">每日独立用户数</span>
+            </div>
+            <div v-if="!trendChart" class="loading pad">加载中…</div>
+            <svg v-else :viewBox="`0 0 ${trendChart.W} ${trendChart.H}`" class="svg-chart">
+              <line :x1="trendChart.pad" :y1="trendChart.H - trendChart.pad" :x2="trendChart.W - trendChart.pad" :y2="trendChart.H - trendChart.pad" stroke="var(--c-line)" />
+              <path :d="trendChart.path" fill="none" stroke="var(--accent-2)" stroke-width="1.5" />
+            </svg>
+            <div class="muted sm insight">
+              区间 <span class="mono">{{ trendChart.yMax.toFixed(0) }}</span> 用户
+            </div>
+          </GlassCard>
+
+          <GlassCard type="middle" class="chart-card">
+            <div class="chart-head">
+              <h3 class="serif">③ 柱状:24 时段打卡人数</h3>
+              <span class="muted sm">过去 30 天</span>
+            </div>
+            <div v-if="!hourlyChart" class="loading pad">加载中…</div>
+            <svg v-else :viewBox="`0 0 ${hourlyChart.W} ${hourlyChart.H}`" class="svg-chart">
+              <line :x1="hourlyChart.pad" :y1="hourlyChart.H - hourlyChart.pad" :x2="hourlyChart.W - hourlyChart.pad" :y2="hourlyChart.H - hourlyChart.pad" stroke="var(--c-line)" />
+              <rect
+                v-for="(b, i) in hourlyChart.data" :key="i"
+                :x="hourlyChart.pad + i * hourlyChart.bw"
+                :y="hourlyChart.yScale(b.value)"
+                :width="hourlyChart.bw * 0.8"
+                :height="hourlyChart.H - hourlyChart.pad - hourlyChart.yScale(b.value)"
+                fill="var(--accent-1)" opacity="0.7"
+              />
+              <text v-for="i in hourlyChart.data" :key="`l${i.hour}`"
+                v-show="i % 3 === 0"
+                :x="hourlyChart.pad + i * hourlyChart.bw + hourlyChart.bw * 0.4"
+                :y="hourlyChart.H - hourlyChart.pad + 14"
+                font-size="9" fill="var(--c-ink-3)" text-anchor="middle">
+                {{ i.hour }}h
+              </text>
+            </svg>
+            <div class="muted sm insight">
+              峰值时段:<span class="mono">{{ Math.max(...hourlyChart.data.map(d => d.value)) }}</span> 次
+            </div>
+          </GlassCard>
+
+          <GlassCard type="middle" class="chart-card">
+            <div class="chart-head">
+              <h3 class="serif">④ 热力:周×小时 活跃度</h3>
+              <span class="muted sm">过去 30 天,格子越亮越活跃</span>
+            </div>
+            <div v-if="!heatmapChart" class="loading pad">加载中…</div>
+            <svg v-else :viewBox="`0 0 ${heatmapChart.W} ${heatmapChart.H}`" class="svg-chart">
+              <rect
+                v-for="(c, i) in heatmapChart.cells" :key="`c${i}`"
+                :x="c.x" :y="c.y"
+                :width="heatmapChart.cellW - 1"
+                :height="heatmapChart.cellH - 1"
+                :fill="`rgba(124, 92, 255, ${(c.value / heatmapChart.vMax) * 0.9 + 0.05})`"
+              >
+                <title>{{ HEATMAP_DOWS[c.dow] }} {{ c.hour }}时 · {{ c.value }} 次</title>
+              </rect>
+              <text v-for="(label, di) in HEATMAP_DOWS" :key="`dow${di}`"
+                :x="heatmapChart.pad - 4"
+                :y="heatmapChart.pad + di * heatmapChart.cellH + heatmapChart.cellH * 0.6"
+                font-size="9" fill="var(--c-ink-3)" text-anchor="end">
+                {{ label }}
+              </text>
+            </svg>
+          </GlassCard>
+        </div>
       </section>
+
+      <!-- AI 运营建议 modal -->
+      <div v-if="aiOpen" class="modal-mask" @click.self="aiOpen = false">
+        <div class="modal">
+          <div class="modal-head">
+            <h3 class="serif">✨ AI 运营建议(系统默认模型)</h3>
+            <button class="link" @click="aiOpen = false">✕</button>
+          </div>
+          <div class="modal-body">
+            <p v-if="overview" class="muted sm">
+              依据:用户 {{ overview.total_users }} · 7 日活跃 {{ overview.dau_7d }} · AI 调用 {{ overview.data_totals.ai_calls || 0 }}
+            </p>
+            <div v-if="aiLoading" class="loading pad">AI 思考中…</div>
+            <pre v-else class="ai-content">{{ aiAdvice }}</pre>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -690,110 +357,72 @@ const fmtNum = (n: number) => n.toLocaleString('zh-CN')
 .page-header { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; }
 .page-header h2 { font-size: 22px; font-weight: 700; color: var(--c-ink); }
 .muted { color: var(--c-ink-3); font-size: 13px; margin-top: 4px; }
+.sm { font-size: 11px; margin: 0; }
+.mono { font-family: var(--font-mono); }
+.serif { font-family: var(--font-serif); }
 
-/* segmented control */
-.seg {
-  display: flex; padding: 3px;
-  border-radius: var(--r-pill);
-  background: var(--glass-1-bg);
-  border: 1px solid var(--c-line);
+.header-actions { display: flex; gap: 8px; }
+.primary-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: var(--r-sm);
+  background: var(--accent-gradient); color: #fff;
+  border: none; font-size: 13px; font-weight: 500; cursor: pointer;
 }
-.seg-btn {
-  border: none; background: transparent;
-  color: var(--c-ink-2); font-size: 12px;
-  padding: 5px 12px; border-radius: var(--r-pill);
-  cursor: pointer;
-  transition: background var(--t-fast), color var(--t-fast);
-}
-.seg-btn:hover { color: var(--c-ink); }
-.seg-btn.active {
-  background: var(--accent-gradient);
-  color: #fff;
-  box-shadow: 0 4px 12px -4px rgba(124, 92, 255, 0.45);
-}
-
-/* ===== Charts grid ===== */
-.charts-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-.chart-card {
-  padding: 18px !important;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.chart-card-wide {
-  grid-column: span 2;
+.primary-btn:hover:not(:disabled) { transform: translateY(-1px); }
+.primary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.primary-btn .ic { font-size: 15px; }
+.ghost-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: var(--r-sm);
+  background: var(--glass-2-bg); color: var(--c-ink);
+  border: 1px solid var(--c-line); cursor: pointer;
+  font-size: 13px;
 }
 
-/* chart header */
-.chart-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: end;
-  gap: 12px;
-}
+.kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.kpi { padding: 14px; text-align: center; }
+.k-label { font-size: 11px; color: var(--c-ink-3); margin-bottom: 6px; }
+.k-value { font-size: 22px; font-weight: 700; color: var(--c-ink); }
+
+.chart-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.chart-card { padding: 16px; }
+.chart-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
 .chart-head h3 { font-size: 14px; font-weight: 600; color: var(--c-ink); }
-.chart-head .muted { font-size: 11px; }
-.kpi-mini { text-align: right; display: flex; flex-direction: column; align-items: flex-end; }
-.kpi-num {
-  font-size: 18px; font-weight: 700; color: var(--c-ink);
-  font-variant-numeric: tabular-nums;
-}
-.kpi-sub {
-  font-size: 10px; color: var(--c-ink-3);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
 
-/* chart svg */
-.chart-svg-wrap {
-  position: relative;
-  width: 100%;
-  background: var(--glass-1-bg);
-  border: 1px solid var(--c-line);
-  border-radius: var(--r-sm);
-  padding: 8px;
+.svg-chart { width: 100%; height: auto; max-height: 320px; }
+
+.insight { margin-top: 8px; }
+
+.loading.pad { padding: 60px; text-align: center; color: var(--c-ink-3); }
+
+.modal-mask {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
 }
-.chart-svg { width: 100%; height: auto; display: block; }
-.axis-text {
-  font-size: 10px;
-  fill: var(--c-ink-3);
+.modal {
+  background: var(--c-paper, #fff);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+  max-width: 720px; width: 100%;
+  max-height: 80vh;
+  display: flex; flex-direction: column;
+  backdrop-filter: blur(16px);
+}
+.modal-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--c-line); }
+.modal-body { padding: 20px; }
+.ai-content {
+  padding: 14px;
   font-family: var(--font-mono);
-}
-
-/* legend */
-.legend-row {
-  display: flex; align-items: center; gap: 12px;
-  font-size: 11px; color: var(--c-ink-2);
-}
-.lg-item { display: inline-flex; align-items: center; gap: 4px; }
-.lg-line { width: 14px; height: 2px; border-radius: 2px; display: inline-block; }
-
-/* heatmap legend */
-.heat-legend { display: flex; gap: 2px; }
-.heat-cell { width: 14px; height: 10px; border-radius: 2px; }
-
-/* insight box */
-.insight {
-  display: flex; gap: 8px; align-items: flex-start;
-  padding: 10px 12px;
-  background: linear-gradient(135deg, rgba(124, 92, 255, 0.08), rgba(52, 211, 153, 0.06));
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--glass-1-bg);
   border-radius: var(--r-sm);
-  border: 1px solid var(--c-line);
-  font-size: 12px; color: var(--c-ink-2);
-  line-height: 1.6;
+  max-height: 60vh;
+  overflow: auto;
+  margin: 0;
 }
-.insight-mark {
-  color: var(--accent-1);
-  font-size: 14px;
-  flex-shrink: 0;
-}
-
-@media (max-width: 1024px) {
-  .charts-grid { grid-template-columns: 1fr; }
-  .chart-card-wide { grid-column: span 1; }
-}
+.link { background: none; border: none; color: var(--c-ink-2); cursor: pointer; font-size: 14px; }
 </style>

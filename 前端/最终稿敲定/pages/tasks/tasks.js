@@ -5,7 +5,12 @@ const todayStr = () => {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 };
 
-const nowTimeStr = () => new Date().toISOString().slice(0, 19).replace('T', ' ');
+const nowTimeStr = () => {
+  // 用本地时间,避免 UTC 跨日
+  const d = new Date();
+  const pad = (x) => String(x).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+};
 
 // 把后端 time 格式化为列表展示用的短时间字符串
 const formatTime = (t) => {

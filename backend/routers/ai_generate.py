@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from database import get_connection
 from utils.deps import get_current_user
 from utils.ai_rag import search_knowledge
-from openai import OpenAI, OpenAIError
 from config import settings
 import json
 
@@ -37,23 +36,14 @@ def generate_tasks(req: dict, current_user: int = Depends(get_current_user)):
 
     prompt = TASK_GENERATE_PROMPT.replace("{user_input}", user_input)
 
-    client = OpenAI(
-        api_key=settings.OPENAI_API_KEY,
-        base_url=settings.OPENAI_BASE_URL,
-    )
-
+    # 系统默认模型 + 自动写 ai_chat_logs
+    from utils.llm_admin import get_admin_llm_client, admin_chat
     try:
-        response = client.chat.completions.create(
-            model=settings.CHAT_MODEL,
-            messages=[
-                {"role": "system", "content": "你是一个JSON生成器。只返回JSON数组，不要有其他文字。"},
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0.7,
-            max_tokens=800,
+        content = admin_chat(
+            system_prompt="你是一个JSON生成器。只返回JSON数组,不要有其他文字。",
+            user_message=prompt,
+            session_id=f"admin_ai_generate_{current_user}",
         )
-
-        content = response.choices[0].message.content.strip()
 
         # 清理 markdown 代码块标记
         if content.startswith("```"):
@@ -79,12 +69,10 @@ def generate_tasks(req: dict, current_user: int = Depends(get_current_user)):
         if not isinstance(tasks, list):
             tasks = []
 
-        # Token 记录
-        if hasattr(response, 'usage') and response.usage:
-            usage = response.usage
-            print(f"[AI-Generate] Token消耗: 输入={usage.prompt_tokens}, 输出={usage.completion_tokens}, 总计={usage.total_tokens}")
-
         return {"tasks": tasks}
 
-    except OpenAIError as e:
-        raise HTTPException(status_code=500, detail=f"AI服务异常: {str(e)}")
+    except Exception as e:
+        from openai import OpenAIError
+        if isinstance(e, OpenAIError):
+            raise HTTPException(status_code=500, detail=f"AI服务异常: {str(e)}")
+        raise

@@ -26,6 +26,8 @@ import {
   setDefaultModel,
   testModel,
   getLLMUsage,
+  getLLMTokenUsage,
+  type LLMTokenStats,
   type LLMModel,
   type LLMModelCreate,
   type LLMTestResult,
@@ -42,6 +44,8 @@ const error = ref<string | null>(null)
 
 const models = ref<LLMModel[]>([])
 const usage = ref<LLMUsageStats | null>(null)
+const tokenUsage = ref<LLMTokenStats | null>(null)
+const tokenLoading = ref(false)
 const usageDays = ref<7 | 30 | 90>(7)
 
 const filterOwner = ref<'all' | 'system' | 'user'>('all')
@@ -94,13 +98,15 @@ async function loadModels() {
 
 async function loadUsage() {
   usageLoading.value = true
+  tokenLoading.value = true
   try {
     usage.value = await getLLMUsage(usageDays.value)
+    tokenUsage.value = await getLLMTokenUsage(usageDays.value)
   } catch (e: unknown) {
-    // 静默,只是折线为空
     console.error('usage load failed', e)
   } finally {
     usageLoading.value = false
+    tokenLoading.value = false
   }
 }
 
@@ -528,6 +534,53 @@ function onToggleActive(m: LLMModel) {
             </div>
           </GlassCard>
         </div>
+
+        <!-- Token 用量(按模型) -->
+        <div class="usage-section">
+          <h3 class="serif" style="margin-bottom: 12px">Token 用量(按模型)</h3>
+          <div v-if="tokenLoading" class="loading pad">加载 token 中…</div>
+          <div v-else-if="!tokenUsage?.by_model?.length" class="muted">暂无 token 用量记录</div>
+          <div v-else>
+            <div class="kpi-row small" style="margin-bottom: 16px">
+              <GlassCard type="middle" class="kpi">
+                <div class="k-label">总 Token</div>
+                <div class="k-value mono">{{ tokenUsage?.total?.total_tokens?.toLocaleString() ?? 0 }}</div>
+              </GlassCard>
+              <GlassCard type="middle" class="kpi">
+                <div class="k-label">输入 Token</div>
+                <div class="k-value mono" style="color: var(--accent-2)">{{ tokenUsage?.total?.prompt_tokens?.toLocaleString() ?? 0 }}</div>
+              </GlassCard>
+              <GlassCard type="middle" class="kpi">
+                <div class="k-label">输出 Token</div>
+                <div class="k-value mono" style="color: var(--accent-1)">{{ tokenUsage?.total?.completion_tokens?.toLocaleString() ?? 0 }}</div>
+              </GlassCard>
+            </div>
+            <GlassCard type="middle" class="table-card">
+              <table class="t">
+                <thead>
+                  <tr>
+                    <th>模型</th>
+                    <th>调用次数</th>
+                    <th>输入 Token</th>
+                    <th>输出 Token</th>
+                    <th>总 Token</th>
+                    <th>平均/次</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="m in tokenUsage.by_model" :key="m.model">
+                    <td><code class="mono">{{ m.model }}</code></td>
+                    <td class="mono">{{ m.calls }}</td>
+                    <td class="mono">{{ m.prompt_tokens.toLocaleString() }}</td>
+                    <td class="mono">{{ m.completion_tokens.toLocaleString() }}</td>
+                    <td class="mono" style="color: var(--accent-1)">{{ m.total_tokens.toLocaleString() }}</td>
+                    <td class="mono muted">{{ m.avg_tokens_per_call.toLocaleString() }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </GlassCard>
+          </div>
+        </div>
       </section>
     </div>
 
@@ -763,6 +816,12 @@ function onToggleActive(m: LLMModel) {
 /* usage */
 .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .kpi-row.small { grid-template-columns: repeat(3, 1fr); }
+.usage-section { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--c-line); }
+.table-card { padding: 0; overflow: hidden; }
+.t { width: 100%; border-collapse: collapse; font-size: 13px; }
+.t th, .t td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--c-line); }
+.t th { font-size: 11px; font-weight: 600; color: var(--c-ink-3); text-transform: uppercase; letter-spacing: 0.04em; background: var(--glass-1-bg); }
+.t tbody tr:last-child td { border-bottom: none; }
 .kpi { padding: 16px 18px !important; }
 .k-label { font-size: 11px; color: var(--c-ink-3); text-transform: uppercase; letter-spacing: 0.06em; }
 .k-value { font-family: var(--font-serif); font-size: 26px; font-weight: 700; color: var(--c-ink); margin-top: 4px; font-variant-numeric: tabular-nums; }

@@ -9,7 +9,9 @@ const todayStr = () => {
 const dateMinusDays = (n) => {
   const d = new Date();
   d.setDate(d.getDate() - n);
-  return d.toISOString().slice(0, 10);
+  // 用本地时间(避免 UTC 跨日),和后端 dateStr 对齐
+  const pad = (x) => String(x).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 };
 
 // 罗马数字转换(0-50 够用)

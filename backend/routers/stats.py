@@ -11,6 +11,8 @@ from database import get_connection
 from utils.deps import get_current_user
 from openai import OpenAI
 from config import settings
+from utils.ai_logging import log_user_message, log_assistant_message
+from utils.llm_admin import get_admin_llm_client, admin_chat, ADMIN_SESSION
 
 router = APIRouter(prefix="/api/stats", tags=["stats"])
 insights_router = APIRouter(prefix="/api/ai", tags=["ai_insights"])
@@ -106,12 +108,11 @@ def get_patterns(current_user: int = Depends(get_current_user)):
                     "total": float(r["total"])
                 })
 
-            # 4. 连续打卡天数(过去 30 天内,完成至少 1 条 todo 的连续天数)
+            # 4. 连续打卡天数(与 /api/checkins/streak 算法一致:读 checkins 表)
             cursor.execute(
-                """SELECT DISTINCT due_date AS dt
-                   FROM todos
-                   WHERE user_id = %s AND done = 1 AND due_date IS NOT NULL
-                     AND due_date <= CURDATE()
+                """SELECT DISTINCT checkin_date AS dt
+                   FROM checkins
+                   WHERE user_id = %s AND checkin_date <= CURDATE()
                    ORDER BY dt DESC""",
                 (current_user,)
             )
@@ -331,17 +332,13 @@ def get_ai_insights(current_user: int = Depends(get_current_user)):
 
 只返回 3 条建议,每条一行,前面用数字编号。不要其他内容。"""
 
-    # 调 LLM(非流式,简单)
+    # 调 LLM(系统默认模型,自动写 ai_chat_logs)
     try:
-        client = OpenAI(api_key=settings.OPENAI_API_KEY, base_url=settings.OPENAI_BASE_URL)
-        resp = client.chat.completions.create(
-            model=settings.CHAT_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
-            max_tokens=200
+        text = admin_chat(
+            system_prompt="你是习惯管家 AI 助手。回答必须用中文,简洁、具体、可执行。",
+            user_message=prompt,
+            session_id=f"{ADMIN_SESSION}_insights_{current_user}",
         )
-        text = resp.choices[0].message.content or ""
-        # 解析 3 条建议
         suggestions = []
         for line in text.split("\n"):
             line = line.strip().lstrip("0123456789.、) ").strip()
@@ -349,7 +346,7 @@ def get_ai_insights(current_user: int = Depends(get_current_user)):
                 suggestions.append(line)
         suggestions = suggestions[:3]
     except Exception as e:
-        print(f"[Insights] LLM 调用失败: {e}")
+        # 失败时也用降级建议(不算成功调用,但 UI 还能用)
         suggestions = [
             f"你近 30 天完成率 {summary.get('overall_completion_rate', 0)}%,继续保持!",
             f"已连续打卡 {summary.get('streak_days', 0)} 天,别断了",

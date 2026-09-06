@@ -71,19 +71,22 @@ Page({
       todayDateLabel: dateLabel
     });
     // 数据版本号变化 → 重新拉数据(由其他页面 CRUD 触发)
+    // 没变就**完全跳过** —— 切 tab 不再触发 5+ 个 API
     const currentVer = app.globalData.dataVersion || 0;
     if (this.data.lastDataVer !== currentVer) {
       this.loadDashboardData();
       this.setData({ lastDataVer: currentVer });
-    } else {
-      this.loadDashboardData();
     }
+    // 注意:不再无条件 reload,避免切 tab 卡顿
   },
 
   // 进入首页时自动打卡(每天一次,后端去重)
   maybeAutoCheckin() {
     try {
-      const todayStr = new Date().toISOString().slice(0, 10);
+      const d = new Date();
+      const pad = (x) => String(x).padStart(2, '0');
+      // 用本地时间避免 UTC 跨日
+      const todayStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
       const lastDay = wx.getStorageSync('auto_checkin_day');
       // 同一天已经发过,跳过(避免每次切换 tab 都打)
       if (lastDay === todayStr) return;
@@ -161,8 +164,8 @@ Page({
       }
       this._recomputeSections();
 
-      // 异步加载 AI 建议(不阻塞主页)
-      this._loadInsights();
+      // AI 建议改为手动触发(点"AI 智能建议"卡片才调),不再自动阻塞首页
+      // this._loadInsights();  // 已注释:切 tab 不再等 LLM
     } catch (e) {
       console.error('加载数据失败:', e);
     }

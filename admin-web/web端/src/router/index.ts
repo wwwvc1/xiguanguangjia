@@ -72,6 +72,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, title: '数据洞察' }
   },
   {
+    path: '/data-asset/:type',
+    name: 'DataAsset',
+    component: () => import('@/views/DataAssetView.vue'),
+    meta: { requiresAuth: true, title: '数据资产' }
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/NotFoundView.vue'),

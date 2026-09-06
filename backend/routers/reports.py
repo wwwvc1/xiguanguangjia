@@ -31,8 +31,28 @@ def get_report_detail(report_id: int, current_user: int = Depends(get_current_us
 def generate_report(
     current_user: int = Depends(get_current_user),
     type: str = Query(..., pattern="^(weekly|monthly)$"),
-    period: str = Query(None, description="周报 '2026-W34' / 月报 '2026-08',不传则当期")
+    period: str = Query(None, description="周报 '2026-W34' / 月报 '2026-08',不传则当期"),
+    force: bool = Query(False, description="true 时直接覆盖同周期报告;否则同周期已存在返回 409")
 ):
+    # 算 period
+    from datetime import datetime
+    if not period:
+        if type == "weekly":
+            iso = datetime.now().isocalendar()
+            period = f"{iso[0]}-W{iso[1]:02d}"
+        else:
+            period = datetime.now().strftime("%Y-%m")
+
+    # 同周期已存在时:除非 force=true,否则拒绝
+    if not force:
+        from utils.report_generator import list_reports
+        existing = [r for r in list_reports(current_user, type) if r.get("period") == period]
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail=f"该周期报告已存在(id={existing[0]['id']}),如需重新生成请传 force=true"
+            )
+
     if type == "weekly":
         return generate_weekly_report(current_user, period)
     return generate_monthly_report(current_user, period)

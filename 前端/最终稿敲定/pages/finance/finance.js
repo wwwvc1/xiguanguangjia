@@ -101,7 +101,9 @@ Page({
     }
     const amount = formData.type === 'expense' ? -Math.abs(Number(formData.amount) || 0) : Math.abs(Number(formData.amount) || 0);
     const now = new Date();
-    const time = now.toISOString().slice(0, 19).replace('T', ' ');
+    // 用本地时间(YYYY-MM-DD HH:MM:SS)避免 UTC 跨日,跟首页 dateStr 对齐
+    const pad = (n) => String(n).padStart(2, '0')
+    const time = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
     app.request({
       url: '/transactions/',

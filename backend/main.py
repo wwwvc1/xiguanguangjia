@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
-from routers import auth, todos, goals, transactions, meals, reminders, admin, ai_professional, ai_general, ai_generate, ai_agent, user_settings, user_profile, export, achievements, stats, reports, checkins
+from routers import auth, todos, goals, transactions, meals, reminders, admin, ai_professional, ai_general, ai_generate, ai_agent, user_settings, user_profile, export, achievements, stats, reports, checkins, admin_insights
 from routers import admin_auth, admin_llm_models, user_llm_models, admin_knowledge, admin_logs, admin_achievements, admin_dashboard
 # 导入工具
 from config import settings
@@ -67,6 +67,7 @@ app.include_router(user_llm_models.router)
 app.include_router(admin_knowledge.router)
 app.include_router(admin_logs.router)
 app.include_router(admin_achievements.router)
+app.include_router(admin_insights.router)
 app.include_router(admin_dashboard.router)
 
 

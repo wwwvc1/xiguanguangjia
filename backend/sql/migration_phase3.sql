@@ -120,9 +120,13 @@ CREATE TABLE IF NOT EXISTS ai_chat_logs (
     content TEXT NOT NULL,
     tool_calls JSON NULL,
     model VARCHAR(128) NULL,
+    prompt_tokens INT NULL,
+    completion_tokens INT NULL,
+    total_tokens INT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_user_session (user_id, session_id, created_at),
-    INDEX idx_created (created_at)
+    INDEX idx_created (created_at),
+    INDEX idx_model_tokens (model, created_at, total_tokens)
 );
 
 -- 6. 用户配额

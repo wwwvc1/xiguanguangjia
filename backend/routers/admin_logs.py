@@ -189,3 +189,77 @@ def export_logs_csv(
         )
     finally:
         conn.close()
+
+
+# ============== AI 解读(用系统默认模型) ==============
+
+@router.get("/ai-summary/preview")
+def ai_summary_preview(limit: int = Query(50, ge=10, le=200), admin: dict = Depends(get_current_admin)):
+    """先看准备给 LLM 的数据(不含 LLM 调用)"""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """SELECT action, COUNT(*) AS cnt, MAX(created_at) AS last_at
+                   FROM operation_logs
+                   WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                   GROUP BY action ORDER BY cnt DESC LIMIT 20"""
+            )
+            by_action = cursor.fetchall()
+            cursor.execute(
+                """SELECT HOUR(created_at) AS h, COUNT(*) AS cnt
+                   FROM operation_logs
+                   WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                   GROUP BY h"""
+            )
+            by_hour = {int(r["h"]): int(r["cnt"]) for r in cursor.fetchall()}
+            cursor.execute(
+                """SELECT id, user_id, action, status, created_at
+                   FROM operation_logs ORDER BY id DESC LIMIT %s""",
+                (limit,)
+            )
+            recent = cursor.fetchall()
+            return {
+                "limit": limit,
+                "by_action": [
+                    {"action": r["action"], "count": int(r["cnt"]), "last_at": str(r["last_at"])}
+                    for r in by_action
+                ],
+                "by_hour": [{"hour": h, "value": by_hour.get(h, 0)} for h in range(24)],
+                "recent_logs": [
+                    {"id": r["id"], "user_id": r["user_id"], "action": r["action"],
+                     "status": r["status"], "created_at": str(r["created_at"])}
+                    for r in recent
+                ]
+            }
+    finally:
+        conn.close()
+
+
+@router.post("/ai-summary/run")
+def ai_summary_run(limit: int = Query(50, ge=10, le=200), admin: dict = Depends(get_current_admin)):
+    """真正调 LLM 跑系统日志解读。系统默认模型 + 留痕。"""
+    preview = ai_summary_preview(limit=limit, admin=admin)
+    actions_text = "\n".join([f"- {a['action']}: {a['count']} 次(最近 {a['last_at']})" for a in preview["by_action"]])
+    recent_text = "\n".join([f"- #{r['id']} u={r['user_id']} {r['action']} {r['status']} {r['created_at']}" for r in preview["recent_logs"][:30]])
+
+    prompt = f"""你是「习惯管家」平台的安全/运营分析助手。基于最近 {limit} 条操作日志,给 3-5 条**简洁**的中文洞察(每条 ≤ 50 字):
+
+【按 action 聚合 7 天】
+{actions_text}
+
+【最近 {min(30, len(preview['recent_logs']))} 条明细】
+{recent_text}
+
+按以下角度给建议:异常高频 action、失败率、深夜可疑操作、潜在风险。每条单独一行,前面用 `## 角度 -` 开头。
+"""
+    try:
+        from utils.llm_admin import admin_chat, ADMIN_SESSION
+        text = admin_chat(
+            system_prompt="你是系统安全/运营分析助手。回答必须用中文、简洁、具体、有依据。",
+            user_message=prompt,
+            session_id=f"{ADMIN_SESSION}_log_summary",
+        )
+        return {"preview": preview, "ai_insight": text}
+    except Exception as e:
+        return {"preview": preview, "ai_insight": f"(AI 解读失败: {type(e).__name__}: {e})"}

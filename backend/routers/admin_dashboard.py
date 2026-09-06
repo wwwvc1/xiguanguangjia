@@ -200,3 +200,100 @@ def get_llm_usage(
         total_users=int(totals_row["total_users"]) if totals_row else 0,
         daily=daily
     )
+
+
+# ============================ LLM Token 用量(按模型) ============================
+@router.get("/llm-tokens")
+def get_llm_token_usage(
+    days: int = Query(30, ge=1, le=180),
+    admin: dict = Depends(get_current_admin)
+):
+    """按模型聚合 token 用量。如果 ai_chat_logs 没建 token 列,返回空数据(不报错)"""
+    start = (datetime.now() - timedelta(days=days - 1)).strftime("%Y-%m-%d 00:00:00")
+
+    # 检测 token 列是否存在(没跑迁移就降级)
+    token_cols_ok = False
+    try:
+        conn = get_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    """SELECT COUNT(*) AS c FROM information_schema.COLUMNS
+                       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ai_chat_logs'
+                         AND COLUMN_NAME = 'prompt_tokens'"""
+                )
+                token_cols_ok = cursor.fetchone()["c"] > 0
+        finally:
+            conn.close()
+    except Exception:
+        token_cols_ok = False
+
+    if not token_cols_ok:
+        return {
+            "days": days,
+            "total": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+            "by_model": [],
+            "by_day": [],
+            "warning": "ai_chat_logs 缺 token 列,请跑 backend/sql/add_token_tracking.sql"
+        }
+
+    conn = get_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """SELECT
+                    COALESCE(model, 'unknown') AS model,
+                    COUNT(*) AS calls,
+                    COALESCE(SUM(prompt_tokens), 0) AS prompt_tokens,
+                    COALESCE(SUM(completion_tokens), 0) AS completion_tokens,
+                    COALESCE(SUM(total_tokens), 0) AS total_tokens
+                FROM ai_chat_logs
+                WHERE created_at >= %s AND role = 'assistant'
+                GROUP BY model ORDER BY total_tokens DESC""",
+                (start,)
+            )
+            by_model = []
+            for r in cursor.fetchall():
+                calls = int(r["calls"])
+                total = int(r["total_tokens"])
+                by_model.append({
+                    "model": r["model"],
+                    "calls": calls,
+                    "prompt_tokens": int(r["prompt_tokens"]),
+                    "completion_tokens": int(r["completion_tokens"]),
+                    "total_tokens": total,
+                    "avg_tokens_per_call": round(total / calls) if calls else 0
+                })
+            cursor.execute(
+                """SELECT DATE(created_at) AS d,
+                          COALESCE(model, 'unknown') AS model,
+                          COALESCE(SUM(total_tokens), 0) AS total
+                   FROM ai_chat_logs
+                   WHERE created_at >= %s AND role = 'assistant'
+                   GROUP BY DATE(created_at), model ORDER BY d""",
+                (start,)
+            )
+            by_day = []
+            for r in cursor.fetchall():
+                by_day.append({"date": str(r["d"]), "model": r["model"], "total_tokens": int(r["total"])})
+            cursor.execute(
+                """SELECT
+                    COALESCE(SUM(prompt_tokens), 0) AS pt,
+                    COALESCE(SUM(completion_tokens), 0) AS ct,
+                    COALESCE(SUM(total_tokens), 0) AS tt
+                FROM ai_chat_logs WHERE created_at >= %s AND role = 'assistant'""",
+                (start,)
+            )
+            tot = cursor.fetchone()
+            return {
+                "days": days,
+                "total": {
+                    "prompt_tokens": int(tot["pt"]) if tot else 0,
+                    "completion_tokens": int(tot["ct"]) if tot else 0,
+                    "total_tokens": int(tot["tt"]) if tot else 0,
+                },
+                "by_model": by_model,
+                "by_day": by_day,
+            }
+    finally:
+        conn.close()

@@ -40,18 +40,32 @@ Page({
 
   onGenerate(e) {
     const type = e.currentTarget.dataset.type;
-    wx.showLoading({ title: '生成中...' });
-    app.request({
-      url: `/reports/generate?type=${type}`,
-      method: 'POST'
-    }).then(() => {
-      wx.hideLoading();
-      wx.showToast({ title: '已生成', icon: 'success' });
-      this.loadList();
-    }).catch(() => {
-      wx.hideLoading();
-      wx.showToast({ title: '生成失败', icon: 'none' });
-    });
+    const doGenerate = (force = false) => {
+      wx.showLoading({ title: '生成中...' });
+      app.request({
+        url: `/reports/generate?type=${type}${force ? '&force=true' : ''}`,
+        method: 'POST'
+      }).then(() => {
+        wx.hideLoading();
+        wx.showToast({ title: '已生成', icon: 'success' });
+        this.loadList();
+      }).catch((err) => {
+        wx.hideLoading();
+        if (err && err.statusCode === 409) {
+          // 同周期已存在,二次确认覆盖
+          wx.showModal({
+            title: '报告已存在',
+            content: (err.detail || '该周期报告已存在,是否覆盖?').replace('如果重新生成请传 force=true', '要覆盖吗?'),
+            confirmText: '覆盖',
+            cancelText: '取消',
+            success: (r) => { if (r.confirm) doGenerate(true); }
+          });
+        } else {
+          wx.showToast({ title: err.detail || '生成失败', icon: 'none' });
+        }
+      });
+    };
+    doGenerate(false);
   },
 
   onOpenReport(e) {

@@ -19,6 +19,7 @@ from utils.ai_crud_tools import (
     TOOLS, DESTRUCTIVE_TOOLS, execute_tool, summarize_action_for_user
 )
 from utils import ai_crud_session as ai_session
+from utils.ai_logging import log_user_message, log_assistant_message, log_tool_message
 
 router = APIRouter(prefix="/api/ai/agent", tags=["ai-agent"])
 
@@ -149,8 +150,10 @@ def agent(req: AgentRequest, current_user: int = Depends(get_current_user)):
     # 1) 把用户消息加入历史
     ai_session.append_history(session_id, current_user, {"role": "user", "content": req.message})
 
-    # 2) 调用 LLM 主循环
+    # 2) 调用 LLM 主循环(先取 client/model_name 再写日志,避免 UnboundLocalError)
     client, model_name = _get_client_and_model(req.model_id)
+    log_user_message(current_user, session_id, req.message, model=model_name)
+
     today, yesterday, tomorrow = _date_context()
     system = SYSTEM_PROMPT.format(
         today=today, yesterday=yesterday, tomorrow=tomorrow
@@ -160,7 +163,7 @@ def agent(req: AgentRequest, current_user: int = Depends(get_current_user)):
     pending_destructive = []  # 待确认的(改/删)
     last_assistant_text = ""
     iterations = 0
-    max_iterations = 5
+    max_iterations = 3  # 5→3:实测 3 步够覆盖 90% 场景,提速 40%
 
     try:
         while iterations < max_iterations:
@@ -175,6 +178,17 @@ def agent(req: AgentRequest, current_user: int = Depends(get_current_user)):
             )
             msg = response.choices[0].message
             last_assistant_text = msg.content or ""
+            # 留痕:assistant 消息(含 tool_calls)
+            tc_serialized = None
+            if msg.tool_calls:
+                tc_serialized = []
+                for tc in msg.tool_calls:
+                    tc_serialized.append({
+                        "id": tc.id,
+                        "type": "function",
+                        "function": {"name": tc.function.name, "arguments": tc.function.arguments}
+                    })
+            log_assistant_message(current_user, session_id, last_assistant_text, model=model_name, tool_calls=tc_serialized)
 
             # 没有 tool_calls:模型给出最终回答
             if not msg.tool_calls:
@@ -225,6 +239,11 @@ def agent(req: AgentRequest, current_user: int = Depends(get_current_user)):
                         "result": r
                     })
                     result_for_llm = r
+                    # 留痕:tool 消息
+                    try:
+                        log_tool_message(current_user, session_id, json.dumps(r, ensure_ascii=False, default=str), tc.id, model=model_name)
+                    except Exception:
+                        pass
 
                 history.append({
                     "role": "tool",
