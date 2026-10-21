@@ -1,5 +1,9 @@
 const app = getApp();
 
+// 海外模型没开代理时,连接会一直挂着不报错(既不返回也不 close),
+// 所以客户端自己设一个"多久没有任何数据就判定卡死"的看门狗。
+const NO_RESPONSE_TIMEOUT = 45000;
+
 const TOOL_LABELS = {
   list_todos: '查询待办',
   add_todo: '添加待办',
@@ -55,7 +59,9 @@ Page({
     navHeight: 88,
     messages: [],
     inputValue: '',
-    isLoading: false,
+    // 正在等待/生成中的回复条数。只用来显示"停止"按钮和打字动画,
+    // 不再当成"能不能发下一条"的开关 —— 上一条没回也能继续发。
+    pendingCount: 0,
     currentTab: 'habit',
     scrollIntoView: '',
     aiAvatar: '',
@@ -69,12 +75,14 @@ Page({
 
   onLoad() {
     const g = app.globalData;
+    // 每条 AI 消息独立的请求句柄:aiMsgId -> { task, timer, closed, close() }
+    this._requests = {};
     // 计算微信胶囊的右侧位置
     let capsuleRight = 0;
     try {
       const rect = wx.getMenuButtonBoundingClientRect();
-      const sysInfo = wx.getSystemInfoSync();
-      capsuleRight = (sysInfo.windowWidth - rect.left) + 8;
+      const win = wx.getWindowInfo();
+      capsuleRight = (win.windowWidth - rect.left) + 8;
     } catch (e) {}
     this.setData({
       statusBarHeight: g.statusBarHeight,
@@ -88,13 +96,25 @@ Page({
   onShow() {
     this.setData({ aiAvatar: wx.getStorageSync('ai_avatar') || '' });
     if (!app.globalData.token) {
-      wx.redirectTo({ url: '/pages/login/login' });
+      app.goLogin();
       return;
     }
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 2 });
     }
     this.loadModels();
+  },
+
+  // 页面销毁:把还在等的请求断掉,避免回调打到已销毁的页面
+  onUnload() {
+    Object.keys(this._requests || {}).forEach((id) => {
+      const entry = this._requests[id];
+      if (!entry) return;
+      entry.closed = true;
+      if (entry.timer) clearTimeout(entry.timer);
+      try { entry.task && entry.task.abort(); } catch (e) {}
+    });
+    this._requests = {};
   },
 
   loadModels() {
@@ -177,44 +197,69 @@ Page({
     wx.navigateTo({ url: '/pages/settings/ai-model/ai-model' });
   },
 
+  /* ================= 发送 ================= */
+
+  // 不在 isLoading 上做拦截:上一条没回复,这一条立刻就能发出去
   sendMessage() {
-    const text = this.data.inputValue.trim();
-    if (!text || this.data.isLoading) return;
+    const text = (this.data.inputValue || '').trim();
+    if (!text) return;
 
-    const userMsgId = 'msg_' + Date.now();
-    // 限长:只保留最近 30 条,防止 setData 累积过大
-    const next = [...this.data.messages, { id: userMsgId, role: 'user', content: text }].slice(-30);
-    this.setData({
-      messages: next,
-      inputValue: '',
-      isLoading: true
-    });
-    this._scrollToBottom();
-
-    // 先创建一个空的 AI 消息占位(带 toolChain 数组)
-    const aiMsgId = 'msg_' + (Date.now() + 1);
-    this.setData({
-      messages: [...this.data.messages, {
-        id: aiMsgId,
-        role: 'ai',
-        content: '',
-        toolChain: [],
-        sources: []
-      }].slice(-30)
-    });
-    this._scrollToBottom();
-
-    const url = this.data.currentTab === 'habit'
-      ? '/ai/chat/professional'
-      : '/ai/chat/general';
-
-    // 取最近 10 条消息作为历史(只取 user/assistant 的纯文本)
+    // 历史只取"发送本条之前"的消息,避免当前这句话既进 history 又当 message 发两遍
     const history = this.data.messages
       .filter(m => m.role === 'user' || (m.role === 'ai' && m.content))
       .slice(-10)
       .map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }));
 
-    const requestTask = wx.request({
+    const stamp = Date.now();
+    const userMsgId = 'msg_' + stamp + '_u';
+    const aiMsgId = 'msg_' + stamp + '_a';
+
+    // 限长:只保留最近 30 条,防止 setData 累积过大
+    const messages = [
+      ...this.data.messages,
+      { id: userMsgId, role: 'user', content: text },
+      { id: aiMsgId, role: 'ai', content: '', toolChain: [], sources: [], pending: true, error: false }
+    ].slice(-30);
+
+    this.setData({ messages, inputValue: '' });
+    this._scrollToBottom();
+
+    this._startChat(aiMsgId, text, history);
+  },
+
+  // 每条消息单独开一条请求,互不阻塞
+  _startChat(aiMsgId, text, history) {
+    const url = this.data.currentTab === 'habit'
+      ? '/ai/chat/professional'
+      : '/ai/chat/general';
+
+    const entry = { task: null, timer: null, closed: false, gotData: false };
+    this._requests[aiMsgId] = entry;
+    this._syncPending();
+
+    const close = () => {
+      if (entry.closed) return;
+      entry.closed = true;
+      if (entry.timer) { clearTimeout(entry.timer); entry.timer = null; }
+      delete this._requests[aiMsgId];
+      this._syncPending();
+    };
+    entry.close = close;
+
+    // 看门狗:超过 NO_RESPONSE_TIMEOUT 没有任何数据 → 判定这条回复卡死,自动停掉
+    const armWatchdog = () => {
+      if (entry.closed) return;
+      if (entry.timer) clearTimeout(entry.timer);
+      entry.timer = setTimeout(() => {
+        if (entry.closed) return;
+        this._abort(
+          aiMsgId,
+          `AI 在 ${Math.round(NO_RESPONSE_TIMEOUT / 1000)} 秒内没有响应,已自动停止(海外模型没开代理时常见)。可以直接重发,或换个模型。`
+        );
+      }, NO_RESPONSE_TIMEOUT);
+    };
+
+    const task = wx.request({
       url: app.globalData.apiBase + url,
       method: 'POST',
       header: {
@@ -229,98 +274,188 @@ Page({
       },
       enableChunked: true,
       success: (res) => {
-        // 非流式 fallback
-        if (res.data && res.data.reply) {
-          this._updateAiMessage(aiMsgId, res.data.reply, [], res.data.sources || []);
-          this.setData({ isLoading: false });
+        if (entry.closed) return;
+        const data = res.data || {};
+        if (res.statusCode === 401) {
+          this._markFailed(aiMsgId, '登录已过期,请重新登录后再发一次。');
+          close();
+          app.goLogin();
+          return;
         }
+        if (data.reply) {
+          // 非流式 fallback
+          this._finishMessage(aiMsgId, data.reply, undefined, data.sources || []);
+        } else if (data.detail) {
+          this._markFailed(aiMsgId, typeof data.detail === 'string' ? data.detail : 'AI 服务异常');
+        } else if (!entry.gotData) {
+          this._markFailed(aiMsgId, 'AI 没有返回内容,请重试。');
+        }
+        close();
       },
       fail: (err) => {
+        if (entry.closed) return;  // 看门狗 / 手动停止已经处理过了
+        const msg = (err && err.errMsg) || '';
+        if (msg.indexOf('abort') >= 0) { close(); return; }
         console.error('AI请求失败:', err);
-        this._handleError(err, aiMsgId);
+        this._markFailed(aiMsgId, '网络异常,没拿到回复。检查一下网络/代理后再试。');
+        close();
       }
     });
+    entry.task = task;
+    armWatchdog();
 
-    if (requestTask.onChunkReceived) {
-      let buffer = '';
-      let fullReply = '';
-      const toolCalls = [];  // 当前 AI 消息下的所有工具
+    if (!task.onChunkReceived) return;
 
-      requestTask.onChunkReceived((res) => {
-        const text = this._arrayBufferToString(res.data);
-        buffer += text;
-        const lines = buffer.split('\n');
-        buffer = lines.pop();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+    let fullReply = '';
+    const toolCalls = [];
+    // AI 通过工具改过数据吗?改过就要在收尾时通知首页重新拉数据,
+    // 否则回到首页 onShow 检测不到 dataVersion 变化,不会刷新(用户看到的"没反应")。
+    let wroteData = false;
 
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const evt = JSON.parse(line.slice(6));
-            const t = evt.type;
+    task.onChunkReceived((res) => {
+      if (entry.closed) return;
+      entry.gotData = true;
+      armWatchdog();  // 有数据就续命,慢速流式输出不会被误杀
 
-            if (t === 'tool_call') {
-              // 新建一个 toolChain 项(loading)
-              const name = evt.name || 'unknown';
-              const label = TOOL_LABELS[name] || name;
-              toolCalls.push({
-                id: 'tc_' + toolCalls.length + '_' + Date.now(),
-                name,
-                label,
-                args: evt.args || {},
-                ok: null,
-                summary: ''
-              });
-              this._updateAiMessage(aiMsgId, fullReply, toolCalls);
-            } else if (t === 'tool_result') {
-              // 更新最后一项的结果
-              if (toolCalls.length > 0) {
-                const last = toolCalls[toolCalls.length - 1];
-                last.ok = !!evt.ok;
-                last.summary = evt.ok
-                  ? fmtResult(last.name, evt.result)
-                  : (evt.error || '执行失败');
-              }
-              this._updateAiMessage(aiMsgId, fullReply, toolCalls);
-            } else if (t === 'text_delta') {
-              fullReply += evt.content || '';
-              this._updateAiMessage(aiMsgId, fullReply, toolCalls);
-            } else if (t === 'done') {
-              fullReply = evt.reply || fullReply;
-              const sources = evt.sources || [];
-              this._updateAiMessage(aiMsgId, fullReply, toolCalls, sources);
-              this.setData({ isLoading: false });
-            } else if (t === 'error') {
-              this._handleError({ errMsg: evt.message || 'AI 服务异常' }, aiMsgId);
-            }
-          } catch (e) {
-            // 忽略解析错误
-          }
+      let textChunk = '';
+      try {
+        textChunk = typeof res.data === 'string'
+          ? res.data
+          : decoder.decode(new Uint8Array(res.data), { stream: true });
+      } catch (e) {
+        textChunk = this._arrayBufferToString(res.data);
+      }
+
+      buffer += textChunk;
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (line.indexOf('data: ') !== 0) continue;
+        let evt;
+        try {
+          evt = JSON.parse(line.slice(6));
+        } catch (e) {
+          continue;
         }
-      });
-    }
+        const t = evt.type;
+
+        if (t === 'tool_call') {
+          const name = evt.name || 'unknown';
+          toolCalls.push({
+            id: 'tc_' + toolCalls.length + '_' + Date.now(),
+            name,
+            label: TOOL_LABELS[name] || name,
+            args: evt.args || {},
+            ok: null,
+            summary: ''
+          });
+          this._updateAiMessage(aiMsgId, fullReply, toolCalls);
+        } else if (t === 'tool_result') {
+          if (toolCalls.length > 0) {
+            const last = toolCalls[toolCalls.length - 1];
+            last.ok = !!evt.ok;
+            last.summary = evt.ok
+              ? fmtResult(last.name, evt.result)
+              : (evt.error || '执行失败');
+            // 写类工具(与后端 services/cache_invalidation.py 的前缀约定一致)
+            if (evt.ok && /^(add|create|update|delete|remove|toggle|complete|batch|set|mark|upsert)_/.test(last.name)) {
+              wroteData = true;
+            }
+          }
+          this._updateAiMessage(aiMsgId, fullReply, toolCalls);
+        } else if (t === 'text_delta') {
+          fullReply += evt.content || '';
+          this._updateAiMessage(aiMsgId, fullReply, toolCalls);
+        } else if (t === 'done') {
+          fullReply = evt.reply || fullReply;
+          this._finishMessage(aiMsgId, fullReply, toolCalls, evt.sources || []);
+          // 让首页/待办/收支等页面在下次 onShow 时重新拉数据
+          if (wroteData) app.bumpDataVersion();
+          close();
+        } else if (t === 'error') {
+          if (wroteData) app.bumpDataVersion();
+          this._abort(aiMsgId, evt.message || 'AI 服务异常');
+        }
+      }
+    });
   },
 
-  // 更新 AI 消息内容(含 toolChain 渲染)
-  _updateAiMessage(msgId, content, toolChain, sources) {
-    // 单条内容上限 4000 字符,防止 AI 长回复把单条消息撑得太大
-    const raw = (content || '');
-    const safeContent = raw.length > 4000
-      ? raw.slice(0, 4000) + '\n\n...(回复已截断,完整版请看历史记录)'
-      : raw;
+  // 手动停止全部等待中的回复
+  stopAll() {
+    Object.keys(this._requests || {}).forEach((id) => this._abort(id, '已停止生成'));
+  },
+
+  // 断掉某条消息的请求;hint 非空时在气泡里留一行说明
+  _abort(aiMsgId, hint) {
+    const entry = this._requests && this._requests[aiMsgId];
+    if (!entry) return;
+    entry.closed = true;
+    if (entry.timer) { clearTimeout(entry.timer); entry.timer = null; }
+    try { entry.task && entry.task.abort(); } catch (e) {}
+    delete this._requests[aiMsgId];
+    if (hint) this._markFailed(aiMsgId, hint);
+    this._syncPending();
+  },
+
+  _syncPending() {
+    const n = Object.keys(this._requests || {}).length;
+    if (n !== this.data.pendingCount) this.setData({ pendingCount: n });
+  },
+
+  // 正常结束:落最终内容 + 清掉 pending
+  _finishMessage(msgId, content, toolChain, sources) {
     const messages = this.data.messages.map(m => {
       if (m.id !== msgId) return m;
-      const update = { ...m, content: safeContent };
+      const update = { ...m, content: this._clip(content), pending: false, error: false };
       if (toolChain !== undefined) update.toolChain = toolChain;
-      if (sources !== undefined) {
-        // sources 数组最多保留 8 条,每条 URL+title 截断
-        update.sources = (sources || []).slice(0, 8).map(s => ({
-          title: String(s.title || '').slice(0, 80),
-          url:   String(s.url || '').slice(0, 200)
-        }));
-      }
+      if (sources !== undefined) update.sources = this._clipSources(sources);
+      return update;
+    });
+    this.setData({ messages });
+    this._scrollToBottom();
+  },
+
+  // 失败/超时/被停止:保留已有内容,补一行说明,并把气泡标红
+  _markFailed(msgId, hint) {
+    const tip = hint || '没拿到回复,请重试。';
+    const messages = this.data.messages.map(m => {
+      if (m.id !== msgId) return m;
+      const content = m.content ? `${m.content}\n\n${tip}` : tip;
+      return { ...m, content, pending: false, error: true };
+    });
+    this.setData({ messages });
+    this._scrollToBottom();
+  },
+
+  // 更新 AI 消息内容(流式增量,含 toolChain 渲染)
+  _updateAiMessage(msgId, content, toolChain, sources) {
+    const messages = this.data.messages.map(m => {
+      if (m.id !== msgId) return m;
+      const update = { ...m, content: this._clip(content) };
+      if (toolChain !== undefined) update.toolChain = toolChain;
+      if (sources !== undefined) update.sources = this._clipSources(sources);
       return update;
     });
     this.setData({ messages, scrollIntoView: 'chat-bottom' });
+  },
+
+  // 单条内容上限 4000 字符,防止 AI 长回复把单条消息撑得太大
+  _clip(content) {
+    const raw = content || '';
+    return raw.length > 4000
+      ? raw.slice(0, 4000) + '\n\n...(回复已截断,完整版请看历史记录)'
+      : raw;
+  },
+
+  // sources 数组最多保留 8 条,每条 URL+title 截断
+  _clipSources(sources) {
+    return (sources || []).slice(0, 8).map(s => ({
+      title: String(s.title || '').slice(0, 80),
+      url: String(s.url || '').slice(0, 200)
+    }));
   },
 
   _scrollToBottom() {
@@ -330,20 +465,13 @@ Page({
     }, 50);
   },
 
-  _handleError(err, aiMsgId) {
-    const msg = (err && (err.errMsg || err.message)) || '';
-    let toastMsg = '发送失败，请重试';
-    if (msg.includes('API配置') || msg.includes('authentication')) toastMsg = 'AI服务配置异常';
-    else if (msg.includes('超时') || msg.includes('timeout')) toastMsg = '网络超时，请重试';
-    else if (msg.includes('频繁') || msg.includes('rate limit') || msg.includes('429')) toastMsg = '请求太频繁，请稍后再试';
-    wx.showToast({ title: toastMsg, icon: 'none', duration: 2500 });
-    const messages = this.data.messages.filter(m => m.id !== aiMsgId);
-    this.setData({ messages, isLoading: false });
-  },
-
   _arrayBufferToString(buffer) {
-    const decoder = new TextDecoder('utf-8');
-    return decoder.decode(buffer);
+    try {
+      const decoder = new TextDecoder('utf-8');
+      return decoder.decode(buffer);
+    } catch (e) {
+      return '';
+    }
   },
 
   onFabTap() {

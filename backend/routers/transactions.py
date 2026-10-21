@@ -1,174 +1,102 @@
-"""收支 API (异步版)"""
+"""收支 API
+
+改造点:
+- 删掉了每个请求都 `print` 完整 SQL 的调试代码(生产纯损耗 + 泄敏)
+- `YEAR(time)/MONTH(time)` 函数包裹改成时间区间,能吃索引
+- daily-stats / summary 各合成一条 SQL(原来跑两次 SUM)
+- 写操作 bump 版本号
+"""
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
-from aiomysql import DictCursor
-from database import get_conn
-from models.transaction import TransactionCreate, TransactionUpdate, TransactionResponse
+
+from core import cache
+from models.transaction import TransactionCreate, TransactionResponse, TransactionUpdate
+from repositories import transaction_repo
 from utils.deps import get_current_user
 
 router = APIRouter(prefix="/api/transactions", tags=["transactions"])
 
 
+@router.get("", response_model=list[TransactionResponse])
 @router.get("/", response_model=list[TransactionResponse])
 async def list_transactions(
     current_user: int = Depends(get_current_user),
-    type: str | None = Query(None),
-    year: int | None = Query(None),
-    month: int | None = Query(None)
+    type: Optional[str] = Query(None),
+    year: Optional[int] = Query(None),
+    month: Optional[int] = Query(None),
 ):
-    async with get_conn() as conn:
-        async with conn.cursor(DictCursor) as cur:
-            base_sql = "SELECT id, user_id, category, description, amount, type, time, created_at FROM transactions WHERE user_id = %s"
-            params = [current_user]
-            if type is not None:
-                base_sql += " AND type = %s"
-                params.append(type)
-            if year is not None and month is not None:
-                base_sql += " AND YEAR(time) = %s AND MONTH(time) = %s"
-                params.extend([year, month])
-            base_sql += " ORDER BY time DESC"
-            await cur.execute(base_sql, tuple(params))
-            rows = await cur.fetchall()
-            print(f"[DEBUG /transactions/] user={current_user} year={year} month={month} SQL={base_sql} params={tuple(params)} -> {len(rows)} rows")
-            for row in rows:
-                row["amount"] = float(row["amount"])
-            return rows
+    return await transaction_repo.list_for_user(current_user, type, year, month)
 
 
+@router.post("", response_model=TransactionResponse, status_code=201)
 @router.post("/", response_model=TransactionResponse, status_code=201)
 async def create_transaction(tx_data: TransactionCreate, current_user: int = Depends(get_current_user)):
-    async with get_conn() as conn:
-        async with conn.cursor(DictCursor) as cur:
-            await cur.execute(
-                "INSERT INTO transactions (user_id, category, description, amount, type, time) VALUES (%s, %s, %s, %s, %s, %s)",
-                (current_user, tx_data.category, tx_data.description, tx_data.amount, tx_data.type, tx_data.time)
-            )
-            tx_id = cur.lastrowid
-            await conn.commit()
-            await cur.execute(
-                "SELECT id, user_id, category, description, amount, type, time, created_at FROM transactions WHERE id = %s",
-                (tx_id,)
-            )
-            row = await cur.fetchone()
-            row["amount"] = float(row["amount"])
-            return row
+    row = await transaction_repo.create(
+        current_user, tx_data.category, tx_data.description,
+        tx_data.amount, tx_data.type, tx_data.time,
+    )
+    await cache.abump(current_user, "tx")
+    return row
 
 
 @router.put("/{tx_id}", response_model=TransactionResponse)
 async def update_transaction(
     tx_id: int,
     tx_data: TransactionUpdate,
-    current_user: int = Depends(get_current_user)
+    current_user: int = Depends(get_current_user),
 ):
-    async with get_conn() as conn:
-        async with conn.cursor(DictCursor) as cur:
-            await cur.execute("SELECT id FROM transactions WHERE id = %s AND user_id = %s", (tx_id, current_user))
-            if not await cur.fetchone():
-                raise HTTPException(status_code=404, detail="交易不存在")
-            updates = {}
-            if tx_data.category is not None:
-                updates["category"] = tx_data.category
-            if tx_data.description is not None:
-                updates["description"] = tx_data.description
-            if tx_data.amount is not None:
-                updates["amount"] = tx_data.amount
-            if tx_data.type is not None:
-                updates["type"] = tx_data.type
-            if tx_data.time is not None:
-                updates["time"] = tx_data.time
-            if not updates:
-                raise HTTPException(status_code=400, detail="没有提供更新字段")
-            set_clause = ", ".join(f"{k} = %s" for k in updates)
-            values = list(updates.values()) + [tx_id]
-            await cur.execute(f"UPDATE transactions SET {set_clause} WHERE id = %s", values)
-            await conn.commit()
-            await cur.execute(
-                "SELECT id, user_id, category, description, amount, type, time, created_at FROM transactions WHERE id = %s",
-                (tx_id,)
-            )
-            row = await cur.fetchone()
-            row["amount"] = float(row["amount"])
-            return row
+    if not await transaction_repo.exists(current_user, tx_id):
+        raise HTTPException(status_code=404, detail="交易不存在")
+
+    fields = {}
+    for key in ("category", "description", "amount", "type", "time"):
+        value = getattr(tx_data, key)
+        if value is not None:
+            fields[key] = value
+    if not fields:
+        raise HTTPException(status_code=400, detail="没有提供更新字段")
+
+    row = await transaction_repo.update(current_user, tx_id, fields)
+    await cache.abump(current_user, "tx")
+    return row
 
 
 @router.delete("/{tx_id}")
 async def delete_transaction(tx_id: int, current_user: int = Depends(get_current_user)):
-    async with get_conn() as conn:
-        async with conn.cursor(DictCursor) as cur:
-            await cur.execute("DELETE FROM transactions WHERE id = %s AND user_id = %s", (tx_id, current_user))
-            if cur.rowcount == 0:
-                raise HTTPException(status_code=404, detail="交易不存在")
-            await conn.commit()
-            return {"message": "交易删除成功"}
+    affected = await transaction_repo.delete(current_user, tx_id)
+    if affected == 0:
+        raise HTTPException(status_code=404, detail="交易不存在")
+    await cache.abump(current_user, "tx")
+    return {"message": "交易删除成功"}
 
 
 @router.get("/summary")
 async def get_monthly_summary(
+    month: str = Query(..., description="月份,格式 YYYY-MM"),
     current_user: int = Depends(get_current_user),
-    month: str = Query(..., description="月份，格式为YYYY-MM")
 ):
-    async with get_conn() as conn:
-        async with conn.cursor(DictCursor) as cur:
-            year, mon = month.split("-")
-            date_start = f"{year}-{mon}-01 00:00:00"
-            if mon == "12":
-                date_end = f"{int(year)+1}-01-01 00:00:00"
-            else:
-                date_end = f"{year}-{int(mon)+1:02d}-01 00:00:00"
-            await cur.execute(
-                "SELECT COALESCE(SUM(amount),0) AS total FROM transactions WHERE user_id = %s AND type = 'income' AND time >= %s AND time < %s",
-                (current_user, date_start, date_end)
-            )
-            income = float((await cur.fetchone())["total"])
-            await cur.execute(
-                "SELECT COALESCE(SUM(ABS(amount)),0) AS total FROM transactions WHERE user_id = %s AND type = 'expense' AND time >= %s AND time < %s",
-                (current_user, date_start, date_end)
-            )
-            expense = float((await cur.fetchone())["total"])
-            return {
-                "month": month,
-                "income": income,
-                "expense": expense,
-                "net": income - expense
-            }
+    try:
+        year_s, mon_s = month.split("-")
+        year, mon = int(year_s), int(mon_s)
+    except Exception:
+        raise HTTPException(status_code=400, detail="月份格式应为 YYYY-MM")
+    return await transaction_repo.monthly_summary(current_user, year, mon)
 
 
 @router.get("/daily-stats")
 async def get_daily_stats(
+    date: str = Query(..., description="日期,格式 YYYY-MM-DD"),
     current_user: int = Depends(get_current_user),
-    date: str = Query(..., description="日期，格式为YYYY-MM-DD")
 ):
-    async with get_conn() as conn:
-        async with conn.cursor(DictCursor) as cur:
-            date_start = f"{date} 00:00:00"
-            date_end = f"{date} 23:59:59"
-            await cur.execute(
-                "SELECT COALESCE(SUM(amount),0) AS total FROM transactions WHERE user_id = %s AND type = 'income' AND time >= %s AND time <= %s",
-                (current_user, date_start, date_end)
-            )
-            income = float((await cur.fetchone())["total"])
-            await cur.execute(
-                "SELECT COALESCE(SUM(ABS(amount)),0) AS total FROM transactions WHERE user_id = %s AND type = 'expense' AND time >= %s AND time <= %s",
-                (current_user, date_start, date_end)
-            )
-            expense = float((await cur.fetchone())["total"])
-            return {
-                "date": date,
-                "income": income,
-                "expense": expense,
-                "net": income - expense
-            }
+    return await transaction_repo.daily_stats(current_user, date)
 
 
-@router.get("/today", response_model=list[TransactionResponse])
-async def get_today_transactions(current_user: int = Depends(get_current_user)):
-    async with get_conn() as conn:
-        async with conn.cursor(DictCursor) as cur:
-            await cur.execute(
-                "SELECT id, user_id, category, description, amount, type, time, created_at FROM transactions "
-                "WHERE user_id = %s AND DATE(time) = CURDATE() ORDER BY time DESC",
-                (current_user,)
-            )
-            rows = await cur.fetchall()
-            for row in rows:
-                row["amount"] = float(row["amount"])
-            return rows
+@router.get("/today")
+async def get_today_transactions(
+    date: Optional[str] = Query(None, description="默认今天"),
+    current_user: int = Depends(get_current_user),
+):
+    from datetime import date as _date
+    day = date or _date.today().strftime("%Y-%m-%d")
+    return await transaction_repo.list_today(current_user, day)

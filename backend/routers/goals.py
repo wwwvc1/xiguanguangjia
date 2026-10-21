@@ -1,17 +1,36 @@
-"""目标 API (异步版)"""
-from fastapi import APIRouter, Depends, HTTPException, Query
+"""目标 API (异步版)
+
+写操作之后必须 bump 缓存版本号(goal 域),
+否则首页/洞察会在 TTL 内看到旧数据 —— 和 AI 工具写库是同一类问题。
+成就评估改为 BackgroundTasks,不再拖住响应。
+"""
+import logging
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel
 from typing import List
 from aiomysql import DictCursor
+from core import cache
 from database import get_conn, get_sync_connection
 from models.goal import GoalCreate, GoalUpdate, GoalResponse
 from utils.deps import get_current_user
+
+log = logging.getLogger("routers.goals")
 
 
 class GoalBatchDelete(BaseModel):
     ids: List[int]
 
 router = APIRouter(prefix="/api/goals", tags=["goals"])
+
+
+async def _sync_achievements_bg(user_id: int) -> None:
+    """后台评估成就;失败只记日志,不影响响应"""
+    try:
+        from services import achievement_service
+        await achievement_service.sync_user(user_id)
+    except Exception as e:
+        log.warning("后台成就评估失败(user=%s): %s", user_id, e)
 
 
 @router.get("/", response_model=list[GoalResponse])
@@ -56,7 +75,8 @@ def _auto_calc_progress(user_id: int, metric_type: str, target_value: int) -> in
 
 
 @router.post("/", response_model=GoalResponse, status_code=201)
-async def create_goal(goal_data: GoalCreate, current_user: int = Depends(get_current_user)):
+async def create_goal(goal_data: GoalCreate, background: BackgroundTasks,
+                     current_user: int = Depends(get_current_user)):
     if goal_data.start_date and goal_data.end_date and goal_data.start_date > goal_data.end_date:
         raise HTTPException(status_code=400, detail="开始日期不能晚于结束日期")
     if goal_data.linked_metric:
@@ -80,14 +100,8 @@ async def create_goal(goal_data: GoalCreate, current_user: int = Depends(get_cur
                 (goal_id,)
             )
             row = await cur.fetchone()
-    try:
-        import asyncio
-        from utils.achievement_engine import check_and_unlock
-        newly = await asyncio.get_event_loop().run_in_executor(None, check_and_unlock, current_user)
-        if newly:
-            row["newly_unlocked"] = newly
-    except Exception as e:
-        print(f"[成就检查] 失败: {e}")
+    await cache.abump(current_user, "goal")
+    background.add_task(_sync_achievements_bg, current_user)
     return row
 
 
@@ -95,6 +109,7 @@ async def create_goal(goal_data: GoalCreate, current_user: int = Depends(get_cur
 async def update_goal(
     goal_id: int,
     goal_data: GoalUpdate,
+    background: BackgroundTasks,
     current_user: int = Depends(get_current_user)
 ):
     async with get_conn() as conn:
@@ -134,14 +149,9 @@ async def update_goal(
                 "FROM goals WHERE id = %s", (goal_id,)
             )
             row = await cur.fetchone()
-    try:
-        import asyncio
-        from utils.achievement_engine import check_and_unlock
-        newly = await asyncio.get_event_loop().run_in_executor(None, check_and_unlock, current_user)
-        if newly:
-            row["newly_unlocked"] = newly
-    except Exception as e:
-        print(f"[成就检查] 失败: {e}")
+    await cache.abump(current_user, "goal")
+    if goal_data.done is not None or goal_data.progress is not None:
+        background.add_task(_sync_achievements_bg, current_user)
     return row
 
 
@@ -154,7 +164,8 @@ async def delete_goal(goal_id: int, current_user: int = Depends(get_current_user
             if cur.rowcount == 0:
                 raise HTTPException(status_code=404, detail="目标不存在")
             await conn.commit()
-            return {"message": "已删除"}
+    await cache.abump(current_user, "goal")
+    return {"message": "已删除"}
 
 
 @router.post("/batch-delete")
@@ -171,4 +182,5 @@ async def batch_delete_goals(payload: GoalBatchDelete, current_user: int = Depen
             )
             deleted = cur.rowcount
             await conn.commit()
-            return {"deleted": deleted, "message": f"已删除 {deleted} 条"}
+    await cache.abump(current_user, "goal")
+    return {"deleted": deleted, "message": f"已删除 {deleted} 条"}

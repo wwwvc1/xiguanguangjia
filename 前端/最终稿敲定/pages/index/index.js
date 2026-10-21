@@ -31,7 +31,9 @@ Page({
     lastDataVer: -1,
     streak: 0,
     userInfo: { nickname: '我', avatar: '' },
-    todayDateLabel: ''
+    todayDateLabel: '',
+    // 每日首次进入的「添加今日待办」提示
+    showDailyPrompt: false
   },
 
   onLoad() {
@@ -40,8 +42,8 @@ Page({
     let capsuleRight = 0;
     try {
       const rect = wx.getMenuButtonBoundingClientRect();
-      const sysInfo = wx.getSystemInfoSync();
-      capsuleRight = (sysInfo.windowWidth - rect.left) + 8;  // 8px 间距
+      const win = wx.getWindowInfo();
+      capsuleRight = (win.windowWidth - rect.left) + 8;  // 8px 间距
     } catch (e) {}
     this.setData({
       statusBarHeight: g.statusBarHeight,
@@ -52,7 +54,7 @@ Page({
 
   onShow() {
     if (!app.globalData.token) {
-      wx.redirectTo({ url: '/pages/login/login' });
+      app.goLogin();
       return;
     }
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
@@ -93,7 +95,7 @@ Page({
       // 标记今天已发(立即标记,即使请求失败也不重复尝试)
       wx.setStorageSync('auto_checkin_day', todayStr);
       app.request({
-        url: '/checkins/',
+        url: '/checkins',
         method: 'POST',
         data: { auto: true }
       }).then(r => {
@@ -112,63 +114,153 @@ Page({
     wx.navigateTo({ url: '/pages/checkin/checkin' });
   },
 
+  _todayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  },
+
+  /**
+   * 首页数据加载。
+   *
+   * 改造前:6 个接口 Promise.all(外加自动打卡共 7 个请求),
+   * 每个都要过一遍 JWT 校验、服务端各跑各的 SQL。
+   *
+   * 改造后:1 个 /dashboard 聚合接口 —— 服务端并发查 5 条轻量 SQL、
+   * 整包缓存 60s,并用版本号在写操作后自动失效。
+   * 失败时自动回退到旧的多请求路径,后端没升级也能正常用。
+   */
   async loadDashboardData() {
     try {
       if (!app.globalData.token) return;
+      const dateStr = this._todayStr();
 
-      const today = new Date();
-      const dateStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-
-      const todos = await app.request({ url: `/todos/?done=false&date=${dateStr}` });
-      const completedToday = await app.request({ url: `/todos/?done=true&date=${dateStr}` });
-
-      const totalToday = (todos || []).length + (completedToday || []).length;
-      const completionRate = totalToday > 0
-        ? Math.round(((completedToday || []).length / totalToday) * 100)
-        : 0;
-      this.setData({ todos, completionRate });
-
-      const dailyStats = await app.request({ url: `/transactions/daily-stats?date=${dateStr}` });
-      this.setData({
-        todayIncome: dailyStats.income,
-        todayExpense: dailyStats.expense,
-        todayNet: dailyStats.net
-      });
-
-      // 主动拉 streak(不依赖 maybeAutoCheckin 的副作用,确保首页 streak 始终是最新的)
+      let dash = null;
       try {
-        const streak = await app.request({ url: '/checkins/streak' });
-        if (streak && typeof streak.streak === 'number') {
-          this.setData({ streak: streak.streak });
-        }
+        dash = await app.request({ url: `/dashboard?date=${dateStr}` });
       } catch (e) {
-        console.warn('加载 streak 失败:', e);
+        console.warn('dashboard 聚合接口不可用,回退多请求模式:', e);
       }
 
-      const meals = await app.request({ url: '/meals/' });
-      const todayCalories = (meals || [])
-        .filter(m => m.date === dateStr)
-        .reduce((sum, m) => sum + (Number(m.total_calories) || 0), 0);
-      this.setData({ todayCalories });
-
-      try {
-        const settings = await app.request({ url: '/user/settings' });
-        if (settings && settings.target_calories) {
-          this.setData({ calorieGoal: settings.target_calories });
-        }
-        if (settings && Array.isArray(settings.home_layout) && settings.home_layout.length > 0) {
-          this.setData({ layout: settings.home_layout });
-        }
-      } catch (e) {
-        console.warn('加载用户设置失败:', e);
+      if (dash && typeof dash === 'object' && Array.isArray(dash.todos)) {
+        this._applyDashboard(dash);
+        return;
       }
-      this._recomputeSections();
-
-      // AI 建议改为手动触发(点"AI 智能建议"卡片才调),不再自动阻塞首页
-      // this._loadInsights();  // 已注释:切 tab 不再等 LLM
+      await this._loadDashboardLegacy(dateStr);
     } catch (e) {
       console.error('加载数据失败:', e);
     }
+  },
+
+  _applyDashboard(dash) {
+    const setData = {
+      todos: dash.todos || [],
+      completionRate: dash.completion_rate || 0,
+      todayIncome: dash.income || 0,
+      todayExpense: dash.expense || 0,
+      todayNet: dash.net || 0,
+      streak: typeof dash.streak === 'number' ? dash.streak : 0,
+      todayCalories: dash.calories || 0,
+      todayChecked: !!dash.today_checked
+    };
+    if (dash.calorie_goal) setData.calorieGoal = dash.calorie_goal;
+    if (Array.isArray(dash.layout) && dash.layout.length > 0) {
+      setData.layout = dash.layout;
+    }
+    this.setData(setData);
+    this._recomputeSections();
+    this._maybeShowDailyPrompt(dash.total_today || 0);
+  },
+
+  // 兼容旧后端:聚合接口不存在时走原来的 6 请求
+  async _loadDashboardLegacy(dateStr) {
+    const [
+      todosRes, completedRes, dailyStatsRes, streakRes, mealsRes, settingsRes
+    ] = await Promise.all([
+      app.request({ url: `/todos?done=false&date=${dateStr}` }).catch(() => []),
+      app.request({ url: `/todos?done=true&date=${dateStr}` }).catch(() => []),
+      app.request({ url: `/transactions/daily-stats?date=${dateStr}` }).catch(() => ({ income: 0, expense: 0, net: 0 })),
+      app.request({ url: '/checkins/streak' }).catch(() => ({ streak: 0 })),
+      app.request({ url: '/meals' }).catch(() => []),
+      app.request({ url: '/user/settings' }).catch(() => ({}))
+    ]);
+
+    const todos = todosRes || [];
+    const completedToday = completedRes || [];
+    const totalToday = todos.length + completedToday.length;
+    const dailyStats = dailyStatsRes || { income: 0, expense: 0, net: 0 };
+    const streak = streakRes || { streak: 0 };
+    const meals = mealsRes || [];
+    const settings = settingsRes || {};
+    const todayCalories = meals
+      .filter(m => m.date === dateStr)
+      .reduce((sum, m) => sum + (Number(m.total_calories) || 0), 0);
+
+    const setData = {
+      todos,
+      completionRate: totalToday > 0 ? Math.round((completedToday.length / totalToday) * 100) : 0,
+      todayIncome: dailyStats.income,
+      todayExpense: dailyStats.expense,
+      todayNet: dailyStats.net,
+      streak: typeof streak.streak === 'number' ? streak.streak : 0,
+      todayCalories
+    };
+    if (settings.target_calories) setData.calorieGoal = settings.target_calories;
+    if (Array.isArray(settings.home_layout) && settings.home_layout.length > 0) {
+      setData.layout = settings.home_layout;
+    }
+    this.setData(setData);
+    this._recomputeSections();
+    this._maybeShowDailyPrompt(todos.length + completedToday.length);
+  },
+
+  // ============================================================
+  // 每日首次进入:提示添加今日待办
+  // ------------------------------------------------------------
+  // 三个判断,避免骚扰:
+  //   1. 今天已经提示过 → 不再提示(跨页面切换、杀进程重进都不会重复)
+  //   2. 今天已经有待办 → 说明已经规划过,不打扰
+  //   3. 数据没加载出来(接口失败)→ 不弹,免得在错误状态下弹窗
+  // ============================================================
+  _maybeShowDailyPrompt(totalToday) {
+    try {
+      if (!app.globalData.token) return;
+      if (this.data.showDailyPrompt) return;
+
+      const today = this._todayStr();
+      if (wx.getStorageSync('daily_prompt_day') === today) return;
+      if (totalToday > 0) {
+        // 已经有待办了,记一笔当天已提示,后续不再判断
+        wx.setStorageSync('daily_prompt_day', today);
+        return;
+      }
+
+      // 立刻落盘:保证「每天只弹一次」,即使被强杀也不会重弹
+      wx.setStorageSync('daily_prompt_day', today);
+      this.setData({ showDailyPrompt: true });
+    } catch (e) {
+      // storage 异常时静默跳过,不打扰主流程
+    }
+  },
+
+  // 「去添加」→ 切到待办 tab,并让待办页自动弹出新增表单
+  // (tabBar 页面只能用 switchTab,而 switchTab 不支持带 query 参数,
+  //  所以用 storage 传一个一次性标记,待办页 onShow 消费掉)
+  onDailyPromptGo() {
+    this.setData({ showDailyPrompt: false });
+    try {
+      wx.setStorageSync('open_add_todo', 1);
+    } catch (e) {}
+    wx.switchTab({
+      url: '/pages/todo/todo',
+      fail: () => {
+        try { wx.removeStorageSync('open_add_todo'); } catch (e) {}
+      }
+    });
+  },
+
+  // 「稍后」→ 今天不再提示
+  onDailyPromptLater() {
+    this.setData({ showDailyPrompt: false });
   },
 
   onCheckin() {

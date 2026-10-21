@@ -16,8 +16,12 @@ Page({
       statusBarHeight: g.statusBarHeight,
       navHeight: g.navHeight
     });
-    if (app.globalData.token) {
+    // 只有内存和 storage 都有 token 才算已登录,避免残留全局 token
+    // 把用户从登录页又弹回首页(之前 401 死循环的根因之一)
+    if (app.globalData.token && wx.getStorageSync('token')) {
       wx.switchTab({ url: '/pages/index/index' });
+    } else {
+      app.clearSession();
     }
   },
 
@@ -116,16 +120,7 @@ Page({
   _handleAuthResponse(res, successText) {
     const data = res.data || {};
     if (data.access_token) {
-      app.globalData.token = data.access_token;
-      app.globalData.userId = data.user_id;
-      app.globalData.nickname = data.nickname;
-      app.globalData.avatar = data.avatar;
-      wx.setStorageSync('token', data.access_token);
-      wx.setStorageSync('userInfo', {
-        user_id: data.user_id,
-        nickname: data.nickname,
-        avatar: data.avatar
-      });
+      app.setToken(data);
       wx.showToast({ title: successText, icon: 'success' });
       setTimeout(() => {
         wx.switchTab({ url: '/pages/index/index' });

@@ -844,14 +844,23 @@ EXECUTORS = {
 def execute_tool(name: str, args: dict, user_id: int) -> dict:
     """
     执行单个工具。所有执行都强制 user_id 隔离(在 SQL WHERE 里已硬编码)。
+
+    写操作成功后**必须**失效对应的缓存版本号,否则首页/洞察会在 TTL 内看到旧数据
+    (典型现象:AI 里加了待办,回首页刷新不出来)。
     """
     fn = EXECUTORS.get(name)
     if not fn:
         return {"error": f"未知工具: {name}"}
     try:
-        return fn(args or {}, user_id)
+        result = fn(args or {}, user_id)
     except Exception as e:
         return {"error": f"执行 {name} 失败: {str(e)}"}
+
+    if not (isinstance(result, dict) and result.get("error")):
+        from services.cache_invalidation import bump_for_tool
+        bump_for_tool(user_id, name)
+
+    return result
 
 
 def summarize_action_for_user(tool: str, args: dict, user_id: int) -> str:

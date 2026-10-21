@@ -56,7 +56,7 @@ Page({
 
   onShow() {
     if (!app.globalData.token) {
-      wx.redirectTo({ url: '/pages/login/login' });
+      app.goLogin();
       return;
     }
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
@@ -121,7 +121,7 @@ Page({
     if (this.data.checking || this.data.todayChecked) return;
     this.setData({ checking: true });
     app.request({
-      url: '/checkins/',
+      url: '/checkins',
       method: 'POST',
       data: { note: this.data.note || null, auto: false }
     }).then(r => {

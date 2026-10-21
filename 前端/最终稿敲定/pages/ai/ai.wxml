@@ -29,7 +29,7 @@
     class="chat-scroll"
     scroll-y
     scroll-into-view="{{scrollIntoView}}"
-    scroll-with-animation="{{!isLoading}}"
+    scroll-with-animation="{{pendingCount === 0}}"
     enhanced
     show-scrollbar="{{true}}"
     style="height: calc(100vh - {{navHeight}}px - 320rpx - {{inputHeight}}rpx);"
@@ -53,7 +53,7 @@
           <image wx:if="{{aiAvatar}}" src="{{aiAvatar}}" class="avatar-img-sm" mode="aspectFill" />
           <text wx:else>🤖</text>
         </view>
-        <view id="{{item.id}}" class="chat-bubble ai">
+        <view id="{{item.id}}" class="chat-bubble ai {{item.error ? 'errored' : ''}}">
           <!-- 工具执行链(可折叠) -->
           <view wx:if="{{item.toolChain && item.toolChain.length > 0}}" class="tool-chain pit-sm">
             <view class="tool-chain-header">
@@ -69,7 +69,18 @@
               </view>
             </view>
           </view>
-          <text>{{item.content}}</text>
+          <!-- 这条回复还没开始时,显示打字点 -->
+          <view wx:if="{{item.pending && !item.content}}" class="typing-dots">
+            <view class="dot"></view>
+            <view class="dot"></view>
+            <view class="dot"></view>
+          </view>
+          <text wx:if="{{item.content}}">{{item.content}}</text>
+          <!-- 已经出了部分内容、但还在流式生成 -->
+          <view wx:if="{{item.pending && item.content}}" class="streaming-hint">
+            <view class="streaming-dot"></view>
+            <text>正在生成…</text>
+          </view>
           <view wx:if="{{item.sources && item.sources.length > 0}}" class="source-hint">
             <text class="source-label">📖 参考来源</text>
             <view wx:for="{{item.sources}}" wx:key="*this" wx:for-item="src" class="source-item">
@@ -83,21 +94,6 @@
         <text user-select="true" space="emsp">{{item.content}}</text>
       </view>
     </block>
-
-    <!-- 加载中 — 打字点动画 -->
-    <view wx:if="{{isLoading}}" class="ai-row">
-      <view class="chat-avatar-sm">
-        <image wx:if="{{aiAvatar}}" src="{{aiAvatar}}" class="avatar-img-sm" mode="aspectFill" />
-        <text wx:else>🤖</text>
-      </view>
-      <view class="chat-bubble ai">
-        <view class="typing-dots">
-          <view class="dot"></view>
-          <view class="dot"></view>
-          <view class="dot"></view>
-        </view>
-      </view>
-    </view>
 
     <!-- 底部锚点：流式输出时自动滚动到这里，保证最新内容可见 -->
     <view id="chat-bottom" class="chat-bottom-anchor"></view>
@@ -146,11 +142,12 @@
         auto-height
         style="height: {{inputHeight}}rpx;"
       />
-      <view class="send-btn {{inputValue.trim() ? 'active' : ''}}" bindtap="sendMessage" wx:if="{{!isLoading}}">
-        <text>发送</text>
+      <!-- 有回复在等的时候给出"停止";发送键始终可用(上一条没回也能发下一条) -->
+      <view class="send-btn stop" bindtap="stopAll" wx:if="{{pendingCount > 0}}">
+        <text>停止</text>
       </view>
-      <view class="send-btn loading" wx:if="{{isLoading}}">
-        <text>...</text>
+      <view class="send-btn {{inputValue.trim() ? 'active' : ''}}" bindtap="sendMessage">
+        <text>发送</text>
       </view>
     </view>
   </view>

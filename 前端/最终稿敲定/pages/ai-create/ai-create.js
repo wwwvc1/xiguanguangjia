@@ -203,8 +203,14 @@ Page({
         const filtered = this.data.messages.filter(m => m.id !== msgId);
         let newMsgs = [...filtered];
         const summary = (data.summary || '').trim();
+        const warning = (data.warning || '').trim();
         if (summary) {
           newMsgs.push({ id: nextMsgId(), role: 'ai', content: summary });
+        }
+        // 幻觉警告(后端检测到 AI 文字说成功但实际没调工具)
+        if (warning) {
+          newMsgs.push({ id: nextMsgId(), role: 'ai', content: warning });
+          wx.showModal({ title: '⚠️ 提示', content: warning, showCancel: false, confirmText: '知道了' });
         }
         if (data.actions && data.actions.length) {
           newMsgs.push({ id: nextMsgId(), role: 'actions', actions: data.actions });

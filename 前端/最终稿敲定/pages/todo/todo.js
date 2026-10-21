@@ -34,13 +34,27 @@ Page({
   },
   onShow() {
     if (!app.globalData.token) {
-      wx.redirectTo({ url: '/pages/login/login' });
+      app.goLogin();
       return;
     }
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({selected: 1});
     }
     this.loadData();
+    this._consumeOpenAddFlag();
+  },
+
+  // 首页「添加今日待办」弹窗点「去添加」→ 直接弹新增表单
+  // (switchTab 不能带参数,所以用一次性 storage 标记传过来)
+  _consumeOpenAddFlag() {
+    try {
+      if (!wx.getStorageSync('open_add_todo')) return;
+      wx.removeStorageSync('open_add_todo');
+      // 先确保停在「待办」tab,再复用已有的 onFabTap 打开对应表单
+      this.setData({ activeTab: 'todo' }, () => this.onFabTap());
+    } catch (e) {
+      try { wx.removeStorageSync('open_add_todo'); } catch (_) {}
+    }
   },
   loadData() {
     const today = todayStr();
@@ -50,7 +64,7 @@ Page({
     app.request({ url: '/todos/?done=true' }).then(todos => {
       this.setData({ completedTodos: todos });
     }).catch(() => { this.setData({ completedTodos: [] }); });
-    app.request({ url: '/goals/' }).then(goals => {
+    app.request({ url: '/goals' }).then(goals => {
       this.setData({ goals });
     }).catch(() => { this.setData({ goals: [] }); });
   },
@@ -180,7 +194,7 @@ Page({
       return;
     }
     app.request({
-      url: '/goals/',
+      url: '/goals',
       method: 'POST',
       data: {
         name: name.trim(),

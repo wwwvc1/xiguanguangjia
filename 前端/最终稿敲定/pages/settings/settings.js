@@ -75,7 +75,7 @@ Page({
 
   onShow() {
     if (!app.globalData.token) {
-      wx.redirectTo({ url: '/pages/login/login' });
+      app.goLogin();
       return;
     }
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
@@ -324,7 +324,7 @@ Page({
   },
 
   loadReminders() {
-    app.request({ url: '/reminders/' })
+    app.request({ url: '/reminders' })
       .then(list => {
         // 限长:只保留最近 20 条,避免 setData 累积过大
         this.setData({ reminders: (list || []).slice(0, 20).map(enrich) });
@@ -444,7 +444,7 @@ Page({
       }).catch(() => wx.showToast({ title: '更新失败', icon: 'none' }));
     } else {
       app.request({
-        url: '/reminders/',
+        url: '/reminders',
         method: 'POST',
         data: { type: formData.type, time: timeStr, enabled: true, weekdays: formData.weekdays }
       }).then(() => {

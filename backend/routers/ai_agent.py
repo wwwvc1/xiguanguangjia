@@ -5,21 +5,21 @@ AI Agent 端点:支持增删改查 + 聚合查询的统一入口
 - POST /api/ai/agent/reset:清空会话历史
 """
 import json
-import time
 from datetime import date, datetime
-from typing import Optional, Literal
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from openai import OpenAI, OpenAIError
+from langchain_core.messages import SystemMessage, convert_to_messages
 
-from config import settings
+from agent.chat_model import get_chat_model_for_user
+from agent.core import AgentError, ToolCallingAgent, crud_result, friendly_error
 from utils.deps import get_current_user
 from utils.ai_crud_tools import (
     TOOLS, DESTRUCTIVE_TOOLS, execute_tool, summarize_action_for_user
 )
 from utils import ai_crud_session as ai_session
-from utils.ai_logging import log_user_message, log_assistant_message, log_tool_message
+from utils.ai_logging import log_user_message
 
 router = APIRouter(prefix="/api/ai/agent", tags=["ai-agent"])
 
@@ -84,23 +84,19 @@ def _json_safe(obj):
     return obj
 
 
-def _get_client_and_model(model_id: Optional[int]):
-    """
-    拿到 LLM client + model_name。
-    model_id 提供则查 user/system 模型;否则用默认 .env 配置。
-    """
-    if model_id:
-        try:
-            from utils.llm_factory import get_llm_client_by_id
-            client, model_name = get_llm_client_by_id(model_id)
-            return client, model_name
-        except Exception as e:
-            print(f"[ai_agent] model_id={model_id} 加载失败,使用默认: {e}")
+def _get_llm_and_model(model_id: Optional[int], user_id: int):
+    """拿到 ChatOpenAI + model_name。
 
-    return (
-        OpenAI(api_key=settings.OPENAI_API_KEY, base_url=settings.OPENAI_BASE_URL),
-        settings.CHAT_MODEL
-    )
+    改造历史:
+    1. 最初调的 `get_llm_client_by_id` **根本没有定义**,异常被吞 → 永远走失效的 .env key;
+    2. 后来补了这个函数,但仍然返回裸 OpenAI 客户端;
+    3. 现在统一返回 **ChatOpenAI**,和 /api/ai/chat/professional 共用 `agent/core.py` 的循环。
+
+    model_id 提供 → 必须用它(加载失败直接抛,不静默降级);
+    没提供 → 「用户激活模型 > 系统默认 > 环境变量」。
+    """
+    llm, model_record = get_chat_model_for_user(user_id, model_id, temperature=0.3)
+    return llm, (model_record.get("model_name") or "unknown")
 
 
 def _date_context():
@@ -136,7 +132,7 @@ def _infer_intent(actions: list) -> str:
 # ============================================================
 
 @router.post("/")
-def agent(req: AgentRequest, current_user: int = Depends(get_current_user)):
+async def agent(req: AgentRequest, current_user: int = Depends(get_current_user)):
     if not req.message.strip():
         raise HTTPException(400, "请输入消息")
 
@@ -150,8 +146,11 @@ def agent(req: AgentRequest, current_user: int = Depends(get_current_user)):
     # 1) 把用户消息加入历史
     ai_session.append_history(session_id, current_user, {"role": "user", "content": req.message})
 
-    # 2) 调用 LLM 主循环(先取 client/model_name 再写日志,避免 UnboundLocalError)
-    client, model_name = _get_client_and_model(req.model_id)
+    # 2) 取模型(ChatOpenAI)+ 记 user 日志
+    try:
+        llm, model_name = _get_llm_and_model(req.model_id, current_user)
+    except Exception as e:
+        raise HTTPException(500, f"AI 模型不可用: {e}")
     log_user_message(current_user, session_id, req.message, model=model_name)
 
     today, yesterday, tomorrow = _date_context()
@@ -159,105 +158,48 @@ def agent(req: AgentRequest, current_user: int = Depends(get_current_user)):
         today=today, yesterday=yesterday, tomorrow=tomorrow
     )
 
-    actions_taken = []      # 已实际执行的(读/增/聚合一类)
-    pending_destructive = []  # 待确认的(改/删)
-    last_assistant_text = ""
-    iterations = 0
-    max_iterations = 3  # 5→3:实测 3 步够覆盖 90% 场景,提速 40%
+    # 3) 跑统一的 LangChain 工具循环
+    #    - require_confirmation=True:破坏性操作只暂存,等用户点确认
+    #    - emit_deltas=False:这条链路返回 JSON,不是 SSE
+    #    - session 里的 history 是 OpenAI 格式,convert_to_messages 负责转成
+    #      HumanMessage / AIMessage / ToolMessage
+    messages = [SystemMessage(content=system)] + convert_to_messages(history)
+
+    runner = ToolCallingAgent(
+        user_id=current_user,
+        llm=llm,
+        model_name=model_name,
+        tools=TOOLS,
+        execute_tool=execute_tool,
+        max_iterations=3,              # 实测 3 步覆盖 90% 场景,比 5 步快 40%
+        destructive=DESTRUCTIVE_TOOLS,
+        require_confirmation=True,
+        summarize=summarize_action_for_user,
+        emit_deltas=False,
+        result_adapter=crud_result,    # ai_crud_tools:有 error 键即失败
+        session_id=session_id,
+    )
 
     try:
-        while iterations < max_iterations:
-            iterations += 1
-
-            messages = [{"role": "system", "content": system}] + history
-            response = client.chat.completions.create(
-                model=model_name,
-                tools=TOOLS,
-                messages=messages,
-                temperature=0.3,
-            )
-            msg = response.choices[0].message
-            last_assistant_text = msg.content or ""
-            # 留痕:assistant 消息(含 tool_calls)
-            tc_serialized = None
-            if msg.tool_calls:
-                tc_serialized = []
-                for tc in msg.tool_calls:
-                    tc_serialized.append({
-                        "id": tc.id,
-                        "type": "function",
-                        "function": {"name": tc.function.name, "arguments": tc.function.arguments}
-                    })
-            log_assistant_message(current_user, session_id, last_assistant_text, model=model_name, tool_calls=tc_serialized)
-
-            # 没有 tool_calls:模型给出最终回答
-            if not msg.tool_calls:
-                ai_session.append_history(session_id, current_user, {
-                    "role": "assistant", "content": last_assistant_text
-                })
-                break
-
-            # 有 tool_calls:执行每一个
-            history.append({
-                "role": "assistant",
-                "content": msg.content,
-                "tool_calls": [
-                    {
-                        "id": tc.id,
-                        "type": "function",
-                        "function": {"name": tc.function.name, "arguments": tc.function.arguments}
-                    }
-                    for tc in msg.tool_calls
-                ]
-            })
-
-            for tc in msg.tool_calls:
-                tool_name = tc.function.name
-                try:
-                    args = json.loads(tc.function.arguments)
-                except json.JSONDecodeError:
-                    args = {}
-
-                if tool_name in DESTRUCTIVE_TOOLS:
-                    # 破坏性:暂存,不执行
-                    preview = summarize_action_for_user(tool_name, args, current_user)
-                    pending_destructive.append({
-                        "tool": tool_name,
-                        "args": args,
-                        "preview": preview
-                    })
-                    result_for_llm = {
-                        "status": "pending_confirmation",
-                        "message": f"动作『{preview}』已暂存,等待用户确认"
-                    }
-                else:
-                    # 安全:直接执行
-                    r = execute_tool(tool_name, args, current_user)
-                    actions_taken.append({
-                        "tool": tool_name,
-                        "args": args,
-                        "result": r
-                    })
-                    result_for_llm = r
-                    # 留痕:tool 消息
-                    try:
-                        log_tool_message(current_user, session_id, json.dumps(r, ensure_ascii=False, default=str), tc.id, model=model_name)
-                    except Exception:
-                        pass
-
-                history.append({
-                    "role": "tool",
-                    "tool_call_id": tc.id,
-                    "content": json.dumps(result_for_llm, ensure_ascii=False, default=str)
-                })
-        else:
-            # 达到 max_iterations
-            last_assistant_text = "操作太复杂了,请简化后重试。"
-
-    except OpenAIError as e:
-        raise HTTPException(500, f"AI 服务异常: {str(e)}")
+        outcome = await runner.aloop(messages)
+    except AgentError as e:
+        # core 已经翻译好了,不要再包一层
+        raise HTTPException(500, str(e))
     except Exception as e:
-        raise HTTPException(500, f"处理失败: {str(e)}")
+        raise HTTPException(500, friendly_error(e))
+
+    # 4) 本轮新增的 assistant/tool 消息回写 session(格式与改造前完全一致)
+    for msg in outcome.new_messages:
+        ai_session.append_history(session_id, current_user, msg)
+
+    # result 还原成 ai_crud_tools 的原始返回,保持前端契约不变
+    actions_taken = [
+        {"tool": a["tool"], "args": a["args"],
+         "result": (a.get("result") or {}).get("data")}
+        for a in outcome.actions
+    ]
+    pending_destructive = outcome.pending
+    last_assistant_text = outcome.reply
 
     # 3) 决定响应:有待确认动作 → 要求确认;否则返回结果
     # 去重:同样的 (tool, args) 重复出现只保留一次(LLM 多轮调用常见)

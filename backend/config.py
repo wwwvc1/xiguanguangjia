@@ -1,28 +1,8 @@
-from pydantic_settings import BaseSettings
+"""兼容 shim —— 真正的配置在 core/config.py
 
-class Settings(BaseSettings):
-    # 数据库配置
-    DB_HOST: str = "localhost"
-    DB_PORT: int = 3306
-    DB_USER: str = "root"
-    DB_PASSWORD: str = "123456"
-    DB_NAME: str = "habit_tracker"
+保留这个文件是为了让既有的 30+ 处 `from config import settings` 不用改。
+新代码请直接 `from core.config import settings`。
+"""
+from core.config import BACKEND_DIR, ENV_FILE, Settings, settings
 
-    # JWT 配置
-    SECRET_KEY: str = "your-secret-key-change-in-production"
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_DAYS: int = 7
-
-    # OpenAI 配置
-    OPENAI_API_KEY: str = "sk-your-openai-api-key"
-    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
-    CHAT_MODEL: str = "gpt-4o-mini"
-
-
-    # ChromaDB
-    CHROMA_DB_PATH: str = "./chroma_db"
-
-    class Config:
-        env_file = ".env"
-
-settings = Settings()
+__all__ = ["Settings", "settings", "BACKEND_DIR", "ENV_FILE"]

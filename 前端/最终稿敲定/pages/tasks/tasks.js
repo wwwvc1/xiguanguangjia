@@ -47,7 +47,7 @@ Page({
 
   onShow() {
     if (!app.globalData.token) {
-      wx.redirectTo({ url: '/pages/login/login' });
+      app.goLogin();
       return;
     }
     this.loadData();
@@ -60,7 +60,7 @@ Page({
       .catch(() => this.setData({ todoList: [] }));
 
     // 加载目标
-    app.request({ url: '/goals/' })
+    app.request({ url: '/goals' })
       .then(goalList => this.setData({ goalList }))
       .catch(() => this.setData({ goalList: [] }));
 
@@ -182,7 +182,7 @@ Page({
       }
       promise = isEdit
         ? app.request({ url: `/todos/${editId}`, method: 'PUT', data: { text: formData.text.trim() } })
-        : app.request({ url: '/todos/', method: 'POST', data: { text: formData.text.trim() } });
+        : app.request({ url: '/todos', method: 'POST', data: { text: formData.text.trim() } });
     } else if (activeTab === 'goal') {
       if (!formData.name || !formData.name.trim()) {
         wx.showToast({ title: '请输入目标名称', icon: 'none' });
@@ -194,7 +194,7 @@ Page({
       };
       promise = isEdit
         ? app.request({ url: `/goals/${editId}`, method: 'PUT', data: payload })
-        : app.request({ url: '/goals/', method: 'POST', data: payload });
+        : app.request({ url: '/goals', method: 'POST', data: payload });
     } else if (activeTab === 'finance') {
       if (!formData.category || !formData.category.trim()) {
         wx.showToast({ title: '请输入分类', icon: 'none' });
@@ -211,7 +211,7 @@ Page({
       };
       promise = isEdit
         ? app.request({ url: `/transactions/${editId}`, method: 'PUT', data: payload })
-        : app.request({ url: '/transactions/', method: 'POST', data: payload });
+        : app.request({ url: '/transactions', method: 'POST', data: payload });
     }
 
     if (!promise) return;

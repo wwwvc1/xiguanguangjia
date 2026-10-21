@@ -192,6 +192,11 @@
   font-weight: 500;
   box-shadow: 0 6rpx 16rpx rgba(20, 42, 32, 0.20), inset 0 1rpx 0 rgba(255, 255, 255, 0.18);
 }
+/* 失败 / 超时 / 被停止的回复:砖红描边,和正常回复区分 */
+.chat-bubble.ai.errored{
+  border-color: rgba(142, 61, 42, 0.42);
+  background: rgba(142, 61, 42, 0.06);
+}
 
 /* 来源 + 工具链 */
 .source-hint{
@@ -281,6 +286,24 @@
   40%{ transform: scale(1); opacity: 1; }
 }
 
+/* 已经出了内容、但还在流式生成 */
+.streaming-hint{
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  color: var(--ink-3);
+  letter-spacing: 0.02em;
+}
+.streaming-dot{
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+  background: var(--agar);
+  animation: dotBounce 1.2s infinite ease-in-out;
+}
+
 /* 底部输入栏 — 悬浮胶囊 tabbar 更高了,要把输入栏抬高 */
 .input-bar-fixed{
   position: fixed;
@@ -341,9 +364,10 @@
   background: var(--agar);
   border-color: var(--agar);
 }
-.send-btn.loading{
-  color: var(--ink-3);
-  opacity: 0.7;
+.send-btn.stop{
+  color: var(--brick);
+  background: rgba(142, 61, 42, 0.10);
+  border-color: rgba(142, 61, 42, 0.35);
 }
 
 /* 模型选择弹窗 */

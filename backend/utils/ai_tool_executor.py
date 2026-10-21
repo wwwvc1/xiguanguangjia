@@ -810,7 +810,12 @@ class ToolExecutor:
         if not func:
             return {"ok": False, "error": f"未知工具: {tool_name}"}
         try:
-            return func(user_id=user_id, **(arguments or {}))
+            result = func(user_id=user_id, **(arguments or {}))
+            # 写成功 → 失效缓存版本号,避免首页/洞察在 TTL 内看到旧数据
+            if isinstance(result, dict) and result.get("ok"):
+                from services.cache_invalidation import bump_for_tool
+                bump_for_tool(user_id, tool_name)
+            return result
         except TypeError as e:
             return {"ok": False, "error": f"参数错误: {e}"}
         except Exception as e:

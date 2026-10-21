@@ -106,7 +106,7 @@ Page({
     const time = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
     app.request({
-      url: '/transactions/',
+      url: '/transactions',
       method: 'POST',
       data: {
         category: formData.category,

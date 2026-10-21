@@ -1,7 +1,12 @@
-"""提醒 API (异步版)"""
+"""提醒 API (异步版)
+
+写操作后 bump "reminder" 缓存版本号:
+成就里的 `early_reminder` metric 会读 reminders 表,不失效就会在 TTL 内算错。
+"""
 import json
 from fastapi import APIRouter, Depends, HTTPException, Query
 from aiomysql import DictCursor
+from core import cache
 from database import get_conn
 from models.reminder import ReminderCreate, ReminderUpdate, ReminderResponse
 from utils.deps import get_current_user
@@ -69,9 +74,10 @@ async def create_reminder(reminder_data: ReminderCreate, current_user: int = Dep
                 (rid,)
             )
             row = await cur.fetchone()
-            row["time"] = str(row["time"])
-            row["weekdays"] = _wd_from_json(row.get("weekdays"))
-            return row
+    row["time"] = str(row["time"])
+    row["weekdays"] = _wd_from_json(row.get("weekdays"))
+    await cache.abump(current_user, "reminder")
+    return row
 
 
 @router.put("/{reminder_id}", response_model=ReminderResponse)
@@ -109,9 +115,10 @@ async def update_reminder(
                 (reminder_id,)
             )
             row = await cur.fetchone()
-            row["time"] = str(row["time"])
-            row["weekdays"] = _wd_from_json(row.get("weekdays"))
-            return row
+    row["time"] = str(row["time"])
+    row["weekdays"] = _wd_from_json(row.get("weekdays"))
+    await cache.abump(current_user, "reminder")
+    return row
 
 
 @router.delete("/{reminder_id}")
@@ -123,4 +130,5 @@ async def delete_reminder(reminder_id: int, current_user: int = Depends(get_curr
             if cur.rowcount == 0:
                 raise HTTPException(404, "提醒不存在")
             await conn.commit()
-            return {"message": "提醒删除成功"}
+    await cache.abump(current_user, "reminder")
+    return {"message": "提醒删除成功"}

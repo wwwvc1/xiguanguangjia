@@ -1,0 +1,55 @@
+# ============================================================
+# 习惯管家后端依赖
+# 版本号取自实际可运行环境(backend/.venv),不要随手升级大版本
+# ------------------------------------------------------------
+# 安装:
+#   cd backend
+#   python -m venv .venv
+#   .venv\Scripts\pip install -r requirements.txt
+# ============================================================
+
+# ---- Web 框架 ----
+fastapi==0.141.1
+uvicorn==0.52.1
+python-multipart==0.0.32
+pydantic==2.13.4
+pydantic-settings==2.15.0
+
+# ---- 数据库 ----
+aiomysql==0.3.2
+PyMySQL==1.2.0
+
+# ---- 鉴权 ----
+python-jose==3.5.0
+bcrypt==5.0.0
+
+# ---- HTTP ----
+httpx==0.28.1
+requests==2.34.2
+
+# ---- LLM / LangChain(阶段一已改造为 ChatOpenAI + bind_tools)----
+openai==3.0.0
+langchain==1.3.15
+langchain-core==1.5.4
+langchain-openai==1.5.0
+langchain-community==0.4.2
+langchain-text-splitters==1.1.2
+
+# ---- RAG / 向量库 ----
+chromadb==1.5.9
+sentence-transformers==5.7.0
+torch==2.13.0
+numpy==2.5.2
+
+# ---- 可选(装了才启用)----
+# 官方 Redis 客户端。**不装也能跑**:core/redis_client.py 会自动回退到
+# core/mini_redis.py(纯标准库 RESP2 实现,覆盖本项目用到的命令)。
+redis>=5.0
+
+# 定时任务(周报/月报)。当前环境未安装,scheduler 会静默跳过。
+APScheduler>=3.10
+
+# RAG 的官方新包(替代已 sunset 的 langchain_community 相关类)。
+# 装上后 DeprecationWarning 消失;不装会自动回退,功能一致。
+# langchain-chroma>=0.2
+# langchain-huggingface>=0.3

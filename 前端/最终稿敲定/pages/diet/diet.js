@@ -59,7 +59,7 @@ Page({
 
   onShow() {
     if (!app.globalData.token) {
-      wx.redirectTo({ url: '/pages/login/login' });
+      app.goLogin();
       return;
     }
     this.loadData();
@@ -72,7 +72,7 @@ Page({
   loadData() {
     // 并行加载：饮食列表 + 用户设置
     Promise.all([
-      app.request({ url: '/meals/' }).catch(() => []),
+      app.request({ url: '/meals' }).catch(() => []),
       app.request({ url: '/user/settings' }).catch(() => null)
     ]).then(([meals, settings]) => {
       const display = buildDisplayMeals(meals);
@@ -135,7 +135,7 @@ Page({
 
     const promise = existing && existing.id
       ? app.request({ url: `/meals/${existing.id}`, method: 'PUT', data: payload })
-      : app.request({ url: '/meals/', method: 'POST', data: payload });
+      : app.request({ url: '/meals', method: 'POST', data: payload });
 
     promise.then(() => {
       this.loadData();

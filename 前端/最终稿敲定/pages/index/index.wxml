@@ -212,4 +212,17 @@
       </view>
     </view>
   </view>
+
+  <!-- 每日首次进入:提示添加今日待办 -->
+  <view class="modal-mask" wx:if="{{showDailyPrompt}}" bindtap="onDailyPromptLater">
+    <view class="modal-content bump" catchtap="stopPropagation">
+      <text class="daily-prompt-emoji">🌱</text>
+      <text class="modal-title">开始今天吧</text>
+      <text class="daily-prompt-desc">今天还没有待办。花 1 分钟列 2–3 件小事,一天会轻松很多。</text>
+      <view class="modal-actions">
+        <view class="modal-btn cancel-btn bump-sm" bindtap="onDailyPromptLater">稍后</view>
+        <view class="modal-btn confirm-btn" bindtap="onDailyPromptGo">去添加</view>
+      </view>
+    </view>
+  </view>
 </view>
